@@ -31,7 +31,7 @@ def run_sim(
     seed: int,
     ticks: int,
     snapshot_every: int,
-    agent_kind: str = "random",
+    agent_kind: str = "utility",
     policy_weights: dict = None,
     return_score: bool = False,
 ):
