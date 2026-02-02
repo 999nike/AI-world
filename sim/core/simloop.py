@@ -27,7 +27,14 @@ SETTLEMENT_RULES = {
 }
 
 
-def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
+def run_sim(
+    seed: int,
+    ticks: int,
+    snapshot_every: int,
+    agent_kind: str = "random",
+    policy_weights: dict | None = None,
+    return_score: bool = False,
+):
     run_id = make_run_id()
     run_dir = Path("runs") / run_id
     logger = RunLogger(run_dir)
@@ -36,6 +43,11 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
     rng = RNG(seed)
     world = make_world(cfg, rng)
 
+    if agent_kind == "utility":
+    from sim.agents.utility_agent import UtilityAgent
+    w = policy_weights or {}
+    brains = {a.agent_id: UtilityAgent(a.agent_id, w) for a in world.agents}
+else:
     brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
     # --- Metrics counters (new) ---
