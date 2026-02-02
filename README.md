@@ -257,8 +257,7 @@ no combat initially (combat later)
 You want learning, not immediate extinction.
 
 
-Perfect timing. I’ll clean this up, lock it to reality, and make it future-proof — no fluff, no promises you haven’t actually built.
-Below is a drop-in replacement for your README section. You can paste this straight in.
+# AI-world## Agent-Based Civilization Simulator Lab
 v0 — Current State (Reality-Checked)
 Core Simulation ✅
 [x] Deterministic tick-based simulation
