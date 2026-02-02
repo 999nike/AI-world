@@ -292,3 +292,5 @@ You want learning, not immediate extinction.
 - [x] Run summary JSON
 - [x] Metrics block
 - [x] Simple score function
+
+physics maths real life world physics engine simulation ai agents emergent behavior civilization simulator agent-based modeling
