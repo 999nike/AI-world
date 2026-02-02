@@ -43,6 +43,10 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         "settlements_created": 0,
         "food_deposited_total": 0,
         "food_deposit_events": 0,
+        "wood_deposited_total": 0,
+        "wood_deposit_events": 0,
+        "stone_deposited_total": 0,
+        "stone_deposit_events": 0,
         "population_grew_events": 0,
         "population_starved_events": 0,
         "population_net_change": 0,
@@ -70,6 +74,8 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
             "owner": owner_id,
             "population": int(SETTLEMENT_RULES["starting_population"]),
             "food_stock": 0,
+            "wood_stock": 0,
+            "stone_stock": 0,
         }
         metrics["settlements_created"] += 1
         logger.event(
@@ -139,11 +145,11 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
             tile = world.tile_at(a.x, a.y)
             st = world.structure_at(a.x, a.y)
 
-            # attach structure to settlement if standing on one
+           # attach structure to settlement if standing on one
             if st is not None:
                 st_sid = settlement_at_structure(st.x, st.y)
 
-                # auto-deposit FOOD only
+                # auto-deposit FOOD / WOOD / STONE (economy-lite)
                 if a.inv_food > 0:
                     settlements[st_sid]["food_stock"] += a.inv_food
                     deposited = a.inv_food
@@ -160,6 +166,44 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                             "settlement_id": st_sid,
                             "amount": deposited,
                             "food_stock": settlements[st_sid]["food_stock"],
+                        }
+                    )
+
+                if a.inv_wood > 0:
+                    settlements[st_sid]["wood_stock"] += a.inv_wood
+                    deposited = a.inv_wood
+                    a.inv_wood = 0
+
+                    metrics["wood_deposit_events"] += 1
+                    metrics["wood_deposited_total"] += deposited
+
+                    logger.event(
+                        {
+                            "type": "wood_deposited",
+                            "tick": t,
+                            "agent_id": a.agent_id,
+                            "settlement_id": st_sid,
+                            "amount": deposited,
+                            "wood_stock": settlements[st_sid]["wood_stock"],
+                        }
+                    )
+
+                if a.inv_stone > 0:
+                    settlements[st_sid]["stone_stock"] += a.inv_stone
+                    deposited = a.inv_stone
+                    a.inv_stone = 0
+
+                    metrics["stone_deposit_events"] += 1
+                    metrics["stone_deposited_total"] += deposited
+
+                    logger.event(
+                        {
+                            "type": "stone_deposited",
+                            "tick": t,
+                            "agent_id": a.agent_id,
+                            "settlement_id": st_sid,
+                            "amount": deposited,
+                            "stone_stock": settlements[st_sid]["stone_stock"],
                         }
                     )
 
