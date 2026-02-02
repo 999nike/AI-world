@@ -38,10 +38,20 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
 
     brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    # --- Settlement state kept HERE (single-file upgrade) ---
-    # settlement_id -> dict
+    # --- Metrics counters (new) ---
+    metrics = {
+        "settlements_created": 0,
+        "food_deposited_total": 0,
+        "food_deposit_events": 0,
+        "population_grew_events": 0,
+        "population_starved_events": 0,
+        "population_net_change": 0,
+        "build_hut": 0,
+        "build_storage": 0,
+    }
+
+    # --- Settlement state kept HERE (single-file settlement bundle) ---
     settlements: Dict[str, Dict[str, Any]] = {}
-    # structure (x,y) -> settlement_id
     struct_to_settlement: Dict[str, str] = {}
     settlement_counter = 0
 
@@ -61,6 +71,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
             "population": int(SETTLEMENT_RULES["starting_population"]),
             "food_stock": 0,
         }
+        metrics["settlements_created"] += 1
         logger.event(
             {
                 "type": "settlement_created",
@@ -71,14 +82,11 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         return sid
 
     def settlement_at_structure(x: int, y: int) -> str:
-        # If this structure is already mapped, return it.
         k = pos_key(x, y)
         sid = struct_to_settlement.get(k)
         if sid:
             return sid
 
-        # Otherwise, assign nearest settlement by anchor distance if any exists,
-        # else create a new one at this point.
         if not settlements:
             sid = create_settlement(x, y, owner_id="system")
             struct_to_settlement[k] = sid
@@ -92,11 +100,9 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 best_d = d
                 best_sid = sid2
 
-        # Attach to nearest
         struct_to_settlement[k] = best_sid  # type: ignore
         return best_sid  # type: ignore
 
-    # Save config used
     (run_dir / "config.json").write_text(
         json.dumps(
             {
@@ -134,15 +140,18 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
             st = world.structure_at(a.x, a.y)
 
             # attach structure to settlement if standing on one
-            st_sid = None
             if st is not None:
                 st_sid = settlement_at_structure(st.x, st.y)
 
-                # auto-deposit FOOD only (keeps it simple + meaningful)
+                # auto-deposit FOOD only
                 if a.inv_food > 0:
                     settlements[st_sid]["food_stock"] += a.inv_food
                     deposited = a.inv_food
                     a.inv_food = 0
+
+                    metrics["food_deposit_events"] += 1
+                    metrics["food_deposited_total"] += deposited
+
                     logger.event(
                         {
                             "type": "food_deposited",
@@ -242,22 +251,21 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                         a.inv_wood -= cost["wood"]
                         a.inv_stone -= cost["stone"]
 
-                        # Build structure
                         world.structures.append(
                             Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
                         )
                         note = f"built_{b}"
+                        if b == "hut":
+                            metrics["build_hut"] += 1
+                        elif b == "storage":
+                            metrics["build_storage"] += 1
 
-                        # Settlement linkage: first structure at a location creates/attaches settlement
-                        # If no settlements exist yet, create one anchored here owned by builder.
+                        # settlement linkage
                         if not settlements:
                             sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
                             struct_to_settlement[pos_key(a.x, a.y)] = sid
                         else:
-                            # attach this new structure to nearest settlement by default
                             sid = settlement_at_structure(a.x, a.y)
-                            # If this is very far from nearest, allow new settlement creation
-                            # (simple threshold; keeps multi-village possible)
                             s_anchor = settlements[sid]
                             d = abs(a.x - s_anchor["x"]) + abs(a.y - s_anchor["y"])
                             if d >= 8:
@@ -268,7 +276,6 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 ok = False
                 note = "unknown_action"
 
-            # resolution log
             tile2 = world.tile_at(a.x, a.y)
             st2 = world.structure_at(a.x, a.y)
             sid2 = None
@@ -290,7 +297,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 }
             )
 
-        # --- Settlement tick: consumption + growth/starvation ---
+        # settlement tick: consumption + growth/starvation
         if settlements:
             cons = int(SETTLEMENT_RULES["food_per_pop_per_tick"])
             buffer_food = int(SETTLEMENT_RULES["growth_food_buffer"])
@@ -303,19 +310,23 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 need = pop_before * cons
                 if s["food_stock"] >= need:
                     s["food_stock"] -= need
-                    # growth rule: if still plenty left, grow
-                    # (deterministic, not random)
                     if s["food_stock"] >= (need + buffer_food) and pop_before > 0:
                         grow_by = min(max_growth, 1)
                         s["population"] = pop_before + grow_by
                 else:
-                    # starvation: consume what exists, drop population by 1
                     s["food_stock"] = 0
                     if pop_before > 0:
                         s["population"] = pop_before - 1
 
                 pop_after = int(s["population"])
                 food_after = int(s["food_stock"])
+
+                if pop_after != pop_before:
+                    metrics["population_net_change"] += (pop_after - pop_before)
+                    if pop_after > pop_before:
+                        metrics["population_grew_events"] += 1
+                    else:
+                        metrics["population_starved_events"] += 1
 
                 if pop_after != pop_before or food_after != food_before:
                     logger.event(
@@ -330,14 +341,11 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                         }
                     )
 
-        # snapshot (augment with settlements + mapped structures)
+        # snapshot
         if snapshot_every > 0 and (t % snapshot_every) == 0:
             snap = world.to_dict_summary()
-
-            # add settlement info
             snap["settlements"] = list(settlements.values())
 
-            # add structure->settlement mapping for readability
             if "structures" in snap:
                 out_structs: List[Dict[str, Any]] = []
                 for st in snap["structures"]:
@@ -353,11 +361,25 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
     final = world.to_dict_summary()
     final["settlements"] = list(settlements.values())
 
+    # simple score (bigger is better)
+    total_pop = sum(int(s["population"]) for s in settlements.values()) if settlements else 0
+    num_settlements = len(settlements)
+    num_structures = len(world.structures)
+    score = (
+        total_pop * 10
+        + num_settlements * 25
+        + num_structures * 5
+        + metrics["food_deposited_total"]
+        - metrics["population_starved_events"] * 20
+    )
+
     summary = {
         "run_id": run_id,
         "seed": seed,
         "ticks": ticks,
         "final": final,
+        "metrics": metrics,
+        "score": score,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
