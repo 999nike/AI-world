@@ -7,6 +7,13 @@ class Tile:
     wood: int
     stone: int
 
+
+@dataclass
+class AgentState:
+    agent_id: str
+    x: int
+    y: int
+
 @dataclass
 class WorldState:
     tick: int
@@ -18,6 +25,7 @@ class WorldState:
         return y * self.width + x
 
     def to_dict_summary(self) -> Dict:
+        "agents": [{"id": a.agent_id, "x": a.x, "y": a.y} for a in self.agents],
         total_food = sum(t.food for t in self.tiles)
         total_wood = sum(t.wood for t in self.tiles)
         total_stone = sum(t.stone for t in self.tiles)
