@@ -292,7 +292,6 @@ def run_sim(
                             note = "no_stone"
 elif action.type == "build":
     b = action.building
-
     # Hard rule: no huts until a storage exists in the nearest settlement
     if b == "hut" and settlements:
         best_sid = None
