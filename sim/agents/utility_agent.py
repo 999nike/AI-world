@@ -51,8 +51,7 @@ class UtilityAgent:
     agent_id: str
     weights: Dict[str, float]
 
-
-    def act(self, obs: Observation, rng: RNG) -> Action:
+def act(self, obs: Observation, rng: RNG) -> Action:
     # --- STORAGE-FIRST BOOTSTRAP ---
     inv = obs.inventory
     structure = obs.structure
