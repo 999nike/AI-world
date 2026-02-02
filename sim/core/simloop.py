@@ -42,6 +42,13 @@ def run_sim(
     cfg = WorldConfig()
     rng = RNG(seed)
     world = make_world(cfg, rng)
+    # --- brains ---
+if agent_kind == "utility":
+    from sim.agents.utility_agent import UtilityAgent
+    w = policy_weights or {}
+    brains = {a.agent_id: UtilityAgent(a.agent_id, w) for a in world.agents}
+else:
+    brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
     if agent_kind == "utility":
     from sim.agents.utility_agent import UtilityAgent
