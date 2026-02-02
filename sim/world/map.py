@@ -1,4 +1,7 @@
+from sim.core.rng import RNG
+from sim.world.config import WorldConfig
 from sim.world.state import Tile, WorldState, AgentState
+
 
 def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
     tiles = []
@@ -21,4 +24,10 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
             )
         )
 
-    return WorldState(tick=0, width=cfg.width, height=cfg.height, tiles=tiles, agents=agents)
+    return WorldState(
+        tick=0,
+        width=cfg.width,
+        height=cfg.height,
+        tiles=tiles,
+        agents=agents,
+    )
