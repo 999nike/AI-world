@@ -32,7 +32,7 @@ def run_sim(
     ticks: int,
     snapshot_every: int,
     agent_kind: str = "random",
-    policy_weights: dict | None = None,
+    policy_weights: dict = None,
     return_score: bool = False,
 ):
     run_id = make_run_id()
