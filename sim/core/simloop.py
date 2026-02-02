@@ -290,46 +290,47 @@ def run_sim(
                         else:
                             ok = False
                             note = "no_stone"
+elif action.type == "build":
+    b = action.building
 
-            elif action.type == "build":
-                b = action.building
+    # Hard rule: no huts until a storage exists in the nearest settlement
+    if b == "hut" and settlements:
+        best_sid = None
+        best_d = 10**9
+        for sid2, s in settlements.items():
+            d = abs(a.x - s["x"]) + abs(a.y - s["y"])
+            if d < best_d:
+                best_d = d
+                best_sid = sid2
 
-                # Hard rule: no huts until a storage exists in the nearest settlement
-                if b == "hut" and settlements:
-                    best_sid = None
-                    best_d = 10**9
-                    for sid2, s in settlements.items():
-                        d = abs(a.x - s["x"]) + abs(a.y - s["y"])
-                        if d < best_d:
-                            best_d = d
-                            best_sid = sid2
+        has_storage = any(
+            st2.type == "storage"
+            and settlement_at_structure(st2.x, st2.y) == best_sid
+            for st2 in world.structures
+        )
+        if not has_storage:
+            ok = False
+            note = "hut_requires_storage"
 
-                    has_storage = any(
-                        st2.type == "storage"
-                        and settlement_at_structure(st2.x, st2.y) == best_sid
-                        for st2 in world.structures
-                    )
-                    if not has_storage:
-                        ok = False
-                        note = "hut_requires_storage
-                        if b not in BUILD_COSTS:
-                         ok = False
-                        note = "bad_building"
-                elif world.structure_at(a.x, a.y) is not None and b != "storage":
-                     ok = False
-                      note = "occupied"
-                else:
-                    cost = BUILD_COSTS[b]
-                    need_wood = int(cost["wood"])
-                    need_stone = int(cost["stone"])
-                     # Spend from agent inventory first
-                    use_wood = min(a.inv_wood, need_wood)
-                    use_stone = min(a.inv_stone, need_stone)
-                    a.inv_wood -= use_wood
-                    a.inv_stone -= use_stone
-                    need_wood -= use_wood
-                    need_stone -= use_stone
+    if ok:
+        if b not in BUILD_COSTS:
+            ok = False
+            note = "bad_building"
+        elif world.structure_at(a.x, a.y) is not None and b != "storage":
+            ok = False
+            note = "occupied"
+        else:
+            cost = BUILD_COSTS[b]
+            need_wood = int(cost["wood"])
+            need_stone = int(cost["stone"])
 
+            # Spend from agent inventory first
+            use_wood = min(a.inv_wood, need_wood)
+            use_stone = min(a.inv_stone, need_stone)
+            a.inv_wood -= use_wood
+            a.inv_stone -= use_stone
+            need_wood -= use_wood
+            need_stone -= use_stone
                     # If still short, try to fund the remainder from nearest settlement stockpile
                     funded_sid = None
                     if (need_wood > 0 or need_stone > 0) and settlements:
