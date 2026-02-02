@@ -31,16 +31,9 @@ class Structure:
     x: int
     y: int
     owner_id: str
-    settlement_id: str  # links structure to settlement
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": self.type,
-            "x": self.x,
-            "y": self.y,
-            "owner": self.owner_id,
-            "settlement_id": self.settlement_id,
-        }
+        return {"type": self.type, "x": self.x, "y": self.y, "owner": self.owner_id}
 
 
 @dataclass
@@ -71,7 +64,7 @@ class WorldState:
     tiles: List[Tile]
     agents: List[AgentState]
     structures: List[Structure]
-    settlements: List[Settlement]
+    settlements: List[Settlement]  # kept for compatibility; simloop also outputs settlements
 
     def idx(self, x: int, y: int) -> int:
         return y * self.width + x
@@ -85,12 +78,6 @@ class WorldState:
                 return s
         return None
 
-    def settlement_by_id(self, sid: str) -> Optional[Settlement]:
-        for s in self.settlements:
-            if s.settlement_id == sid:
-                return s
-        return None
-
     def to_dict_summary(self) -> Dict[str, Any]:
         total_food = sum(t.food for t in self.tiles)
         total_wood = sum(t.wood for t in self.tiles)
@@ -100,10 +87,7 @@ class WorldState:
             "tick": self.tick,
             "width": self.width,
             "height": self.height,
-            "agents": [
-                {"id": a.agent_id, "x": a.x, "y": a.y, "inv": a.inv_dict()}
-                for a in self.agents
-            ],
+            "agents": [{"id": a.agent_id, "x": a.x, "y": a.y, "inv": a.inv_dict()} for a in self.agents],
             "structures": [s.to_dict() for s in self.structures],
             "settlements": [s.to_dict() for s in self.settlements],
             "totals": {"food": total_food, "wood": total_wood, "stone": total_stone},
