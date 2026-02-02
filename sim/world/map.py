@@ -34,4 +34,5 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
         tiles=tiles,
         agents=agents,
         structures=[],
+        settlements=[],  # <-- required now
     )
