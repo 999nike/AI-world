@@ -31,9 +31,36 @@ class Structure:
     x: int
     y: int
     owner_id: str
+    settlement_id: str  # links structure to settlement
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"type": self.type, "x": self.x, "y": self.y, "owner": self.owner_id}
+        return {
+            "type": self.type,
+            "x": self.x,
+            "y": self.y,
+            "owner": self.owner_id,
+            "settlement_id": self.settlement_id,
+        }
+
+
+@dataclass
+class Settlement:
+    settlement_id: str
+    name: str
+    x: int
+    y: int
+    population: int = 2
+    food_stock: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.settlement_id,
+            "name": self.name,
+            "x": self.x,
+            "y": self.y,
+            "population": self.population,
+            "food_stock": self.food_stock,
+        }
 
 
 @dataclass
@@ -44,6 +71,7 @@ class WorldState:
     tiles: List[Tile]
     agents: List[AgentState]
     structures: List[Structure]
+    settlements: List[Settlement]
 
     def idx(self, x: int, y: int) -> int:
         return y * self.width + x
@@ -54,6 +82,12 @@ class WorldState:
     def structure_at(self, x: int, y: int) -> Optional[Structure]:
         for s in self.structures:
             if s.x == x and s.y == y:
+                return s
+        return None
+
+    def settlement_by_id(self, sid: str) -> Optional[Settlement]:
+        for s in self.settlements:
+            if s.settlement_id == sid:
                 return s
         return None
 
@@ -71,5 +105,6 @@ class WorldState:
                 for a in self.agents
             ],
             "structures": [s.to_dict() for s in self.structures],
+            "settlements": [s.to_dict() for s in self.settlements],
             "totals": {"food": total_food, "wood": total_wood, "stone": total_stone},
         }
