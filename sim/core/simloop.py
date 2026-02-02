@@ -247,7 +247,7 @@ def run_sim(
                 }
             )
 
-            ok = True
+           ok = True
             note = ""
 
             if action.type == "move":
@@ -290,113 +290,119 @@ def run_sim(
                         else:
                             ok = False
                             note = "no_stone"
-elif action.type == "build":
-    b = action.building
-    # Hard rule: no huts until a storage exists in the nearest settlement
-    if b == "hut" and settlements:
-        best_sid = None
-        best_d = 10**9
-        for sid2, s in settlements.items():
-            d = abs(a.x - s["x"]) + abs(a.y - s["y"])
-            if d < best_d:
-                best_d = d
-                best_sid = sid2
 
-        has_storage = any(
-            st2.type == "storage"
-            and settlement_at_structure(st2.x, st2.y) == best_sid
-            for st2 in world.structures
-        )
-        if not has_storage:
-            ok = False
-            note = "hut_requires_storage"
+            elif action.type == "build":
+                b = action.building
 
-    if ok:
-        if b not in BUILD_COSTS:
-            ok = False
-            note = "bad_building"
-        elif world.structure_at(a.x, a.y) is not None and b != "storage":
-            ok = False
-            note = "occupied"
-        else:
-            cost = BUILD_COSTS[b]
-            need_wood = int(cost["wood"])
-            need_stone = int(cost["stone"])
+                # Hard rule: no huts until a storage exists in the nearest settlement
+                if b == "hut" and settlements:
+                    best_sid = None
+                    best_d = 10**9
+                    for sid2, s in settlements.items():
+                        d = abs(a.x - s["x"]) + abs(a.y - s["y"])
+                        if d < best_d:
+                            best_d = d
+                            best_sid = sid2
 
-            # Spend from agent inventory first
-            use_wood = min(a.inv_wood, need_wood)
-            use_stone = min(a.inv_stone, need_stone)
-            a.inv_wood -= use_wood
-            a.inv_stone -= use_stone
-            need_wood -= use_wood
-            need_stone -= use_stone
-                    # If still short, try to fund the remainder from nearest settlement stockpile
-                    funded_sid = None
-                    if (need_wood > 0 or need_stone > 0) and settlements:
-                        best_sid = None
-                        best_d = 10**9
-                        for sid2, s in settlements.items():
-                            d = abs(a.x - s["x"]) + abs(a.y - s["y"])
-                            if d < best_d:
-                                best_d = d
-                                best_sid = sid2
-                        funded_sid = best_sid
+                    has_storage = any(
+                        st.type == "storage"
+                        and settlement_at_structure(st.x, st.y) == best_sid
+                        for st in world.structures
+                    )
+                    if not has_storage:
+                        ok = False
+                        note = "hut_requires_storage"
 
-                        s = settlements[best_sid]  # type: ignore
-                        if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
-                            s["wood_stock"] -= need_wood
-                            s["stone_stock"] -= need_stone
-                            need_wood = 0
-                            need_stone = 0
-                        else:
-                            ok = False
-                            note = "insufficient_resources"
-                            # refund what we took from agent inventory
-                            a.inv_wood += use_wood
-                            a.inv_stone += use_stone
+                if ok:
+                    if b not in BUILD_COSTS:
+                        ok = False
+                        note = "bad_building"
+                    elif world.structure_at(a.x, a.y) is not None and b != "storage":
+                        ok = False
+                        note = "occupied"
+                    else:
+                        cost = BUILD_COSTS[b]
+                        need_wood = int(cost["wood"])
+                        need_stone = int(cost["stone"])
 
-                    # If costs fully covered, build it
-                    if ok and need_wood == 0 and need_stone == 0:
-                        world.structures.append(
-                            Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
-                        )
-                        note = f"built_{b}"
-                        logger.event(
-                 {
-                          "type": f"build_{b}",
-                          "tick": t,
-                          "agent_id": a.agent_id,
-                          "x": a.x,
-                          "y": a.y,
-                            }
-                           )
-                        if b == "hut":
-                            metrics["build_hut"] += 1
-                        elif b == "storage":
-                            metrics["build_storage"] += 1
+                        # Spend from agent inventory first
+                        use_wood = min(a.inv_wood, need_wood)
+                        use_stone = min(a.inv_stone, need_stone)
+                        a.inv_wood -= use_wood
+                        a.inv_stone -= use_stone
+                        need_wood -= use_wood
+                        need_stone -= use_stone
 
-                        if funded_sid is not None:
-                            logger.event(
-                                {
-                                    "type": "build_funded",
-                                    "tick": t,
-                                    "agent_id": a.agent_id,
-                                    "settlement_id": funded_sid,
-                                    "building": b,
-                                }
+                        # If still short, try to fund the remainder from nearest settlement stockpile
+                        funded_sid = None
+                        if (need_wood > 0 or need_stone > 0) and settlements:
+                            best_sid = None
+                            best_d = 10**9
+                            for sid2, s in settlements.items():
+                                d = abs(a.x - s["x"]) + abs(a.y - s["y"])
+                                if d < best_d:
+                                    best_d = d
+                                    best_sid = sid2
+                            funded_sid = best_sid
+
+                            s = settlements[best_sid]  # type: ignore
+                            if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
+                                s["wood_stock"] -= need_wood
+                                s["stone_stock"] -= need_stone
+                                need_wood = 0
+                                need_stone = 0
+                            else:
+                                ok = False
+                                note = "insufficient_resources"
+                                # Refund what we already took from agent inventory
+                                a.inv_wood += use_wood
+                                a.inv_stone += use_stone
+
+                        # If costs fully covered, build it
+                        if ok and need_wood == 0 and need_stone == 0:
+                            world.structures.append(
+                                Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
                             )
+                            note = f"built_{b}"
 
-                        # settlement linkage
-                        if not settlements:
-                            sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
-                            struct_to_settlement[pos_key(a.x, a.y)] = sid
-                        else:
-                            sid = settlement_at_structure(a.x, a.y)
-                            s_anchor = settlements[sid]
-                            d = abs(a.x - s_anchor["x"]) + abs(a.y - s_anchor["y"])
-                            if d >= 8:
+                            if b == "hut":
+                                metrics["build_hut"] += 1
+                            elif b == "storage":
+                                metrics["build_storage"] += 1
+
+                            if funded_sid is not None:
+                                logger.event(
+                                    {
+                                        "type": "build_funded",
+                                        "tick": t,
+                                        "agent_id": a.agent_id,
+                                        "settlement_id": funded_sid,
+                                        "building": b,
+                                    }
+                                )
+
+                            # settlement linkage
+                            if not settlements:
                                 sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
                                 struct_to_settlement[pos_key(a.x, a.y)] = sid
+                            else:
+                                sid = settlement_at_structure(a.x, a.y)
+                                s_anchor = settlements[sid]
+                                d = abs(a.x - s_anchor["x"]) + abs(a.y - s_anchor["y"])
+                                if d >= 8:
+                                    sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
+                                struct_to_settlement[pos_key(a.x, a.y)] = sid
+
+            else:
+                ok = False
+                note = "unknown_action"
+
+            tile2 = world.tile_at(a.x, a.y)
+            st2 = world.structure_at(a.x, a.y)
+
+            sid2 = None
+            if st2 is not None:
+                sid2 = settlement_at_structure(st2.x, st2.y)
 
             logger.event(
                 {
@@ -406,9 +412,10 @@ elif action.type == "build":
                     "ok": ok,
                     "note": note,
                     "pos": {"x": a.x, "y": a.y},
-                    "tile": world.tile_at(a.x, a.y).to_dict(),
+                    "tile": tile2.to_dict(),
                     "inv": a.inv_dict(),
-                    "structure": (world.structure_at(a.x, a.y).to_dict() if world.structure_at(a.x, a.y) else None),
+                    "structure": (st2.to_dict() if st2 else None),
+                    "settlement_id": sid2,
                 }
             )
 
