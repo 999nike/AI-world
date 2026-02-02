@@ -363,6 +363,15 @@ def run_sim(
                             Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
                         )
                         note = f"built_{b}"
+                        logger.event(
+                 {
+                          "type": f"build_{b}",
+                          "tick": t,
+                          "agent_id": a.agent_id,
+                          "x": a.x,
+                          "y": a.y,
+                            }
+                           )
                         if b == "hut":
                             metrics["build_hut"] += 1
                         elif b == "storage":
