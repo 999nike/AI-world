@@ -20,7 +20,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
     rng = RNG(seed)
     world = make_world(cfg, rng)
 
-    # Agent brains (one per agent)
+    # brains
     brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
     # Save config used
@@ -43,18 +43,19 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         world.tick = t
         logger.event({"type": "tick_started", "tick": t})
 
-        # v0 environment dynamics: deterministic regrowth
+        # deterministic regrowth
         if t % 5 == 0:
             for _ in range(10):
                 x = rng.randint(0, world.width - 1)
                 y = rng.randint(0, world.height - 1)
-                tile = world.tiles[world.idx(x, y)]
+                tile = world.tile_at(x, y)
                 tile.food = min(tile.food + 1, cfg.max_food)
                 tile.wood = min(tile.wood + 1, cfg.max_wood)
                 tile.stone = min(tile.stone + 1, cfg.max_stone)
 
-        # Agent step: observe -> act -> resolve (move only)
+        # agent loop
         for a in world.agents:
+            tile = world.tile_at(a.x, a.y)
             obs = Observation(
                 tick=t,
                 self_id=a.agent_id,
@@ -62,7 +63,10 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 y=a.y,
                 width=world.width,
                 height=world.height,
+                tile=tile.to_dict(),
+                inventory=a.inv_dict(),
             )
+
             action = brains[a.agent_id].act(obs, rng)
 
             logger.event(
@@ -72,31 +76,75 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                     "agent_id": a.agent_id,
                     "action": action.to_dict(),
                     "pos": {"x": a.x, "y": a.y},
+                    "tile": tile.to_dict(),
+                    "inv": a.inv_dict(),
                 }
             )
 
             ok = True
-            nx = a.x + action.dx
-            ny = a.y + action.dy
+            note = ""
 
-            # bounds check
-            if nx < 0 or nx >= world.width or ny < 0 or ny >= world.height:
+            if action.type == "move":
+                nx = a.x + int(action.dx)
+                ny = a.y + int(action.dy)
+
+                if nx < 0 or nx >= world.width or ny < 0 or ny >= world.height:
+                    ok = False
+                    note = "out_of_bounds"
+                    nx, ny = a.x, a.y
+
+                a.x, a.y = nx, ny
+
+            elif action.type == "gather":
+                res = action.resource
+                if res not in ("food", "wood", "stone"):
+                    ok = False
+                    note = "bad_resource"
+                else:
+                    cur_tile = world.tile_at(a.x, a.y)
+                    amount = 1
+
+                    if res == "food":
+                        if cur_tile.food >= amount:
+                            cur_tile.food -= amount
+                            a.inv_food += amount
+                        else:
+                            ok = False
+                            note = "no_food"
+                    elif res == "wood":
+                        if cur_tile.wood >= amount:
+                            cur_tile.wood -= amount
+                            a.inv_wood += amount
+                        else:
+                            ok = False
+                            note = "no_wood"
+                    elif res == "stone":
+                        if cur_tile.stone >= amount:
+                            cur_tile.stone -= amount
+                            a.inv_stone += amount
+                        else:
+                            ok = False
+                            note = "no_stone"
+            else:
                 ok = False
-                nx, ny = a.x, a.y
+                note = "unknown_action"
 
-            a.x, a.y = nx, ny
-
+            # log resolution
+            tile2 = world.tile_at(a.x, a.y)
             logger.event(
                 {
                     "type": "action_resolved",
                     "tick": t,
                     "agent_id": a.agent_id,
                     "ok": ok,
+                    "note": note,
                     "pos": {"x": a.x, "y": a.y},
+                    "tile": tile2.to_dict(),
+                    "inv": a.inv_dict(),
                 }
             )
 
-        # Snapshot
+        # snapshot
         if snapshot_every > 0 and (t % snapshot_every) == 0:
             snap = world.to_dict_summary()
             logger.snapshot({"type": "snapshot", **snap})
@@ -108,7 +156,10 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         "ticks": ticks,
         "final": world.to_dict_summary(),
     }
-    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    (run_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2),
+        encoding="utf-8",
+    )
 
     logger.event({"type": "run_finished", "run_id": run_id})
     logger.close()

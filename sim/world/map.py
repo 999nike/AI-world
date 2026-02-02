@@ -21,6 +21,9 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
                 agent_id=f"A{i}",
                 x=rng.randint(0, cfg.width - 1),
                 y=rng.randint(0, cfg.height - 1),
+                inv_food=0,
+                inv_wood=0,
+                inv_stone=0,
             )
         )
 
