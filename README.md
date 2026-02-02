@@ -255,3 +255,40 @@ enough food sources to survive
 scarce ore (forces trade/exploration)
 no combat initially (combat later)
 You want learning, not immediate extinction.
+
+
+
+## v0 Progress
+
+### Core Simulation
+- [x] Deterministic tick-based world
+- [x] Replayable runs (seeded)
+- [x] Event logging + snapshots
+- [x] Metrics + final score
+
+### Agents
+- [x] Movement
+- [x] Resource gathering (food / wood / stone)
+- [x] Building (hut / storage)
+- [x] Smarter baseline behavior (feed settlements first)
+
+### Settlements (CORE DONE)
+- [x] Settlement creation
+- [x] Population per settlement
+- [x] Food stockpile
+- [x] Wood & stone stockpiles
+- [x] Auto-deposit resources
+- [x] Food consumption per tick
+- [x] Population growth
+- [x] Starvation & decline
+- [x] Settlement-linked structures
+
+### Economy (Lite)
+- [x] Shared settlement resources
+- [x] Resource flow visibility (metrics)
+- [x] Deposit events logged
+
+### Analysis
+- [x] Run summary JSON
+- [x] Metrics block
+- [x] Simple score function
