@@ -280,6 +280,24 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
 
             elif action.type == "build":
                 b = action.building
+                # Hard rule: no huts until a storage exists in the nearest settlement
+                if b == "hut" and settlements:
+                    best_sid = None
+                    best_d = 10**9
+                    for sid2, s in settlements.items():
+                        d = abs(a.x - s["x"]) + abs(a.y - s["y"])
+                        if d < best_d:
+                            best_d = d
+                            best_sid = sid2
+
+                    has_storage = any(
+                        st.type == "storage"
+                        and settlement_at_structure(st.x, st.y) == best_sid
+                        for st in world.structures
+                    )
+                    if not has_storage:
+                        ok = False
+                        note = "hut_requires_storage"
                 if b not in BUILD_COSTS:
                     ok = False
                     note = "bad_building"
