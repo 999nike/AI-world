@@ -53,13 +53,15 @@ class UtilityAgent:
 
 
     def act(self, obs: Observation, rng: RNG) -> Action:
-        # --- STORAGE-FIRST BOOTSTRAP ---
+      # --- STORAGE-FIRST BOOTSTRAP ---
         inv = obs.inventory
         structure = obs.structure
 
-        if structure is None:
-            if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
-                return Action(type="build", building="storage")
+        # Attempt storage as soon as we have ANY building material.
+        # Simloop will fund the remainder from settlement stock if available.
+    if structure is None:
+    if inv.get("wood", 0) > 0 or inv.get("stone", 0) > 0:
+        return Action(type="build", building="storage")
         # ε-greedy: explore randomly sometimes
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
