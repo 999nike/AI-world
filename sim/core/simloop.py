@@ -363,7 +363,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                                 sid2 = None
                                 if st2 is not None:
                                     sid2 = settlement_at_structure(st2.x, st2.y)
-                                    S logger.event(
+                                    logger.event(
                 {
                     "type": "action_resolved",
                     "tick": t,
