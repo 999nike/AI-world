@@ -53,30 +53,31 @@ class UtilityAgent:
 
 
     def act(self, obs: Observation, rng: RNG) -> Action:
-      # --- STORAGE-FIRST BOOTSTRAP ---
-        inv = obs.inventory
-        structure = obs.structure
+    # --- STORAGE-FIRST BOOTSTRAP ---
+    inv = obs.inventory
+    structure = obs.structure
 
-        # Attempt storage as soon as we have ANY building material.
-        # Simloop will fund the remainder from settlement stock if available.
+    # Attempt storage as soon as we have ANY building material.
+    # Simloop will fund the remainder from settlement stock if available.
     if structure is None:
-    if inv.get("wood", 0) > 0 or inv.get("stone", 0) > 0:
-        return Action(type="build", building="storage")
-        # ε-greedy: explore randomly sometimes
-        eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
-        if rng.random() < eps:
-            return self._random_action(obs, rng)
+        if inv.get("wood", 0) > 0 or inv.get("stone", 0) > 0:
+            return Action(type="build", building="storage")
 
-        candidates = self._enumerate_candidates(obs)
-        best = None
-        best_u = -1e18
-        for a in candidates:
-            u = self._utility(obs, a)
-            if u > best_u:
-                best_u = u
-                best = a
+    # ε-greedy: explore randomly sometimes
+    eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
+    if rng.random() < eps:
+        return self._random_action(obs, rng)
 
-        return best if best is not None else self._random_action(obs, rng)
+    candidates = self._enumerate_candidates(obs)
+    best = None
+    best_u = -1e18
+    for a in candidates:
+        u = self._utility(obs, a)
+        if u > best_u:
+            best_u = u
+            best = a
+
+    return best if best is not None else self._random_action(obs, rng)
 
     def _random_action(self, obs: Observation, rng: RNG) -> Action:
         # Simple safe fallback (never crashes)
