@@ -1,4 +1,3 @@
-cat > sim/log/logger.py << 'EOF'
 import json
 from pathlib import Path
 from typing import Any, Dict
@@ -24,4 +23,3 @@ class RunLogger:
     def close(self) -> None:
         self._events_f.close()
         self._snaps_f.close()
-EOF
