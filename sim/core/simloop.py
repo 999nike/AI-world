@@ -316,13 +316,13 @@ def run_sim(
                 if b not in BUILD_COSTS:
                     ok = False
                     note = "bad_building"
-                elif world.structure_at(a.x, a.y) is not None:
-                    ok = False
-                    note = "occupied"
-                else:
-                    cost = BUILD_COSTS[b]
-                    need_wood = int(cost["wood"])
-                    need_stone = int(cost["stone"])
+                elif world.structure_at(a.x, a.y) is not None and b != "storage":
+    ok = False
+    note = "occupied"
+else:
+    cost = BUILD_COSTS[b]
+    need_wood = int(cost["wood"])
+    need_stone = int(cost["stone"])
 
                     # Spend from agent inventory first
                     use_wood = min(a.inv_wood, need_wood)
@@ -757,7 +757,7 @@ def run_sim(
                 if b not in BUILD_COSTS:
                     ok = False
                     note = "bad_building"
-                elif world.structure_at(a.x, a.y) is not None:
+                elif world.structure_at(a.x, a.y) is not None and b != "storage":
                     ok = False
                     note = "occupied"
                 else:
