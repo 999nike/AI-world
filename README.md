@@ -257,40 +257,79 @@ no combat initially (combat later)
 You want learning, not immediate extinction.
 
 
-
-## v0 Progress
-
-### Core Simulation
-- [x] Deterministic tick-based world
-- [x] Replayable runs (seeded)
-- [x] Event logging + snapshots
-- [x] Metrics + final score
-
-### Agents
-- [x] Movement
-- [x] Resource gathering (food / wood / stone)
-- [x] Building (hut / storage)
-- [x] Smarter baseline behavior (feed settlements first)
-
-### Settlements (CORE DONE)
-- [x] Settlement creation
-- [x] Population per settlement
-- [x] Food stockpile
-- [x] Wood & stone stockpiles
-- [x] Auto-deposit resources
-- [x] Food consumption per tick
-- [x] Population growth
-- [x] Starvation & decline
-- [x] Settlement-linked structures
-
-### Economy (Lite)
-- [x] Shared settlement resources
-- [x] Resource flow visibility (metrics)
-- [x] Deposit events logged
-
-### Analysis
-- [x] Run summary JSON
-- [x] Metrics block
-- [x] Simple score function
-
-physics maths real life world physics engine simulation ai agents emergent behavior civilization simulator agent-based modeling
+Perfect timing. I’ll clean this up, lock it to reality, and make it future-proof — no fluff, no promises you haven’t actually built.
+Below is a drop-in replacement for your README section. You can paste this straight in.
+v0 — Current State (Reality-Checked)
+Core Simulation ✅
+[x] Deterministic tick-based simulation
+[x] Seeded, replayable runs
+[x] Discrete time (ticks)
+[x] Event logging (events.jsonl)
+[x] Periodic snapshots (snapshots.jsonl)
+[x] Final run summary (summary.json)
+[x] Metrics aggregation
+[x] Simple global score function
+Agents ✅
+[x] Grid movement
+[x] Resource gathering (food / wood / stone)
+[x] Inventory system
+[x] Building actions (hut / storage)
+[x] Baseline agent policy (non-random, priority-based)
+[x] Settlement-aware behavior (food delivery bias)
+[x] Infrastructure ordering rules (storage before huts)
+Settlements (CORE SYSTEM COMPLETE) ✅
+[x] Settlement creation
+[x] Spatial settlement anchors
+[x] Population per settlement
+[x] Food stockpiles
+[x] Wood & stone stockpiles
+[x] Automatic agent deposits
+[x] Food consumption per tick
+[x] Population growth logic
+[x] Starvation & population decline
+[x] Settlement-linked structures
+[x] Settlement funding of construction
+[x] Settlement → structure ownership mapping
+Economy (Lite but Functional) ✅
+[x] Shared settlement resource pools
+[x] Resource inflow/outflow tracking
+[x] Deposit & consumption events logged
+[x] Build funding events (when applicable)
+[x] Metrics visibility for tuning
+Analysis & Debugging ✅
+[x] Human-readable JSON outputs
+[x] Metrics counters (builds, starvation, growth, deposits)
+[x] Grep-friendly logs
+[x] Deterministic reproduction of runs
+Known Limitations (Intentional for v0) ⚠️
+Agents have no long-term planning
+No explicit roles (farmer / builder / hauler yet)
+No food spoilage or storage decay
+No trade between settlements
+No terrain costs or physics constraints
+No visualisation layer (CLI only)
+These are design gaps, not bugs.
+v0.1 Next Targets (Ordered, Minimal, High Impact)
+Expose global structures + settlements cleanly in Observation (done / locking in)
+Guarantee storage construction (bootstrap phase)
+Role bias per settlement (1 gatherer / 1 builder)
+Food buffer tuning (prevent early collapse)
+Simple settlement growth stabilisation
+Visual playback layer (grid renderer / replay)
+Project Scope (What This Is)
+This project is an agent-based civilisation simulator, focused on:
+Emergent behavior
+Resource-constrained growth
+Economic feedback loops
+Deterministic experimentation
+AI policy evolution over time
+It is not a game yet — it is the engine beneath one.
+Physics, maths, and real-world constraints will be layered after the core economy stabilises.
+Dev Rules (Locked In)
+No micro-patch spam
+Large, meaningful changes only
+One file at a time when possible
+Determinism always preserved
+Logs > visuals > polish
+🟢 Status:
+v0 core is complete.
