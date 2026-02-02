@@ -358,12 +358,12 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                             if d >= 8:
                                 sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
                                 struct_to_settlement[pos_key(a.x, a.y)] = sid
-            st2 = world.structure_at(a.x, a.y)
-            sid2 = None
-            if st2 is not None:
-                sid2 = settlement_at_structure(st2.x, st2.y)
-
-            logger.event(
+                                tile2 = world.tile_at(a.x, a.y)
+                                st2 = world.structure_at(a.x, a.y)
+                                sid2 = None
+                                if st2 is not None:
+                                    sid2 = settlement_at_structure(st2.x, st2.y)
+                                    S logger.event(
                 {
                     "type": "action_resolved",
                     "tick": t,
