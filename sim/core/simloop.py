@@ -7,8 +7,15 @@ from sim.world.map import make_world
 from sim.log.run_id import make_run_id
 from sim.log.logger import RunLogger
 
+from sim.world.state import Structure
 from sim.agents.types import Observation
 from sim.agents.baseline_random import RandomAgent
+
+
+BUILD_COSTS = {
+    "hut": {"wood": 2, "stone": 1},
+    "storage": {"wood": 3, "stone": 2},
+}
 
 
 def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
@@ -20,10 +27,8 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
     rng = RNG(seed)
     world = make_world(cfg, rng)
 
-    # brains
     brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    # Save config used
     (run_dir / "config.json").write_text(
         json.dumps(
             {
@@ -31,6 +36,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 "ticks": ticks,
                 "snapshot_every": snapshot_every,
                 "world": cfg.__dict__,
+                "build_costs": BUILD_COSTS,
             },
             indent=2,
         ),
@@ -56,6 +62,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         # agent loop
         for a in world.agents:
             tile = world.tile_at(a.x, a.y)
+            st = world.structure_at(a.x, a.y)
             obs = Observation(
                 tick=t,
                 self_id=a.agent_id,
@@ -65,6 +72,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 height=world.height,
                 tile=tile.to_dict(),
                 inventory=a.inv_dict(),
+                structure=(st.to_dict() if st else None),
             )
 
             action = brains[a.agent_id].act(obs, rng)
@@ -78,6 +86,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                     "pos": {"x": a.x, "y": a.y},
                     "tile": tile.to_dict(),
                     "inv": a.inv_dict(),
+                    "structure": (st.to_dict() if st else None),
                 }
             )
 
@@ -103,7 +112,6 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                 else:
                     cur_tile = world.tile_at(a.x, a.y)
                     amount = 1
-
                     if res == "food":
                         if cur_tile.food >= amount:
                             cur_tile.food -= amount
@@ -125,12 +133,33 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                         else:
                             ok = False
                             note = "no_stone"
+
+            elif action.type == "build":
+                b = action.building
+                if b not in BUILD_COSTS:
+                    ok = False
+                    note = "bad_building"
+                elif world.structure_at(a.x, a.y) is not None:
+                    ok = False
+                    note = "occupied"
+                else:
+                    cost = BUILD_COSTS[b]
+                    if a.inv_wood < cost["wood"] or a.inv_stone < cost["stone"]:
+                        ok = False
+                        note = "insufficient_resources"
+                    else:
+                        a.inv_wood -= cost["wood"]
+                        a.inv_stone -= cost["stone"]
+                        world.structures.append(Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id))
+                        note = f"built_{b}"
+
             else:
                 ok = False
                 note = "unknown_action"
 
-            # log resolution
+            # resolution log
             tile2 = world.tile_at(a.x, a.y)
+            st2 = world.structure_at(a.x, a.y)
             logger.event(
                 {
                     "type": "action_resolved",
@@ -141,6 +170,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
                     "pos": {"x": a.x, "y": a.y},
                     "tile": tile2.to_dict(),
                     "inv": a.inv_dict(),
+                    "structure": (st2.to_dict() if st2 else None),
                 }
             )
 
@@ -156,10 +186,7 @@ def run_sim(seed: int, ticks: int, snapshot_every: int) -> None:
         "ticks": ticks,
         "final": world.to_dict_summary(),
     }
-    (run_dir / "summary.json").write_text(
-        json.dumps(summary, indent=2),
-        encoding="utf-8",
-    )
+    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     logger.event({"type": "run_finished", "run_id": run_id})
     logger.close()

@@ -33,4 +33,5 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
         height=cfg.height,
         tiles=tiles,
         agents=agents,
+        structures=[],
     )
