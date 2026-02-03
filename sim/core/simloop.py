@@ -247,7 +247,7 @@ def run_sim(
                 }
             )
 
-           ok = True
+            ok = True
             note = ""
 
             if action.type == "move":
