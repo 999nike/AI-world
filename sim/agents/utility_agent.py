@@ -64,8 +64,16 @@ class UtilityAgent:
         structure = obs.structure
 
         if structure is None:
-            if inv.get("wood", 0) > 0 or inv.get("stone", 0) > 0:
-                return Action(type="build", building="storage")
+            # Bootstrap: build exactly ONE storage globally, then stop spamming storage.
+            structs = _safe_get_list(obs, "structures")
+            has_storage = False
+            if structs:
+                has_storage = any(s.get("type") == "storage" for s in structs)
+
+            if not has_storage:
+                # Only attempt storage if FULL inventory can cover cost
+                if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
+                    return Action(type="build", building="storage")
 
         # ε-greedy: explore randomly sometimes
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))

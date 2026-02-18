@@ -16,6 +16,7 @@ class Observation:
     tile: Dict[str, int]        # {"food": int, "wood": int, "stone": int}
     inventory: Dict[str, int]   # {"food": int, "wood": int, "stone": int}
     structure: Optional[Dict[str, Any]]
+    structures: Optional[list] = None  # global structures (optional)
     role: Optional[Role] = None  # future use (does nothing yet)
 
 

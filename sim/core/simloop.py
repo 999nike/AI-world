@@ -20,7 +20,7 @@ BUILD_COSTS = {
 
 # Settlement core parameters (tune later)
 SETTLEMENT_RULES = {
-    "starting_population": 2,
+    "starting_population": 1,
     "food_per_pop_per_tick": 1,     # consumption
     "growth_food_buffer": 5,        # if stock >= pop*consumption + buffer => grow
     "max_pop_growth_per_tick": 1,   # keep stable
@@ -238,6 +238,7 @@ def run_sim(
                 tile=tile.to_dict(),
                 inventory=a.inv_dict(),
                 structure=(st.to_dict() if st else None),
+                structures=[s.to_dict() for s in world.structures],
             )
 
             action = brains[a.agent_id].act(obs, rng)
@@ -268,7 +269,7 @@ def run_sim(
                             action = Action(type="gather", resource="food")
             
                 # 2) BUILD GUARD: if build requested but can't be funded (inv+tile+settlement), gather missing mats
-                if action.type == "build":
+                if False and action.type == "build" and settlements:
                     b_try = action.building
                     cost = BUILD_COSTS.get(b_try)
                     if cost:
