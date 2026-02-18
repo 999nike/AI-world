@@ -9,7 +9,7 @@ from sim.log.run_id import make_run_id
 from sim.log.logger import RunLogger
 
 from sim.world.state import Structure
-from sim.agents.types import Observation
+from sim.agents.types import Observation, Action
 from sim.agents.baseline_random import RandomAgent
 
 
@@ -21,8 +21,8 @@ BUILD_COSTS = {
 # Settlement core parameters (tune later)
 SETTLEMENT_RULES = {
     "starting_population": 1,
-    "food_per_pop_per_tick": 1,     # consumption
-    "growth_food_buffer": 5,        # if stock >= pop*consumption + buffer => grow
+    "food_per_pop_per_tick": 0.25,  # consumption (tuned)
+    "growth_food_buffer": 2,        # if stock >= pop*consumption + buffer => grow
     "max_pop_growth_per_tick": 1,   # keep stable
 }
 
@@ -86,6 +86,8 @@ def run_sim(
             'food_stock': 0,
             'wood_stock': 0,
             'stone_stock': 0,
+            'starve_ticks': 0,
+            'surplus_ticks': 0,
         }
 
         # Starter food so a brand-new settlement doesn't starve before first deposit
@@ -167,67 +169,70 @@ def run_sim(
             st = world.structure_at(a.x, a.y)
 
             # attach structure to settlement if standing on one
+            st_sid = None
             if st is not None:
                 st_sid = settlement_at_structure(st.x, st.y)
 
-                # auto-deposit FOOD / WOOD / STONE (economy-lite)
+            # auto-deposit FOOD / WOOD / STONE (economy-lite)
+            # NEW RULE: if a settlement exists, allow deposit when near its anchor (not only on structures).
+            deposit_sid = st_sid
+            if deposit_sid is None and settlements:
+                best_sid = None
+                best_d = 10**9
+                for sid2, ss in settlements.items():
+                    d = abs(a.x - ss['x']) + abs(a.y - ss['y'])
+                    if d < best_d:
+                        best_d = d
+                        best_sid = sid2
+                # deposit if we're close enough to the settlement anchor (radius 2)
+                if best_sid is not None and best_d <= 2:
+                    deposit_sid = best_sid
+
+            if deposit_sid is not None:
                 if a.inv_food > 0:
-                    settlements[st_sid]["food_stock"] += a.inv_food
+                    settlements[deposit_sid]['food_stock'] += a.inv_food
                     deposited = a.inv_food
                     a.inv_food = 0
-
-                    metrics["food_deposit_events"] += 1
-                    metrics["food_deposited_total"] += deposited
-
-                    logger.event(
-                        {
-                            "type": "food_deposited",
-                            "tick": t,
-                            "agent_id": a.agent_id,
-                            "settlement_id": st_sid,
-                            "amount": deposited,
-                            "food_stock": settlements[st_sid]["food_stock"],
-                        }
-                    )
+                    metrics['food_deposit_events'] += 1
+                    metrics['food_deposited_total'] += deposited
+                    logger.event({
+                        'type': 'food_deposited',
+                        'tick': t,
+                        'agent_id': a.agent_id,
+                        'settlement_id': deposit_sid,
+                        'amount': deposited,
+                        'food_stock': settlements[deposit_sid]['food_stock'],
+                    })
 
                 if a.inv_wood > 0:
-                    settlements[st_sid]["wood_stock"] += a.inv_wood
+                    settlements[deposit_sid]['wood_stock'] += a.inv_wood
                     deposited = a.inv_wood
                     a.inv_wood = 0
-
-                    metrics["wood_deposit_events"] += 1
-                    metrics["wood_deposited_total"] += deposited
-
-                    logger.event(
-                        {
-                            "type": "wood_deposited",
-                            "tick": t,
-                            "agent_id": a.agent_id,
-                            "settlement_id": st_sid,
-                            "amount": deposited,
-                            "wood_stock": settlements[st_sid]["wood_stock"],
-                        }
-                    )
+                    metrics['wood_deposit_events'] += 1
+                    metrics['wood_deposited_total'] += deposited
+                    logger.event({
+                        'type': 'wood_deposited',
+                        'tick': t,
+                        'agent_id': a.agent_id,
+                        'settlement_id': deposit_sid,
+                        'amount': deposited,
+                        'wood_stock': settlements[deposit_sid]['wood_stock'],
+                    })
 
                 if a.inv_stone > 0:
-                    settlements[st_sid]["stone_stock"] += a.inv_stone
+                    settlements[deposit_sid]['stone_stock'] += a.inv_stone
                     deposited = a.inv_stone
                     a.inv_stone = 0
-
-                    metrics["stone_deposit_events"] += 1
-                    metrics["stone_deposited_total"] += deposited
-
-                    logger.event(
-                        {
-                            "type": "stone_deposited",
-                            "tick": t,
-                            "agent_id": a.agent_id,
-                            "settlement_id": st_sid,
-                            "amount": deposited,
-                            "stone_stock": settlements[st_sid]["stone_stock"],
-                        }
-                    )
-
+                    metrics['stone_deposit_events'] += 1
+                    metrics['stone_deposited_total'] += deposited
+                    logger.event({
+                        'type': 'stone_deposited',
+                        'tick': t,
+                        'agent_id': a.agent_id,
+                        'settlement_id': deposit_sid,
+                        'amount': deposited,
+                        'stone_stock': settlements[deposit_sid]['stone_stock'],
+                    })
             obs = Observation(
                 tick=t,
                 self_id=a.agent_id,
@@ -256,6 +261,21 @@ def run_sim(
                             best_d = d
                             best_sid = sid2
                     nearest_sid = best_sid
+                # 0) HAUL GUARD: if carrying food, walk it back to nearest settlement anchor (radius 2)
+                if nearest_sid is not None and getattr(a, "inv_food", 0) > 0:
+                    ss = settlements[nearest_sid]
+                    ax, ay = int(a.x), int(a.y)
+                    sx, sy = int(ss["x"]), int(ss["y"])
+                    dist = abs(ax - sx) + abs(ay - sy)
+                    if dist > 2 and action.type != "move":
+                        dx = 0
+                        dy = 0
+                        if abs(sx - ax) >= abs(sy - ay):
+                            dx = 1 if sx > ax else -1
+                        else:
+                            dy = 1 if sy > ay else -1
+                        action = Action(type="move", dx=dx, dy=dy)
+
             
                 # 1) FOOD GUARD: if settlement has people and is short on food, gather food now
                 if nearest_sid is not None:
@@ -265,7 +285,16 @@ def run_sim(
                     buf  = int(SETTLEMENT_RULES.get("growth_food_buffer", 0))
                     if pop > 0:
                         need_food = pop * cons + buf
-                        if int(ss.get("food_stock", 0)) < need_food and action.type != "gather":
+                        food_stock = int(ss.get("food_stock", 0))
+                        emergency = food_stock < (pop * cons)
+
+                        # EMERGENCY: never build/move while settlement is under daily consumption.
+                        if emergency:
+                            if not (action.type == "gather" and getattr(action, "resource", None) == "food"):
+                                action = Action(type="gather", resource="food")
+
+                        # SOFT PRESSURE: if below growth threshold, forbid building (but still allow moving/gathering).
+                        elif food_stock < need_food and action.type == "build":
                             action = Action(type="gather", resource="food")
             
                 # 2) BUILD GUARD: if build requested but can't be funded (inv+tile+settlement), gather missing mats
@@ -389,6 +418,26 @@ def run_sim(
                         ok = False
                         note = "hut_requires_storage"
 
+                        # Hard rule: huts require food stability (prevents build-then-starve spiral)
+                        if ok and b == 'hut' and settlements:
+                            # use nearest settlement to decide food stability
+                            best_sid = None
+                            best_d = 10**9
+                            for sid2, s in settlements.items():
+                                d2 = abs(a.x - s['x']) + abs(a.y - s['y'])
+                                if d2 < best_d:
+                                    best_d = d2
+                                    best_sid = sid2
+                            if best_sid is not None:
+                                ss = settlements[best_sid]
+                                pop = int(ss.get('population', 0))
+                                cons = int(SETTLEMENT_RULES.get('food_per_pop_per_tick', 1))
+                                buf  = int(SETTLEMENT_RULES.get('growth_food_buffer', 5))
+                                need = pop * cons + buf
+                                if int(ss.get('food_stock', 0)) < need:
+                                    ok = False
+                                    note = 'hut_requires_food_stability'
+
                 if ok:
                     if b not in BUILD_COSTS:
                         ok = False
@@ -493,7 +542,7 @@ def run_sim(
                                 sid = settlement_at_structure(a.x, a.y)
                                 s_anchor = settlements[sid]
                                 d = abs(a.x - s_anchor["x"]) + abs(a.y - s_anchor["y"])
-                                if d >= 8:
+                                if d >= 24:
                                     sid = create_settlement(a.x, a.y, owner_id=a.agent_id)
                                 struct_to_settlement[pos_key(a.x, a.y)] = sid
 
@@ -525,7 +574,7 @@ def run_sim(
 
         # settlement tick: consumption + growth/starvation
         if settlements:
-            cons = int(SETTLEMENT_RULES["food_per_pop_per_tick"])
+            cons = float(SETTLEMENT_RULES["food_per_pop_per_tick"])
             buffer_food = int(SETTLEMENT_RULES["growth_food_buffer"])
             max_growth = int(SETTLEMENT_RULES["max_pop_growth_per_tick"])
 
@@ -533,39 +582,42 @@ def run_sim(
                 pop_before = int(s["population"])
                 food_before = int(s["food_stock"])
 
+                
                 need = pop_before * cons
-                if s["food_stock"] >= need:
-                    s["food_stock"] -= need
-                    if s["food_stock"] >= (need + buffer_food) and pop_before > 0:
-                        grow_by = min(max_growth, 1)
-                        s["population"] = pop_before + grow_by
-                else:
-                    s["food_stock"] = 0
-                    if pop_before > 0:
-                        s["population"] = pop_before - 1
-
-                pop_after = int(s["population"])
-                food_after = int(s["food_stock"])
-
-                if pop_after != pop_before:
-                    metrics["population_net_change"] += (pop_after - pop_before)
-                    if pop_after > pop_before:
-                        metrics["population_grew_events"] += 1
+                if s.get("food_stock", 0) >= need:
+                    # consume
+                    s["food_stock"] = int(s.get("food_stock", 0)) - int(need)
+                    # reset starvation counter
+                    s["starve_ticks"] = 0
+                    # surplus logic: require sustained surplus before growth
+                    if s.get("food_stock", 0) >= (need + buffer_food) and pop_before > 0:
+                        s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
+                        if int(s["surplus_ticks"]) >= 3:
+                            grow_by = min(max_growth, 1)
+                            s["population"] = pop_before + grow_by
+                            s["surplus_ticks"] = 0
                     else:
-                        metrics["population_starved_events"] += 1
-
-                if pop_after != pop_before or food_after != food_before:
-                    logger.event(
-                        {
-                            "type": "population_changed",
-                            "tick": t,
-                            "settlement_id": sid,
-                            "population_before": pop_before,
-                            "population_after": pop_after,
-                            "food_before": food_before,
-                            "food_after": food_after,
-                        }
-                    )
+                        s["surplus_ticks"] = 0
+                else:
+                    # no food to cover consumption this tick
+                    s["surplus_ticks"] = 0
+                    s["food_stock"] = 0
+                    s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
+                    # only lose population after several consecutive deficit ticks
+                    if pop_before > 0 and int(s["starve_ticks"]) >= 3:
+                        s["population"] = pop_before - 1
+                        s["starve_ticks"] = 0
+        logger.event(
+                                {
+                                    "type": "population_changed",
+                                    "tick": t,
+                                    "settlement_id": sid,
+                                    "population_before": pop_before,
+                                    "population_after": pop_after,
+                                    "food_before": food_before,
+                                    "food_after": food_after,
+                                }
+                            )
 
         # snapshot
         if snapshot_every > 0 and (t % snapshot_every) == 0:
