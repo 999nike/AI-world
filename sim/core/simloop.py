@@ -16,6 +16,7 @@ from sim.agents.baseline_random import RandomAgent
 BUILD_COSTS = {
     "hut": {"wood": 2, "stone": 1},
     "storage": {"wood": 3, "stone": 2},
+    "farm": {"wood": 2, "stone": 0},
 }
 
 # Settlement core parameters (tune later)
@@ -65,6 +66,9 @@ def run_sim(
         "population_net_change": 0,
         "build_hut": 0,
         "build_storage": 0,
+          "build_farm": 0,
+          "farm_harvest_events": 0,
+          "farm_food_total": 0,
     }
 
     # --- Settlement state kept HERE (single-file settlement bundle) ---
@@ -165,13 +169,31 @@ def run_sim(
 
         # agent loop
         for a in world.agents:
+            nearest_sid = None
             tile = world.tile_at(a.x, a.y)
             st = world.structure_at(a.x, a.y)
 
+            # compute nearest settlement early (needed for radius-deposit)
+            nearest_sid = None
+            if settlements:
+                best_sid = None
+                best_d = 10**9
+                for sid2, ss in settlements.items():
+                    d = abs(int(a.x) - int(ss["x"])) + abs(int(a.y) - int(ss["y"]))
+                    if d < best_d:
+                        best_d = d
+                        best_sid = sid2
+                nearest_sid = best_sid
+
             # attach structure to settlement if standing on one
             st_sid = None
-            if st is not None:
-                st_sid = settlement_at_structure(st.x, st.y)
+            if st is not None or (nearest_sid is not None and abs(int(a.x) - int(settlements[nearest_sid]["x"])) + abs(int(a.y) - int(settlements[nearest_sid]["y"])) <= 2):
+                # if we're on a structure, attach by structure position; otherwise use settlement anchor
+                if st is not None:
+                    st_sid = settlement_at_structure(st.x, st.y)
+                else:
+                    ss = settlements[nearest_sid]
+                    st_sid = settlement_at_structure(int(ss["x"]), int(ss["y"]))
 
             # auto-deposit FOOD / WOOD / STONE (economy-lite)
             # NEW RULE: if a settlement exists, allow deposit when near its anchor (not only on structures).
@@ -261,31 +283,15 @@ def run_sim(
                             best_d = d
                             best_sid = sid2
                     nearest_sid = best_sid
-                # 0) HAUL GUARD: if carrying food, walk it back to nearest settlement anchor (radius 2)
-                if nearest_sid is not None and getattr(a, "inv_food", 0) > 0:
-                    ss = settlements[nearest_sid]
-                    ax, ay = int(a.x), int(a.y)
-                    sx, sy = int(ss["x"]), int(ss["y"])
-                    dist = abs(ax - sx) + abs(ay - sy)
-                    if dist > 2 and action.type != "move":
-                        dx = 0
-                        dy = 0
-                        if abs(sx - ax) >= abs(sy - ay):
-                            dx = 1 if sx > ax else -1
-                        else:
-                            dy = 1 if sy > ay else -1
-                        action = Action(type="move", dx=dx, dy=dy)
-
-            
                 # 1) FOOD GUARD: if settlement has people and is short on food, gather food now
                 if nearest_sid is not None:
                     ss = settlements[nearest_sid]
                     pop = int(ss.get("population", 0))
-                    cons = int(SETTLEMENT_RULES.get("food_per_pop_per_tick", 1))
+                    cons = float(SETTLEMENT_RULES.get("food_per_pop_per_tick", 1))
                     buf  = int(SETTLEMENT_RULES.get("growth_food_buffer", 0))
                     if pop > 0:
                         need_food = pop * cons + buf
-                        food_stock = int(ss.get("food_stock", 0))
+                        food_stock = float(ss.get("food_stock", 0))
                         emergency = food_stock < (pop * cons)
 
                         # EMERGENCY: never build/move while settlement is under daily consumption.
@@ -296,6 +302,22 @@ def run_sim(
                         # SOFT PRESSURE: if below growth threshold, forbid building (but still allow moving/gathering).
                         elif food_stock < need_food and action.type == "build":
                             action = Action(type="gather", resource="food")
+            
+                # 0) HAUL GUARD: if carrying food, walk it back to nearest settlement anchor (radius 2)
+                if nearest_sid is not None and getattr(a, "inv_food", 0) >= 2:
+                    ss = settlements[nearest_sid]
+                    ax, ay = int(a.x), int(a.y)
+                    sx, sy = int(ss["x"]), int(ss["y"])
+                    dist = abs(ax - sx) + abs(ay - sy)
+                    if dist > 0:
+                        dx = 0
+                        dy = 0
+                        if abs(sx - ax) >= abs(sy - ay):
+                            dx = 1 if sx > ax else -1
+                        else:
+                            dy = 1 if sy > ay else -1
+                        action = Action(type="move", dx=dx, dy=dy)
+
             
                 # 2) BUILD GUARD: if build requested but can't be funded (inv+tile+settlement), gather missing mats
                 if False and action.type == "build" and settlements:
@@ -380,8 +402,94 @@ def run_sim(
 
             elif action.type == "build":
                 b = action.building
+                # ---- build name sanitize ----
+                # UtilityAgent sometimes emits aliases/garbage build names; normalize here.
+                if b is None:
+                    b = ""
+                b = str(b).strip().lower()
+
+                alias = {
+                    "stor": "storage",
+                    "store": "storage",
+                    "warehouse": "storage",
+                    "house": "hut",
+                    "home": "hut",
+                }
+                b = alias.get(b, b)
+                # ---- governor: force first farm ----
+                # If the brain is spamming storage before any farm exists, resolve it as a farm build.
+                if settlements and str(b).strip().lower() in ("storage","stor","store","warehouse"):
+                    # nearest settlement
+                    best_sid=None; best_d=10**9
+                    for sid2, ss in settlements.items():
+                        d2 = abs(a.x-ss["x"]) + abs(a.y-ss["y"])
+                        if d2 < best_d:
+                            best_d=d2; best_sid=sid2
+                    if best_sid is not None:
+                        farms_here=0
+                        for stx in world.structures:
+                            if stx.type=="farm" and settlement_at_structure(stx.x, stx.y)==best_sid:
+                                farms_here += 1
+                        if farms_here == 0:
+                            b = "farm"
+
+
+                # ---- Farm bootstrap: first build must establish agriculture ----
+                # If no farm exists for nearest settlement, redirect any build attempt to farm.
+                if settlements and action.type == "build":
+                    best_sid = None
+                    best_d = 10**9
+                    for sid2, ss in settlements.items():
+                        d2 = abs(a.x - ss["x"]) + abs(a.y - ss["y"])
+                        if d2 < best_d:
+                            best_d = d2
+                            best_sid = sid2
+                    if best_sid is not None:
+                        farms_here = 0
+                        for stx in world.structures:
+                            if stx.type == "farm" and settlement_at_structure(stx.x, stx.y) == best_sid:
+                                farms_here += 1
+                        if farms_here == 0:
+                            b = "farm"
+
+                            # ---- storage cap (v0 governor) ----
+                            # After farms exist, limit storage to 1 per settlement; redirect extra storage to huts.
+                            if settlements and b == "storage":
+                                best_sid=None; best_d=10**9
+                                for sid2, ss in settlements.items():
+                                    d2 = abs(a.x-ss["x"]) + abs(a.y-ss["y"])
+                                    if d2 < best_d:
+                                        best_d=d2; best_sid=sid2
+                                if best_sid is not None:
+                                    farms_here=0
+                                    stor_here=0
+                                    for stx in world.structures:
+                                        if settlement_at_structure(stx.x, stx.y) == best_sid:
+                                            if stx.type == "farm": farms_here += 1
+                                            if stx.type == "storage": stor_here += 1
+                                    if farms_here > 0 and stor_here >= 1:
+                                        b = "hut"
+                
                 # --- Build spam guard ---
                 # If we cannot pay build costs locally, redirect to gather
+                # ---- governor: stop storage spam ----
+                # If a farm exists and we already have 1+ storage for nearest settlement, force huts instead.
+                if settlements and b == "storage":
+                    best_sid=None; best_d=10**9
+                    for sid2, ss in settlements.items():
+                        d2 = abs(a.x-ss["x"]) + abs(a.y-ss["y"]) 
+                        if d2 < best_d:
+                            best_d=d2; best_sid=sid2
+                    if best_sid is not None:
+                        farms_here=0
+                        stor_here=0
+                        for stx in world.structures:
+                            if settlement_at_structure(stx.x, stx.y) == best_sid:
+                                if stx.type == "farm": farms_here += 1
+                                if stx.type == "storage": stor_here += 1
+                        if farms_here > 0 and stor_here >= 1:
+                            b = "hut"
+
                 cost = BUILD_COSTS.get(b)
                 if cost:
                     need_w = int(cost.get("wood", 0))
@@ -439,10 +547,29 @@ def run_sim(
                                     note = 'hut_requires_food_stability'
 
                 if ok:
+                    # ---- Agriculture bootstrap guard ----
+                    # If the agent tries to build storage before the first farm exists, redirect to farm.
+                    if settlements and b == "storage":
+                        best_sid = None
+                        best_d = 10**9
+                        for sid2, ss in settlements.items():
+                            d2 = abs(a.x - ss["x"]) + abs(a.y - ss["y"])
+                            if d2 < best_d:
+                                best_d = d2
+                                best_sid = sid2
+                        if best_sid is not None:
+                            farms_here = 0
+                            for stx in world.structures:
+                                if stx.type == "farm" and settlement_at_structure(stx.x, stx.y) == best_sid:
+                                    farms_here += 1
+                            if farms_here == 0:
+                                b = "farm"
+                                note = "redirected_storage_to_farm"
+
                     if b not in BUILD_COSTS:
                         ok = False
                         note = "bad_building"
-                    elif world.structure_at(a.x, a.y) is not None and b != "storage":
+                    elif world.structure_at(a.x, a.y) is not None and b not in ("storage","farm"):
                         ok = False
                         note = "occupied"
                     else:
@@ -450,9 +577,9 @@ def run_sim(
                         need_wood = int(cost["wood"])
                         need_stone = int(cost["stone"])
 
-                                                # Spend from agent inventory first (and for storage, allow tile funding too)
+                                                # Spend from agent inventory first (and for storage/farm, allow tile funding too)
                         cur_tile = world.tile_at(a.x, a.y)
-                        if b == "storage":
+                        if b in ("storage","farm"):
                             avail_wood = a.inv_wood + cur_tile.wood
                             avail_stone = a.inv_stone + cur_tile.stone
                             if avail_wood < need_wood or avail_stone < need_stone:
@@ -522,6 +649,8 @@ def run_sim(
                                 metrics["build_hut"] += 1
                             elif b == "storage":
                                 metrics["build_storage"] += 1
+                            elif b == "farm":
+                                metrics["build_farm"] += 1
 
                             if funded_sid is not None:
                                 logger.event(
@@ -575,49 +704,97 @@ def run_sim(
         # settlement tick: consumption + growth/starvation
         if settlements:
             cons = float(SETTLEMENT_RULES["food_per_pop_per_tick"])
-            buffer_food = int(SETTLEMENT_RULES["growth_food_buffer"])
+            buffer_food = float(SETTLEMENT_RULES["growth_food_buffer"])
             max_growth = int(SETTLEMENT_RULES["max_pop_growth_per_tick"])
 
             for sid, s in settlements.items():
-                pop_before = int(s["population"])
-                food_before = int(s["food_stock"])
+                pop_before = int(s.get("population", 0))
+                food_before = float(s.get("food_stock", 0))
+                # ---- farm harvest (v0) ----
+                # Each farm belonging to this settlement produces a small steady food income.
+                farms = 0
+                for stx in world.structures:
+                    if stx.type == "farm" and settlement_at_structure(stx.x, stx.y) == sid:
+                        farms += 1
+                if farms > 0:
+                    yield_per_farm = 1.0  # tuned v0.3
+                    gained = farms * yield_per_farm
+                    s["food_stock"] = float(s.get("food_stock", 0)) + gained
+                    metrics["farm_harvest_events"] += 1
+                    metrics["farm_food_total"] += gained
+                    food_before = float(s.get("food_stock", 0))  # refresh for downstream logic
 
-                
-                need = pop_before * cons
-                if s.get("food_stock", 0) >= need:
-                    # consume
-                    s["food_stock"] = int(s.get("food_stock", 0)) - int(need)
-                    # reset starvation counter
+
+                # persistent counters (per settlement)
+                if "surplus_ticks" not in s:
+                    s["surplus_ticks"] = 0
+                if "starve_ticks" not in s:
                     s["starve_ticks"] = 0
-                    # surplus logic: require sustained surplus before growth
-                    if s.get("food_stock", 0) >= (need + buffer_food) and pop_before > 0:
+
+                need = pop_before * cons
+
+                if pop_before > 0 and food_before >= need:
+                    # consume
+                    s["food_stock"] = food_before - need
+                    s["starve_ticks"] = 0
+
+                    # track surplus for growth
+                    if float(s["food_stock"]) >= (need + buffer_food):
                         s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
                         if int(s["surplus_ticks"]) >= 3:
                             grow_by = min(max_growth, 1)
                             s["population"] = pop_before + grow_by
                             s["surplus_ticks"] = 0
-                    else:
-                        s["surplus_ticks"] = 0
                 else:
-                    # no food to cover consumption this tick
+                    # deficit tick
                     s["surplus_ticks"] = 0
-                    s["food_stock"] = 0
-                    s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
-                    # only lose population after several consecutive deficit ticks
-                    if pop_before > 0 and int(s["starve_ticks"]) >= 3:
+
+                    # If population is 0, do NOT wipe stored food
+                    if pop_before <= 0:
+                        s["starve_ticks"] = 0
+                        s["food_stock"] = food_before
+                    else:
+                        s["food_stock"] = max(0.0, food_before - need)
+
+                    # Only count starvation if pantry was empty at start
+                    if food_before <= 0.0:
+                        s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
+                    else:
+                        s["starve_ticks"] = 0
+
+                    # only lose pop after several consecutive starvation ticks
+                    if int(s["starve_ticks"]) >= 3:
                         s["population"] = pop_before - 1
                         s["starve_ticks"] = 0
-        logger.event(
-                                {
-                                    "type": "population_changed",
-                                    "tick": t,
-                                    "settlement_id": sid,
-                                    "population_before": pop_before,
-                                    "population_after": pop_after,
-                                    "food_before": food_before,
-                                    "food_after": food_after,
-                                }
-                            )
+
+                # respawn rule: if settlement has recovered food, bring population back
+                if pop_before <= 0 and float(s.get("food_stock", 0)) >= (buffer_food + (cons * 3)):
+                    s["population"] = 1
+                    s["starve_ticks"] = 0
+                    s["surplus_ticks"] = 0
+
+                pop_after = int(s.get("population", 0))
+                food_after = float(s.get("food_stock", 0))
+
+                if pop_after != pop_before:
+                    metrics["population_net_change"] += (pop_after - pop_before)
+                    if pop_after > pop_before:
+                        metrics["population_grew_events"] += 1
+                    else:
+                        metrics["population_starved_events"] += 1
+
+                if pop_after != pop_before or food_after != food_before:
+                    logger.event(
+                        {
+                            "type": "population_changed",
+                            "tick": t,
+                            "settlement_id": sid,
+                            "population_before": pop_before,
+                            "population_after": pop_after,
+                            "food_before": food_before,
+                            "food_after": food_after,
+                        }
+                    )
 
         # snapshot
         if snapshot_every > 0 and (t % snapshot_every) == 0:

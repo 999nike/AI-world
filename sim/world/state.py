@@ -27,7 +27,7 @@ class AgentState:
 
 @dataclass
 class Structure:
-    type: str        # "hut" | "storage"
+    type: str        # "hut" | "storage" | "farm"
     x: int
     y: int
     owner_id: str
