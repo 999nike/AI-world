@@ -76,40 +76,35 @@ def run_sim(
         return f"{x},{y}"
 
     def create_settlement(x: int, y: int, owner_id: str) -> str:
-        nonlocal settlement_counter
-        sid = f"S{settlement_counter}"
-        settlement_counter += 1
+        sid = f's{len(settlements) + 1}'
         settlements[sid] = {
-            "id": sid,
-            "name": f"Village_{sid}",
-            "x": x,
-            "y": y,
-            "owner": owner_id,
-            "population": int(SETTLEMENT_RULES["starting_population"]),
-            "food_stock": 0,
-            "wood_stock": 0,
-            "stone_stock": 0,
+            'id': sid,
+            'x': x,
+            'y': y,
+            'owner_id': owner_id,
+            'population': int(SETTLEMENT_RULES.get('starting_population', 2)),
+            'food_stock': 0,
+            'wood_stock': 0,
+            'stone_stock': 0,
         }
 
-    # Starter food so a brand-new settlement doesn't starve before first deposit
-    try:
-        tile0 = world.tile_at(x, y)
-        starter = min(int(getattr(tile0, 'food', 0)), 2)
-        settlements[sid]['food_stock'] = starter
-        # Optionally claim it from the tile so we don't duplicate food
-        if starter > 0:
-            tile0.food = int(getattr(tile0, 'food', 0)) - starter
-    except Exception:
-        settlements[sid]['food_stock'] = 2
+        # Starter food so a brand-new settlement doesn't starve before first deposit
+        try:
+            tile0 = world.tile_at(x, y)
+            starter = min(int(getattr(tile0, 'food', 0)), 2)
+            settlements[sid]['food_stock'] = starter
+            # Optionally claim it from the tile so we don't duplicate food
+            if starter > 0:
+                tile0.food = int(getattr(tile0, 'food', 0)) - starter
+        except Exception:
+            settlements[sid]['food_stock'] = 2
 
-    metrics["settlements_created"] += 1
-    logger.event(
-            {
-                "type": "settlement_created",
-                "tick": world.tick,
-                "settlement": settlements[sid],
-            }
-        )
+        metrics['settlements_created'] += 1
+        logger.event({
+            'type': 'settlement_created',
+            'tick': world.tick,
+            'settlement': settlements[sid],
+        })
 
         return sid
 
