@@ -340,7 +340,12 @@ no combat initially (combat later)
 You want learning, not immediate extinction.
 
 
-# AI-world## Agent-Based Civilization Simulator Lab
+Good. We won’t rewrite the whole thing.
+We’ll update reality, tighten the checklist, and reflect what you’ve actually proven (5k tick stability, farm system rules, etc.).
+Below is a clean replacement block for the section you pasted.
+It removes outdated uncertainty and reflects current stability.
+AI-world
+Agent-Based Civilization Simulator Lab
 v0 — Current State (Reality-Checked)
 Core Simulation ✅
 [x] Deterministic tick-based simulation
@@ -351,15 +356,16 @@ Core Simulation ✅
 [x] Final run summary (summary.json)
 [x] Metrics aggregation
 [x] Simple global score function
+[x] 100–5000 tick stability confirmed across multiple seeds
 Agents ✅
 [x] Grid movement
 [x] Resource gathering (food / wood / stone)
 [x] Inventory system
-[x] Building actions (hut / storage)
-[x] Baseline agent policy (non-random, priority-based)
+[x] Building actions (hut / storage / farm)
+[x] Baseline agent policy (priority-based, non-random)
 [x] Settlement-aware behavior (food delivery bias)
 [x] Infrastructure ordering rules (storage before huts)
-Settlements (CORE SYSTEM COMPLETE) ✅
+Settlements (CORE SYSTEM STABLE) ✅
 [x] Settlement creation
 [x] Spatial settlement anchors
 [x] Population per settlement
@@ -367,54 +373,63 @@ Settlements (CORE SYSTEM COMPLETE) ✅
 [x] Wood & stone stockpiles
 [x] Automatic agent deposits
 [x] Food consumption per tick
-[x] Population growth logic
-[x] Starvation & population decline
+[x] Growth rule (3-tick surplus requirement)
+[x] Starvation rule (3-tick deficit collapse)
 [x] Settlement-linked structures
-[x] Settlement funding of construction
+[x] Settlement-funded construction
 [x] Settlement → structure ownership mapping
+Single-settlement survival loop is stable under deterministic replay.
 Economy (Lite but Functional) ✅
 [x] Shared settlement resource pools
 [x] Resource inflow/outflow tracking
+[x] Farm production (1.0 yield per tick per farm)
 [x] Deposit & consumption events logged
-[x] Build funding events (when applicable)
+[x] Build funding events logged
 [x] Metrics visibility for tuning
 Analysis & Debugging ✅
 [x] Human-readable JSON outputs
-[x] Metrics counters (builds, starvation, growth, deposits)
 [x] Grep-friendly logs
 [x] Deterministic reproduction of runs
+[x] Multi-seed validation (5k tick test batch)
+[x] Population, starvation, and growth metrics confirmed stable
 Known Limitations (Intentional for v0) ⚠️
-Agents have no long-term planning
-No explicit roles (farmer / builder / hauler yet)
-No food spoilage or storage decay
-No trade between settlements
-No terrain costs or physics constraints
+No long-term planning policies
+No explicit agent roles (farmer / builder / hauler yet)
+No trade or redistribution between settlements
+No spoilage, decay, or transport cost
+No terrain cost modifiers
 No visualisation layer (CLI only)
-These are design gaps, not bugs.
-v0.1 Next Targets (Ordered, Minimal, High Impact)
-Expose global structures + settlements cleanly in Observation (done / locking in)
-Guarantee storage construction (bootstrap phase)
-Role bias per settlement (1 gatherer / 1 builder)
-Food buffer tuning (prevent early collapse)
-Simple settlement growth stabilisation
-Visual playback layer (grid renderer / replay)
-Project Scope (What This Is)
-This project is an agent-based civilisation simulator, focused on:
+These are scope boundaries, not defects.
+v0.1 Next Targets (Minimal, High Impact)
+Multi-settlement stability testing
+Settlement build gating (prevent overpopulation via huts)
+Role bias per settlement (soft specialization)
+Food buffer tuning for long-horizon equilibrium
+Courier redistribution (proto-economy)
+Minimal grid replay renderer
+Project Scope
+AI-world is an agent-based civilisation simulation lab focused on:
 Emergent behavior
 Resource-constrained growth
 Economic feedback loops
 Deterministic experimentation
-AI policy evolution over time
-It is not a game yet — it is the engine beneath one.
-Physics, maths, and real-world constraints will be layered after the core economy stabilises.
-Dev Rules (Locked In)
-No micro-patch spam
-Large, meaningful changes only
-One file at a time when possible
+Policy evolution under scarcity
+This is not a game yet.
+It is the simulation engine beneath one.
+Dev Rules (Locked)
 Determinism always preserved
 Logs > visuals > polish
+One major axis of change at a time
+No system layering before stability
 🟢 Status:
-v0 core is complete.
+Single-settlement economy stable.
+Entering multi-settlement expansion phase.
+Now — straight answer:
+Do not touch DESIGN.md beyond adding that internal header note.
+README = contract with reality.
+DESIGN.md = thinking sandbox.
+You’re doing this correctly.
+Next move is yours.
 .................
 
 We don’t trim it.
