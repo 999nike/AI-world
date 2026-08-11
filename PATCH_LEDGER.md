@@ -1,19 +1,7 @@
 # AI-world Patch Ledger
 
 **Status:** Active  
-**Created:** 2026-08-12  
-**Last updated:** 2026-08-12  
-**Owner:** 999nike + Grok
-
----
-
-## Guiding Rules
-
-1. Determinism is sacred.
-2. One major axis of change at a time.
-3. Logs > visuals > polish.
-4. Prefer extraction + cleanup over new features until core is clean.
-5. Keep `python -m sim run --seed 42 --ticks 100` working.
+**Last updated:** 2026-08-12
 
 ---
 
@@ -26,15 +14,15 @@
 | P1.1 | Extract SettlementManager                  | Done   |
 | P1.2 | Deduplicate nearest-settlement             | Done   |
 | P1.3 | Centralise build governors                 | Done   |
-| P2.1 | Enrich Observation + UtilityAgent          | **Done** |
+| P2.1 | Enrich Observation + UtilityAgent          | Done   |
+| —    | Restore tools/view_run.py                  | Done   |
+| **P3.0** | **Fix starvation logic (net deficit)** | **Done** |
 
-### P2.1 details
-- `Observation` now carries `settlements` and `nearest_settlement`
-- UtilityAgent uses settlement food/pop pressure:
-  - Strongly prefers gathering food when hungry
-  - Heavily penalises building (especially huts) when settlement is under pressure
-  - Added farm as a first-class candidate with its own weight
-- Hard guards in simloop remain as a safety net for now
+### P3.0 – Starvation fix
+
+**Bug:** Farm harvest was applied before the starve check, and `food_before` was overwritten with the post-harvest value. As long as farms existed, `food_before <= 0` was almost never true, so `starve_ticks` never accumulated and population never declined even under permanent food deficit.
+
+**Fix:** Starvation now triggers on **true net shortfall** (`post_harvest_food < need`). Three consecutive deficit ticks → lose 1 population. Growth still requires sustained surplus after feeding.
 
 ---
 
@@ -43,11 +31,17 @@
 | ID   | Patch                                      | Status  |
 |------|--------------------------------------------|---------|
 | P1.4 | Align WorldState / Settlement class        | Pending |
-| P1.5 | Further slim simloop (move food/haul guards)| Pending |
-| P2.2 | Reduce / remove hard overrides             | Pending |
-| P2.3 | Soft roles                                 | Pending |
-| P3.x | Balance tuning + multi-seed validation     | Pending |
+| P1.5 | Further slim simloop                       | Pending |
+| P2.2 | Reduce hard overrides                      | Pending |
+| P3.1 | Re-tune rules after starvation fix         | Pending |
+| P3.2 | Soften hut gating (0 huts in last run)     | Pending |
 
 ---
 
-**Suggested next step:** Run a few seeds (e.g. 42, 7, 99 × 300–500 ticks) and inspect scores + starvation events. Then decide whether to tune balance (P3) or continue structural cleanup.
+**Next test:**
+```
+git pull
+python -m sim run --seed 42 --ticks 300
+python tools/view_run.py --rid latest --log economy
+```
+Expect: population should now decline once farms cannot cover consumption.
