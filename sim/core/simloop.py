@@ -66,9 +66,9 @@ def run_sim(
         "population_net_change": 0,
         "build_hut": 0,
         "build_storage": 0,
-          "build_farm": 0,
-          "farm_harvest_events": 0,
-          "farm_food_total": 0,
+        "build_farm": 0,
+        "farm_harvest_events": 0,
+        "farm_food_total": 0,
     }
 
     # --- Settlement state kept HERE (single-file settlement bundle) ---
@@ -302,7 +302,7 @@ def run_sim(
                         # SOFT PRESSURE: if below growth threshold, forbid building (but still allow moving/gathering).
                         elif food_stock < need_food and action.type == "build":
                             action = Action(type="gather", resource="food")
-            
+
                 # 0) HAUL GUARD: if carrying food, walk it back to nearest settlement anchor (radius 2)
                 if nearest_sid is not None and getattr(a, "inv_food", 0) >= 2:
                     ss = settlements[nearest_sid]
@@ -318,7 +318,6 @@ def run_sim(
                             dy = 1 if sy > ay else -1
                         action = Action(type="move", dx=dx, dy=dy)
 
-            
                 # 2) BUILD GUARD: if build requested but can't be funded (inv+tile+settlement), gather missing mats
                 if False and action.type == "build" and settlements:
                     b_try = action.building
@@ -469,7 +468,7 @@ def run_sim(
                                             if stx.type == "storage": stor_here += 1
                                     if farms_here > 0 and stor_here >= 1:
                                         b = "hut"
-                
+
                 # --- Build spam guard ---
                 # If we cannot pay build costs locally, redirect to gather
                 # ---- governor: stop storage spam ----
@@ -477,7 +476,7 @@ def run_sim(
                 if settlements and b == "storage":
                     best_sid=None; best_d=10**9
                     for sid2, ss in settlements.items():
-                        d2 = abs(a.x-ss["x"]) + abs(a.y-ss["y"]) 
+                        d2 = abs(a.x-ss["x"]) + abs(a.y-ss["y"])
                         if d2 < best_d:
                             best_d=d2; best_sid=sid2
                     if best_sid is not None:
@@ -577,7 +576,7 @@ def run_sim(
                         need_wood = int(cost["wood"])
                         need_stone = int(cost["stone"])
 
-                                                # Spend from agent inventory first (and for storage/farm, allow tile funding too)
+                        # Spend from agent inventory first (and for storage/farm, allow tile funding too)
                         cur_tile = world.tile_at(a.x, a.y)
                         if b in ("storage","farm"):
                             avail_wood = a.inv_wood + cur_tile.wood
@@ -847,6 +846,3 @@ def run_sim(
     if return_score:
         return score, run_id
     return None
-
-    logger.event({"type": "run_started", "run_id": run_id, "seed": seed})
-
