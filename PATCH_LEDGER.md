@@ -2,6 +2,7 @@
 
 **Status:** Active  
 **Created:** 2026-08-12  
+**Last updated:** 2026-08-12  
 **Owner:** 999nike + Grok (SuperGrok session)
 
 This file is the single source of truth for the current cleanup & stabilisation work.
@@ -21,12 +22,12 @@ Every patch should be small, reviewable, and leave the sim still runnable.
 
 ## Current Priority Queue
 
-### Phase 0 – Safety & Visibility (Done / In Progress)
+### Phase 0 – Safety & Visibility
 
 | ID     | Patch                                      | Status     | Notes |
 |--------|--------------------------------------------|------------|-------|
 | P0.1   | Create this PATCH_LEDGER.md                | **Done**   | This file |
-| P0.2   | Remove dead code at end of `simloop.py`    | Pending    | Unreachable statements after return |
+| P0.2   | Remove dead code at end of `simloop.py`    | **Done**   | Unreachable `logger.event` after return removed |
 | P0.3   | Add minimal smoke-test helper              | Pending    | Optional but useful |
 
 ### Phase 1 – Structural Cleanup (Highest Leverage)
@@ -81,6 +82,8 @@ Every patch should be small, reviewable, and leave the sim still runnable.
 - UtilityAgent is still heavily overridden by hard guards — this is a smell.
 - Memory Space was not shared at the time of this ledger creation, so we are using the repo itself as the ledger.
 
----
+**Completed today:**
+- P0.1 Ledger created
+- P0.2 Dead code removed from end of `simloop.py`
 
-**Next action:** Start **P1.1** – Extract SettlementManager.
+**Next:** P1.1 – Extract SettlementManager
