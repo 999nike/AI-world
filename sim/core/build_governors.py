@@ -18,6 +18,9 @@ BUILD_ALIASES = {
     "home": "hut",
 }
 
+# After this many farms, further farm attempts become huts (if storage exists)
+FARM_SOFT_CAP = 3
+
 
 def normalise_building_name(raw: Optional[str]) -> str:
     if raw is None:
@@ -37,8 +40,9 @@ def resolve_building(
 
     Order of priority:
     1. Normalise aliases
-    2. Force first farm if none exists for nearest settlement
-    3. Cap storage at 1 per settlement once a farm exists (extra storage → hut)
+    2. Force first farm if none exists
+    3. Cap storage at 1 (extra → hut)
+    4. Soft-cap farms at FARM_SOFT_CAP (extra farm attempts → hut)
     """
     b = normalise_building_name(requested)
     note = ""
@@ -66,6 +70,11 @@ def resolve_building(
         b = "hut"
         note = "storage_capped_to_hut"
 
+    # Priority 3: farm soft-cap → push housing
+    if b == "farm" and farms_here >= FARM_SOFT_CAP and stor_here >= 1:
+        b = "hut"
+        note = "farm_capped_to_hut"
+
     return b, note
 
 
@@ -75,15 +84,9 @@ def can_build_hut(
     sm: SettlementManager,
     world,
 ) -> Tuple[bool, str]:
-    """Hut gates (softened P3.2).
+    """Hut gates (softened).
 
-    Requires:
-    - A settlement exists
-    - At least one storage in that settlement
-    - Not currently in an active starvation streak (starve_ticks == 0)
-
-    Previously also required food_stock >= pop*cons + buffer, which blocked
-    huts for most of the growth phase and produced zero housing.
+    Requires storage + not currently in a starvation streak.
     """
     if sm.count() == 0:
         return False, "hut_requires_storage"
