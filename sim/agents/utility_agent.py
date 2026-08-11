@@ -23,7 +23,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 
     # build preference
     "w_build_storage": 4.0,
-    "w_build_hut": 2.0,
+    "w_build_hut": 3.5,       # was 2.0 – give housing a real chance
     "w_build_farm": 5.0,
 
     # movement / exploration
@@ -33,7 +33,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     # exploration rate
     "epsilon": 0.05,
 
-    # P2.1 – settlement awareness
+    # settlement awareness
     "w_food_pressure": 4.0,
     "w_avoid_build_when_hungry": 6.0,
 }
@@ -117,7 +117,6 @@ class UtilityAgent:
         if pop <= 0:
             return 0.0
 
-        # rough daily need (matches SETTLEMENT_RULES default 0.25)
         need = pop * 0.25
         if food >= need * 2:
             return 0.0
@@ -154,7 +153,6 @@ class UtilityAgent:
             avail = float(tile.get(r, 0))
             score = base * (0.5 + 0.5 * _diminishing(avail, 3.0)) + inv_term
 
-            # Strong boost for food when settlement is hungry
             if r == "food":
                 score += pressure * float(w["w_food_pressure"])
 
@@ -165,7 +163,6 @@ class UtilityAgent:
             has_storage = any(st.get("type") == "storage" for st in structures)
             has_farm = any(st.get("type") == "farm" for st in structures)
 
-            # Strongly discourage building when hungry
             hunger_penalty = pressure * float(w["w_avoid_build_when_hungry"])
 
             if b == "farm":
@@ -181,8 +178,8 @@ class UtilityAgent:
             if b == "hut":
                 can_pay = 1.0 if (inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 1) else 0.2
                 penalty = -3.0 if not has_storage else 0.0
-                # Extra penalty when hungry – huts increase pop pressure
-                return w["w_build_hut"] * can_pay + penalty + inv_term - hunger_penalty * 1.5
+                # Only apply mild hunger penalty (was *1.5) – huts should appear in healthy phase
+                return w["w_build_hut"] * can_pay + penalty + inv_term - hunger_penalty * 0.5
 
             return -5.0
 
