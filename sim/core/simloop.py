@@ -10,6 +10,7 @@ from sim.log.logger import RunLogger
 
 from sim.world.state import Structure
 from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
+from sim.core.build_governors import resolve_building, can_build_hut
 from sim.agents.types import Observation, Action
 from sim.agents.baseline_random import RandomAgent
 
@@ -123,11 +124,11 @@ def run_sim(
 
             action = brains[a.agent_id].act(obs, rng)
 
-            ### GUARD: food/build override ###
+            ### GUARD: food / haul override ###
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
 
-                # 1) FOOD GUARD
+                # FOOD GUARD
                 if nearest_sid is not None:
                     ss = sm.get(nearest_sid)
                     pop = int(ss.get("population", 0))
@@ -144,39 +145,20 @@ def run_sim(
                         elif food_stock < need_food and action.type == "build":
                             action = Action(type="gather", resource="food")
 
-                # 0) HAUL GUARD
+                # HAUL GUARD
                 if nearest_sid is not None and getattr(a, "inv_food", 0) >= 2:
                     ss = sm.get(nearest_sid)
                     ax, ay = int(a.x), int(a.y)
                     sx, sy = int(ss["x"]), int(ss["y"])
                     dist = abs(ax - sx) + abs(ay - sy)
                     if dist > 0:
-                        dx = 0
-                        dy = 0
                         if abs(sx - ax) >= abs(sy - ay):
                             dx = 1 if sx > ax else -1
+                            dy = 0
                         else:
+                            dx = 0
                             dy = 1 if sy > ay else -1
                         action = Action(type="move", dx=dx, dy=dy)
-
-                # 2) BUILD GUARD (currently disabled)
-                if False and action.type == "build" and sm.count() > 0:
-                    b_try = action.building
-                    cost = BUILD_COSTS.get(b_try)
-                    if cost:
-                        need_w = int(cost.get("wood", 0))
-                        need_s = int(cost.get("stone", 0))
-                        tile_now = world.tile_at(a.x, a.y)
-                        have_w = int(getattr(tile_now, "wood", 0)) + int(getattr(a, "inv_wood", 0))
-                        have_s = int(getattr(tile_now, "stone", 0)) + int(getattr(a, "inv_stone", 0))
-                        if nearest_sid is not None:
-                            ss = sm.get(nearest_sid)
-                            have_w += int(ss.get("wood_stock", 0))
-                            have_s += int(ss.get("stone_stock", 0))
-                        if have_w < need_w:
-                            action = Action(type="gather", resource="wood")
-                        elif have_s < need_s:
-                            action = Action(type="gather", resource="stone")
             except Exception:
                 pass
             ### END GUARD ###
@@ -239,132 +221,46 @@ def run_sim(
                             note = "no_stone"
 
             elif action.type == "build":
-                b = action.building
-                if b is None:
-                    b = ""
-                b = str(b).strip().lower()
+                # Centralised governors (P1.3)
+                b, gov_note = resolve_building(
+                    requested=action.building,
+                    agent_x=a.x,
+                    agent_y=a.y,
+                    sm=sm,
+                    world=world,
+                )
+                if gov_note:
+                    note = gov_note
 
-                alias = {
-                    "stor": "storage",
-                    "store": "storage",
-                    "warehouse": "storage",
-                    "house": "hut",
-                    "home": "hut",
-                }
-                b = alias.get(b, b)
-
-                # ---- governor: force first farm ----
-                if sm.count() > 0 and b in ("storage", "stor", "store", "warehouse"):
-                    best_sid = sm.nearest(a.x, a.y)
-                    if best_sid is not None:
-                        farms_here = sm.count_structures_of_type(best_sid, "farm", world)
-                        if farms_here == 0:
-                            b = "farm"
-
-                # ---- Farm bootstrap ----
-                if sm.count() > 0 and action.type == "build":
-                    best_sid = sm.nearest(a.x, a.y)
-                    if best_sid is not None:
-                        farms_here = sm.count_structures_of_type(best_sid, "farm", world)
-                        if farms_here == 0:
-                            b = "farm"
-
-                            # storage cap after farms exist
-                            if b == "storage":
-                                stor_here = sm.count_structures_of_type(best_sid, "storage", world)
-                                if farms_here > 0 and stor_here >= 1:
-                                    b = "hut"
-
-                # ---- governor: stop storage spam ----
-                if sm.count() > 0 and b == "storage":
-                    best_sid = sm.nearest(a.x, a.y)
-                    if best_sid is not None:
-                        farms_here = sm.count_structures_of_type(best_sid, "farm", world)
-                        stor_here = sm.count_structures_of_type(best_sid, "storage", world)
-                        if farms_here > 0 and stor_here >= 1:
-                            b = "hut"
-
-                cost = BUILD_COSTS.get(b)
-                if cost:
-                    need_w = int(cost.get("wood", 0))
-                    need_s = int(cost.get("stone", 0))
-
-                    tile_now = world.tile_at(a.x, a.y)
-                    have_w = a.inv_wood + int(getattr(tile_now, "wood", 0))
-                    have_s = a.inv_stone + int(getattr(tile_now, "stone", 0))
-
-                    if have_w < need_w:
+                # Hut hard gates
+                if b == "hut":
+                    allowed, gate_note = can_build_hut(a.x, a.y, sm, world)
+                    if not allowed:
                         ok = False
-                        note = "insufficient_resources"
-                    elif have_s < need_s:
-                        ok = False
-                        note = "insufficient_resources"
+                        note = gate_note
 
-                # Hard rule: no huts until a storage exists in the nearest settlement
-                if b == "hut" and sm.count() > 0:
-                    best_sid = sm.nearest(a.x, a.y)
-                    has_storage = False
-                    if best_sid is not None:
-                        has_storage = sm.count_structures_of_type(best_sid, "storage", world) > 0
-                    if not has_storage:
-                        ok = False
-                        note = "hut_requires_storage"
-
-                        # Hard rule: huts require food stability
-                        if ok and best_sid is not None:
-                            ss = sm.get(best_sid)
-                            pop = int(ss.get("population", 0))
-                            cons = int(SETTLEMENT_RULES.get("food_per_pop_per_tick", 1))
-                            buf = int(SETTLEMENT_RULES.get("growth_food_buffer", 5))
-                            need = pop * cons + buf
-                            if int(ss.get("food_stock", 0)) < need:
-                                ok = False
-                                note = "hut_requires_food_stability"
+                if ok and b not in BUILD_COSTS:
+                    ok = False
+                    note = "bad_building"
+                elif ok and world.structure_at(a.x, a.y) is not None and b not in ("storage", "farm"):
+                    ok = False
+                    note = "occupied"
 
                 if ok:
-                    # Agriculture bootstrap guard (final)
-                    if sm.count() > 0 and b == "storage":
-                        best_sid = sm.nearest(a.x, a.y)
-                        if best_sid is not None:
-                            farms_here = sm.count_structures_of_type(best_sid, "farm", world)
-                            if farms_here == 0:
-                                b = "farm"
-                                note = "redirected_storage_to_farm"
+                    cost = BUILD_COSTS[b]
+                    need_wood = int(cost["wood"])
+                    need_stone = int(cost["stone"])
 
-                    if b not in BUILD_COSTS:
-                        ok = False
-                        note = "bad_building"
-                    elif world.structure_at(a.x, a.y) is not None and b not in ("storage", "farm"):
-                        ok = False
-                        note = "occupied"
-                    else:
-                        cost = BUILD_COSTS[b]
-                        need_wood = int(cost["wood"])
-                        need_stone = int(cost["stone"])
+                    cur_tile = world.tile_at(a.x, a.y)
+                    use_wood = 0
+                    use_stone = 0
 
-                        cur_tile = world.tile_at(a.x, a.y)
-                        use_wood = 0
-                        use_stone = 0
-
-                        if b in ("storage", "farm"):
-                            avail_wood = a.inv_wood + cur_tile.wood
-                            avail_stone = a.inv_stone + cur_tile.stone
-                            if avail_wood < need_wood or avail_stone < need_stone:
-                                ok = False
-                                note = "insufficient_resources"
-                            else:
-                                use_wood = min(a.inv_wood, need_wood)
-                                use_stone = min(a.inv_stone, need_stone)
-                                a.inv_wood -= use_wood
-                                a.inv_stone -= use_stone
-                                need_wood -= use_wood
-                                need_stone -= use_stone
-                                if need_wood > 0:
-                                    cur_tile.wood -= need_wood
-                                    need_wood = 0
-                                if need_stone > 0:
-                                    cur_tile.stone -= need_stone
-                                    need_stone = 0
+                    if b in ("storage", "farm"):
+                        avail_wood = a.inv_wood + cur_tile.wood
+                        avail_stone = a.inv_stone + cur_tile.stone
+                        if avail_wood < need_wood or avail_stone < need_stone:
+                            ok = False
+                            note = "insufficient_resources"
                         else:
                             use_wood = min(a.inv_wood, need_wood)
                             use_stone = min(a.inv_stone, need_stone)
@@ -372,55 +268,67 @@ def run_sim(
                             a.inv_stone -= use_stone
                             need_wood -= use_wood
                             need_stone -= use_stone
+                            if need_wood > 0:
+                                cur_tile.wood -= need_wood
+                                need_wood = 0
+                            if need_stone > 0:
+                                cur_tile.stone -= need_stone
+                                need_stone = 0
+                    else:
+                        use_wood = min(a.inv_wood, need_wood)
+                        use_stone = min(a.inv_stone, need_stone)
+                        a.inv_wood -= use_wood
+                        a.inv_stone -= use_stone
+                        need_wood -= use_wood
+                        need_stone -= use_stone
 
-                        if (need_wood > 0 or need_stone > 0) and sm.count() == 0:
+                    if (need_wood > 0 or need_stone > 0) and sm.count() == 0:
+                        ok = False
+                        note = "insufficient_resources"
+                        a.inv_wood += use_wood
+                        a.inv_stone += use_stone
+
+                    funded_sid = None
+                    if (need_wood > 0 or need_stone > 0) and sm.count() > 0:
+                        best_sid = sm.nearest(a.x, a.y)
+                        funded_sid = best_sid
+                        s = sm.get(best_sid)  # type: ignore
+                        if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
+                            s["wood_stock"] -= need_wood
+                            s["stone_stock"] -= need_stone
+                            need_wood = 0
+                            need_stone = 0
+                        else:
                             ok = False
                             note = "insufficient_resources"
                             a.inv_wood += use_wood
                             a.inv_stone += use_stone
 
-                        funded_sid = None
-                        if (need_wood > 0 or need_stone > 0) and sm.count() > 0:
-                            best_sid = sm.nearest(a.x, a.y)
-                            funded_sid = best_sid
-                            s = sm.get(best_sid)  # type: ignore
-                            if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
-                                s["wood_stock"] -= need_wood
-                                s["stone_stock"] -= need_stone
-                                need_wood = 0
-                                need_stone = 0
-                            else:
-                                ok = False
-                                note = "insufficient_resources"
-                                a.inv_wood += use_wood
-                                a.inv_stone += use_stone
+                    if ok and need_wood == 0 and need_stone == 0:
+                        world.structures.append(
+                            Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
+                        )
+                        note = f"built_{b}"
 
-                        if ok and need_wood == 0 and need_stone == 0:
-                            world.structures.append(
-                                Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id)
+                        if b == "hut":
+                            metrics["build_hut"] += 1
+                        elif b == "storage":
+                            metrics["build_storage"] += 1
+                        elif b == "farm":
+                            metrics["build_farm"] += 1
+
+                        if funded_sid is not None:
+                            logger.event(
+                                {
+                                    "type": "build_funded",
+                                    "tick": t,
+                                    "agent_id": a.agent_id,
+                                    "settlement_id": funded_sid,
+                                    "building": b,
+                                }
                             )
-                            note = f"built_{b}"
 
-                            if b == "hut":
-                                metrics["build_hut"] += 1
-                            elif b == "storage":
-                                metrics["build_storage"] += 1
-                            elif b == "farm":
-                                metrics["build_farm"] += 1
-
-                            if funded_sid is not None:
-                                logger.event(
-                                    {
-                                        "type": "build_funded",
-                                        "tick": t,
-                                        "agent_id": a.agent_id,
-                                        "settlement_id": funded_sid,
-                                        "building": b,
-                                    }
-                                )
-
-                            # settlement linkage
-                            sm.link_structure(a.x, a.y, owner_id=a.agent_id, world=world, tick=t)
+                        sm.link_structure(a.x, a.y, owner_id=a.agent_id, world=world, tick=t)
 
             else:
                 ok = False
@@ -448,7 +356,7 @@ def run_sim(
                 }
             )
 
-        # settlement tick: consumption + growth/starvation + farm harvest
+        # settlement tick
         sm.tick(world, tick=t)
 
         # snapshot
