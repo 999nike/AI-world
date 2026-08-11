@@ -109,6 +109,9 @@ def run_sim(
             # auto-deposit when near settlement
             sm.try_deposit(a, tick=t)
 
+            # P2.1 – give agent settlement visibility
+            nearest_data = sm.get(nearest_sid) if nearest_sid else None
+
             obs = Observation(
                 tick=t,
                 self_id=a.agent_id,
@@ -120,15 +123,16 @@ def run_sim(
                 inventory=a.inv_dict(),
                 structure=(st.to_dict() if st else None),
                 structures=[s.to_dict() for s in world.structures],
+                settlements=sm.all(),
+                nearest_settlement=nearest_data,
             )
 
             action = brains[a.agent_id].act(obs, rng)
 
-            ### GUARD: food / haul override ###
+            ### GUARD: food / haul override (safety net – agent now has better info) ###
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
 
-                # FOOD GUARD
                 if nearest_sid is not None:
                     ss = sm.get(nearest_sid)
                     pop = int(ss.get("population", 0))
@@ -145,7 +149,6 @@ def run_sim(
                         elif food_stock < need_food and action.type == "build":
                             action = Action(type="gather", resource="food")
 
-                # HAUL GUARD
                 if nearest_sid is not None and getattr(a, "inv_food", 0) >= 2:
                     ss = sm.get(nearest_sid)
                     ax, ay = int(a.x), int(a.y)
@@ -221,7 +224,6 @@ def run_sim(
                             note = "no_stone"
 
             elif action.type == "build":
-                # Centralised governors (P1.3)
                 b, gov_note = resolve_building(
                     requested=action.building,
                     agent_x=a.x,
@@ -232,7 +234,6 @@ def run_sim(
                 if gov_note:
                     note = gov_note
 
-                # Hut hard gates
                 if b == "hut":
                     allowed, gate_note = can_build_hut(a.x, a.y, sm, world)
                     if not allowed:
