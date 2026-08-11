@@ -19,11 +19,12 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_inv_food": 0.8,
     "w_inv_wood": 0.3,
     "w_inv_stone": 0.3,
-    "inv_soft_cap": 6.0,  # diminishing returns cap
+    "inv_soft_cap": 6.0,
 
     # build preference
     "w_build_storage": 4.0,
     "w_build_hut": 2.0,
+    "w_build_farm": 5.0,
 
     # movement / exploration
     "w_move": 0.1,
@@ -31,23 +32,14 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 
     # exploration rate
     "epsilon": 0.05,
+
+    # P2.1 – settlement awareness
+    "w_food_pressure": 4.0,
+    "w_avoid_build_when_hungry": 6.0,
 }
 
 
-def _safe_get_list(obs: Observation, attr: str) -> Optional[List[Dict[str, Any]]]:
-    # Observation doesn't declare these fields right now.
-    # But if you add them later, this agent will use them.
-    try:
-        v = getattr(obs, attr)  # type: ignore
-        if isinstance(v, list):
-            return v
-    except Exception:
-        pass
-    return None
-
-
 def _diminishing(x: float, cap: float) -> float:
-    # smooth saturating curve in [0, 1) as x grows
     return 1.0 - math.exp(-max(0.0, x) / max(1e-9, cap))
 
 
@@ -57,25 +49,18 @@ class UtilityAgent:
     weights: Dict[str, float]
 
     def act(self, obs: Observation, rng: RNG) -> Action:
-        # --- STORAGE-FIRST BOOTSTRAP ---
-        # Attempt storage as soon as we have ANY building material.
-        # Simloop can fund the remainder from settlement stock if available.
         inv = obs.inventory
         structure = obs.structure
 
+        # --- Early bootstrap: first storage if none exist ---
         if structure is None:
-            # Bootstrap: build exactly ONE storage globally, then stop spamming storage.
-            structs = _safe_get_list(obs, "structures")
-            has_storage = False
-            if structs:
-                has_storage = any(s.get("type") == "storage" for s in structs)
-
+            structs = obs.structures or []
+            has_storage = any(s.get("type") == "storage" for s in structs)
             if not has_storage:
-                # Only attempt storage if FULL inventory can cover cost
                 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                     return Action(type="build", building="storage")
 
-        # ε-greedy: explore randomly sometimes
+        # ε-greedy
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
             return self._random_action(obs, rng)
@@ -92,8 +77,6 @@ class UtilityAgent:
         return best if best is not None else self._random_action(obs, rng)
 
     def _random_action(self, obs: Observation, rng: RNG) -> Action:
-        # Simple safe fallback (never crashes)
-        # Prefer any available gather, else move.
         tile = obs.tile
         if tile.get("food", 0) > 0:
             return Action(type="gather", resource="food")
@@ -109,21 +92,38 @@ class UtilityAgent:
     def _enumerate_candidates(self, obs: Observation) -> List[Action]:
         c: List[Action] = []
 
-        # gather candidates
         for r in ("food", "wood", "stone"):
             if obs.tile.get(r, 0) > 0:
                 c.append(Action(type="gather", resource=r))
 
-        # build candidates (only if no structure here)
         if obs.structure is None:
+            c.append(Action(type="build", building="farm"))
             c.append(Action(type="build", building="storage"))
             c.append(Action(type="build", building="hut"))
 
-        # move candidates
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
 
         return c if c else [Action(type="move", dx=1, dy=0)]
+
+    def _settlement_pressure(self, obs: Observation) -> float:
+        """0 = fine, 1 = critical food shortage."""
+        nearest = obs.nearest_settlement
+        if not nearest:
+            return 0.0
+
+        pop = float(nearest.get("population", 0))
+        food = float(nearest.get("food_stock", 0))
+        if pop <= 0:
+            return 0.0
+
+        # rough daily need (matches SETTLEMENT_RULES default 0.25)
+        need = pop * 0.25
+        if food >= need * 2:
+            return 0.0
+        if food <= 0:
+            return 1.0
+        return max(0.0, 1.0 - (food / (need * 2)))
 
     def _utility(self, obs: Observation, a: Action) -> float:
         w = DEFAULT_WEIGHTS.copy()
@@ -133,12 +133,9 @@ class UtilityAgent:
 
         inv = obs.inventory
         tile = obs.tile
+        structures = obs.structures or []
+        pressure = self._settlement_pressure(obs)
 
-        # Optional globals (if you later add them to Observation)
-        structures = _safe_get_list(obs, "structures")
-        settlements = _safe_get_list(obs, "settlements")
-
-        # Inventory shaping (diminishing returns)
         cap = float(w["inv_soft_cap"])
         inv_term = (
             float(w["w_inv_food"]) * _diminishing(float(inv.get("food", 0)), cap)
@@ -146,57 +143,52 @@ class UtilityAgent:
             + float(w["w_inv_stone"]) * _diminishing(float(inv.get("stone", 0)), cap)
         )
 
-        # Encourage food early if global settlement pop is at risk (if visible)
-        pop_pressure = 0.0
-        if settlements:
-            total_pop = sum(int(s.get("population", 0)) for s in settlements)
-            total_food = sum(int(s.get("food_stock", 0)) for s in settlements)
-            if total_pop > 0 and total_food < total_pop:
-                pop_pressure = (total_pop - total_food) / max(1.0, total_pop)
-
         if a.type == "gather":
             r = a.resource or ""
-            base = (
-                w["w_food"]
-                if r == "food"
-                else w["w_wood"]
-                if r == "wood"
-                else w["w_stone"]
-                if r == "stone"
-                else -5.0
-            )
+            base = {
+                "food": w["w_food"],
+                "wood": w["w_wood"],
+                "stone": w["w_stone"],
+            }.get(r, -5.0)
+
             avail = float(tile.get(r, 0))
-            return base * (0.5 + 0.5 * _diminishing(avail, 3.0)) + inv_term + pop_pressure * (
-                2.0 if r == "food" else 0.0
-            )
+            score = base * (0.5 + 0.5 * _diminishing(avail, 3.0)) + inv_term
+
+            # Strong boost for food when settlement is hungry
+            if r == "food":
+                score += pressure * float(w["w_food_pressure"])
+
+            return score
 
         if a.type == "build":
             b = a.building or ""
+            has_storage = any(st.get("type") == "storage" for st in structures)
+            has_farm = any(st.get("type") == "farm" for st in structures)
 
-            has_storage = False
-            if structures:
-                has_storage = any(st.get("type") == "storage" for st in structures)
+            # Strongly discourage building when hungry
+            hunger_penalty = pressure * float(w["w_avoid_build_when_hungry"])
+
+            if b == "farm":
+                bonus = 4.0 if not has_farm else 0.5
+                can_pay = 1.0 if inv.get("wood", 0) >= 2 else 0.3
+                return w["w_build_farm"] * can_pay + bonus + inv_term - hunger_penalty
 
             if b == "storage":
                 bonus = 5.0 if not has_storage else 0.0
-                # Inventory-only affordability signal (simloop may still fund remainder)
                 can_pay = 1.0 if (inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2) else 0.2
-                return w["w_build_storage"] * can_pay + bonus + inv_term
+                return w["w_build_storage"] * can_pay + bonus + inv_term - hunger_penalty
 
             if b == "hut":
                 can_pay = 1.0 if (inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 1) else 0.2
-                penalty = -3.0 if (structures and not has_storage) else 0.0
-                return w["w_build_hut"] * can_pay + penalty + inv_term
+                penalty = -3.0 if not has_storage else 0.0
+                # Extra penalty when hungry – huts increase pop pressure
+                return w["w_build_hut"] * can_pay + penalty + inv_term - hunger_penalty * 1.5
 
             return -5.0
 
         if a.type == "move":
             emptiness = 1.0
-            if (
-                tile.get("food", 0) > 0
-                or tile.get("wood", 0) > 0
-                or tile.get("stone", 0) > 0
-            ):
+            if tile.get("food", 0) > 0 or tile.get("wood", 0) > 0 or tile.get("stone", 0) > 0:
                 emptiness = 0.3
             return w["w_move"] + w["w_explore"] * emptiness + inv_term
 

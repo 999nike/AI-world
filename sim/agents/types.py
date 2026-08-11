@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, List
 
 
 Role = Literal["gatherer", "builder", "idle"]
@@ -16,8 +16,10 @@ class Observation:
     tile: Dict[str, int]        # {"food": int, "wood": int, "stone": int}
     inventory: Dict[str, int]   # {"food": int, "wood": int, "stone": int}
     structure: Optional[Dict[str, Any]]
-    structures: Optional[list] = None  # global structures (optional)
-    role: Optional[Role] = None  # future use (does nothing yet)
+    structures: Optional[List[Dict[str, Any]]] = None
+    settlements: Optional[List[Dict[str, Any]]] = None  # P2.1
+    nearest_settlement: Optional[Dict[str, Any]] = None  # P2.1 – convenience
+    role: Optional[Role] = None
 
 
 @dataclass(frozen=True)
@@ -25,9 +27,9 @@ class Action:
     type: str  # "move" | "gather" | "build"
     dx: int = 0
     dy: int = 0
-    resource: Optional[str] = None     # gather
-    building: Optional[str] = None     # build
-    role_hint: Optional[Role] = None   # future use
+    resource: Optional[str] = None
+    building: Optional[str] = None
+    role_hint: Optional[Role] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d: Dict[str, Any] = {"type": self.type}
