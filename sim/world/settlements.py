@@ -213,57 +213,59 @@ class SettlementManager:
 
         for sid, s in self.settlements.items():
             pop_before = int(s.get("population", 0))
-            food_before = float(s.get("food_stock", 0))
+            stock_at_start = float(s.get("food_stock", 0))
 
-            # Farm harvest
+            # --- Farm harvest ---
             farms = 0
             for stx in world.structures:
                 if stx.type == "farm" and self.structure_settlement_id(stx.x, stx.y) == sid:
                     farms += 1
-            if farms > 0:
-                yield_per_farm = 1.0
-                gained = farms * yield_per_farm
-                s["food_stock"] = float(s.get("food_stock", 0)) + gained
+            farm_yield = farms * 1.0 if farms > 0 else 0.0
+            if farm_yield > 0:
+                s["food_stock"] = stock_at_start + farm_yield
                 self.metrics["farm_harvest_events"] += 1
-                self.metrics["farm_food_total"] += gained
-                food_before = float(s.get("food_stock", 0))
+                self.metrics["farm_food_total"] += farm_yield
+
+            post_harvest = float(s.get("food_stock", 0))
+            need = pop_before * cons
 
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
             if "starve_ticks" not in s:
                 s["starve_ticks"] = 0
 
-            need = pop_before * cons
+            # --- True net position after production ---
+            # shortfall = cannot fully feed population this tick
+            can_fully_feed = post_harvest >= need
 
-            if pop_before > 0 and food_before >= need:
-                s["food_stock"] = food_before - need
+            if pop_before <= 0:
+                # No population — just hold stock, no starvation logic
+                s["starve_ticks"] = 0
+                s["surplus_ticks"] = 0
+            elif can_fully_feed:
+                # Fully fed
+                s["food_stock"] = post_harvest - need
                 s["starve_ticks"] = 0
 
+                # Growth only if leftover still covers another full need + buffer
                 if float(s["food_stock"]) >= (need + buffer_food):
                     s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
                     if int(s["surplus_ticks"]) >= 3:
-                        grow_by = min(max_growth, 1)
-                        s["population"] = pop_before + grow_by
+                        s["population"] = pop_before + min(max_growth, 1)
                         s["surplus_ticks"] = 0
+                else:
+                    s["surplus_ticks"] = 0
             else:
+                # True deficit tick — cannot fully feed
+                s["food_stock"] = 0.0
                 s["surplus_ticks"] = 0
-
-                if pop_before <= 0:
-                    s["starve_ticks"] = 0
-                    s["food_stock"] = food_before
-                else:
-                    s["food_stock"] = max(0.0, food_before - need)
-
-                if food_before <= 0.0:
-                    s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
-                else:
-                    s["starve_ticks"] = 0
+                s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
 
                 if int(s["starve_ticks"]) >= 3:
-                    s["population"] = pop_before - 1
+                    s["population"] = max(0, pop_before - 1)
                     s["starve_ticks"] = 0
 
-            # Respawn rule
+            # Respawn rule: empty settlement recovers if it has enough food banked
             if pop_before <= 0 and float(s.get("food_stock", 0)) >= (buffer_food + (cons * 3)):
                 s["population"] = 1
                 s["starve_ticks"] = 0
@@ -279,7 +281,7 @@ class SettlementManager:
                 else:
                     self.metrics["population_starved_events"] += 1
 
-            if pop_after != pop_before or food_after != food_before:
+            if pop_after != pop_before or food_after != stock_at_start:
                 self.logger.event(
                     {
                         "type": "population_changed",
@@ -287,8 +289,10 @@ class SettlementManager:
                         "settlement_id": sid,
                         "population_before": pop_before,
                         "population_after": pop_after,
-                        "food_before": food_before,
+                        "food_before": stock_at_start,
                         "food_after": food_after,
+                        "farm_yield": farm_yield,
+                        "need": need,
                     }
                 )
 
