@@ -35,7 +35,7 @@ def resolve_building(
 ) -> Tuple[str, str]:
     """Apply all build governors and return (final_building, note).
 
-    Order of priority (matches previous behaviour):
+    Order of priority:
     1. Normalise aliases
     2. Force first farm if none exists for nearest settlement
     3. Cap storage at 1 per settlement once a farm exists (extra storage → hut)
@@ -75,7 +75,16 @@ def can_build_hut(
     sm: SettlementManager,
     world,
 ) -> Tuple[bool, str]:
-    """Hard gates for huts: requires storage + food stability."""
+    """Hut gates (softened P3.2).
+
+    Requires:
+    - A settlement exists
+    - At least one storage in that settlement
+    - Not currently in an active starvation streak (starve_ticks == 0)
+
+    Previously also required food_stock >= pop*cons + buffer, which blocked
+    huts for most of the growth phase and produced zero housing.
+    """
     if sm.count() == 0:
         return False, "hut_requires_storage"
 
@@ -87,11 +96,7 @@ def can_build_hut(
         return False, "hut_requires_storage"
 
     ss = sm.get(best_sid)
-    pop = int(ss.get("population", 0))
-    cons = float(SETTLEMENT_RULES.get("food_per_pop_per_tick", 0.25))
-    buf = float(SETTLEMENT_RULES.get("growth_food_buffer", 2))
-    need = pop * cons + buf
-    if float(ss.get("food_stock", 0)) < need:
-        return False, "hut_requires_food_stability"
+    if int(ss.get("starve_ticks", 0)) > 0:
+        return False, "hut_blocked_while_starving"
 
     return True, ""
