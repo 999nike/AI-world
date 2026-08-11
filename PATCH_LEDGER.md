@@ -27,18 +27,18 @@ Every patch should be small, reviewable, and leave the sim still runnable.
 | ID     | Patch                                      | Status     | Notes |
 |--------|--------------------------------------------|------------|-------|
 | P0.1   | Create this PATCH_LEDGER.md                | **Done**   | This file |
-| P0.2   | Remove dead code at end of `simloop.py`    | **Done**   | Unreachable `logger.event` after return removed |
+| P0.2   | Remove dead code at end of `simloop.py`    | **Done**   | Unreachable code removed |
 | P0.3   | Add minimal smoke-test helper              | Pending    | Optional but useful |
 
 ### Phase 1 – Structural Cleanup (Highest Leverage)
 
 | ID     | Patch                                      | Status     | Goal |
 |--------|--------------------------------------------|------------|------|
-| P1.1   | Extract SettlementManager out of simloop   | **Next**   | Move settlements, create/link, deposit, pop dynamics into `sim/world/settlements.py` |
-| P1.2   | Deduplicate nearest-settlement logic       | Pending    | Single helper used everywhere |
-| P1.3   | Clean & centralise build governors         | Pending    | Farm bootstrap, storage cap, hut food gate |
+| P1.1   | Extract SettlementManager out of simloop   | **Done**   | `sim/world/settlements.py` created. Creation, linkage, deposits, farm harvest, population dynamics moved out. |
+| P1.2   | Deduplicate nearest-settlement logic       | Pending    | Mostly done via SettlementManager.nearest(); remaining governors can be cleaned next |
+| P1.3   | Clean & centralise build governors         | Pending    | Farm bootstrap, storage cap, hut food gate still live in simloop |
 | P1.4   | Align `WorldState` / `Settlement` class    | Pending    | Stop having two competing settlement representations |
-| P1.5   | Slim `simloop.py` to orchestration only    | Pending    | Target < 400–500 lines of clear control flow |
+| P1.5   | Slim `simloop.py` to orchestration only    | Pending    | Significant progress made; further slimming after governors are cleaned |
 
 ### Phase 2 – Agent Observation & Decision Quality
 
@@ -77,13 +77,15 @@ Every patch should be small, reviewable, and leave the sim still runnable.
 
 ## Active Notes (2026-08-12)
 
-- Main risk is `sim/core/simloop.py` size and duplicated logic.
-- Population still tends to collapse after early growth (known from DESIGN.md).
-- UtilityAgent is still heavily overridden by hard guards — this is a smell.
-- Memory Space was not shared at the time of this ledger creation, so we are using the repo itself as the ledger.
-
 **Completed today:**
 - P0.1 Ledger created
-- P0.2 Dead code removed from end of `simloop.py`
+- P0.2 Dead code removed
+- **P1.1 SettlementManager extracted**
+  - New file: `sim/world/settlements.py`
+  - Owns: create, link, nearest, deposit, farm harvest, population dynamics
+  - `simloop.py` now uses `sm = SettlementManager(...)` instead of nested functions + local dicts
+  - Behaviour intentionally kept identical
 
-**Next:** P1.1 – Extract SettlementManager
+**Next recommended:** P1.3 (clean build governors) or P1.2 residual cleanup, then P1.5 further slim.
+
+**Risk note:** The build governors are still duplicated/complex inside the build branch of simloop. That is the next natural target.
