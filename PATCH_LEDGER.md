@@ -20,6 +20,7 @@
 | P3.2 | Soften hut gates + farm→hut redirect | Done |
 | P3.1 | Balance (yield 1.5, slower growth, softer score) | Done |
 | — | **Lock Era 1 into DESIGN.md** | **Done** |
+| P4.0 | Add multi-seed validation tool | Done |
 
 ---
 
@@ -33,7 +34,7 @@
 
 ## Next (post lock)
 
-- Multi-seed validation
+- Multi-seed validation (tool ready — run when ready to view)
 - P2.2 Reduce hard overrides in simloop
 - CLI replay improvements
 - Only then: Era 2 systems
