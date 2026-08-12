@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import time
+from collections import Counter
 from pathlib import Path
 
 
@@ -62,7 +63,6 @@ def load_summary(run_dir: Path) -> dict | None:
 
 
 def load_key_events(run_dir: Path) -> list[dict]:
-    """Pull notable events from events.jsonl for callouts."""
     path = run_dir / "events.jsonl"
     if not path.exists():
         return []
@@ -80,7 +80,6 @@ def load_key_events(run_dir: Path) -> list[dict]:
             if t in KEY_EVENT_TYPES:
                 out.append(ev)
             elif t == "action_resolved" and str(ev.get("note", "")).startswith("built_"):
-                # only late-game / landmark builds
                 b = str(ev.get("note", "")).replace("built_", "")
                 if b in ("academy", "walls", "irrigation", "temple", "barracks", "workshop"):
                     out.append(ev)
@@ -89,6 +88,7 @@ def load_key_events(run_dir: Path) -> list[dict]:
 
 def events_in_range(events: list[dict], t0: int, t1: int) -> list[str]:
     lines = []
+    defend_counts: Counter = Counter()
     for ev in events:
         tick = ev.get("tick")
         if tick is None or not (t0 < tick <= t1):
@@ -105,7 +105,9 @@ def events_in_range(events: list[dict], t0: int, t1: int) -> list[str]:
         elif typ == "settlement_created":
             lines.append(f"  ★ SETTLEMENT  {ev.get('settlement',{}).get('id','?')}")
         elif typ == "soldier_defend":
-            lines.append(f"  ★ DEFEND  {ev.get('settlement_id')} saved pop")
+            defend_counts[ev.get("settlement_id", "?")] += 1
+    for sid, n in defend_counts.items():
+        lines.append(f"  ★ DEFEND  {sid} x{n}")
     return lines
 
 
@@ -141,7 +143,6 @@ def settlement_summary(snap: dict) -> str:
 
 
 def structure_counts(snap: dict) -> str:
-    from collections import Counter
     c = Counter(st.get("type") for st in snap.get("structures", []))
     order = ["farm", "storage", "hut", "granary", "mine", "road",
              "workshop", "barracks", "market", "temple", "academy", "walls", "irrigation"]
