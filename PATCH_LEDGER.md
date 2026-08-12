@@ -1,30 +1,26 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 complete + tools polished  
+**Status:** Era 2 complete + E3.0 age transition live  
 **Last updated:** 2026-08-12
 
 ---
 
 ## Snapshot (for next session)
 
-- Era 1 LOCKED (32/32)
-- Era 2 LIVE: Granary ✓ Mine ✓ Roads ✓ Workshop ✓ Barracks ✓ Defense ✓ Raids ✓
-- God-view: full Era 2 icons + `--final`
-- Stress test Era 2: min_score **80** (was 30); reports G/M/W/B/def/raid
-- Stress 12/12 PASS @300 ticks (seed 42 score 1224)
-- Next: open — age transition, more combat, or free exploration
+- Era 1 LOCKED · Era 2 COMPLETE
+- E3.0 Age transition: workshop + barracks + pop≥15 → era=3, +5 food, +0.25 farm/farm
+- Seed 42 @500: age_up_events **1**, s2 era 3 pop 46, score 1209
+- Next: first Era 3 building (market / temple / academy), or polish
 
 ---
 
-## Era 2 stages
+## Stages
 
 | System | Patch | Status |
 |--------|-------|--------|
-| Buildings 0–4 | E2.0–E2.4 | **Live** |
-| Defense | E2.5 | **Live** |
-| Raids | E2.6 | **Live** |
-| God-view | polish | **Live** |
-| Stress thresholds | Era 2 | **Live** (min_score 80) |
+| Era 2 buildings + combat | E2.0–E2.6 | **Live** |
+| God-view / stress | polish | **Live** |
+| Age transition | E3.0 | **Live** |
 
 ---
 
