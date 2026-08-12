@@ -22,6 +22,7 @@
 | — | **Lock Era 1 into DESIGN.md** | **Done** |
 | P4.0 | Add multi-seed validation tool | Done |
 | P2.2 | Soften hard food/haul overrides in simloop | Done |
+| P5.0 | Minimal god-view tool | Done |
 
 ---
 
@@ -36,7 +37,6 @@
 ## Next (post lock)
 
 - Multi-seed validation (tool ready — run when ready to view)
-- Minimal god-view (grid + icons + tick scrub)
-- CLI replay improvements
-- Decide human role (Governor / Scenario)
+- Decide human role (Governor / Scenario designer)
+- CLI replay improvements (optional)
 - Only then: Era 2 systems
