@@ -38,6 +38,7 @@ SETTLEMENT_RULES = {
     "temple_surplus_ticks": 3,
     "academy_knowledge_per_tick": 0.3,
     "library_knowledge_per_tick": 0.2,
+    "foundry_tools_bonus": 0.15,
     "subject_agriculture_cost": 8,
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
@@ -166,6 +167,9 @@ class SettlementManager:
     def settlement_has_library(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "library", world) >= 1
 
+    def settlement_has_foundry(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "foundry", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -223,7 +227,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -249,6 +253,8 @@ class SettlementManager:
                     has_irrigation = True
                 elif stx.type == "library":
                     has_library = True
+                elif stx.type == "foundry":
+                    has_foundry = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -277,10 +283,14 @@ class SettlementManager:
                 stone_add = mine_stone + (workshop_mine_bonus if has_workshop else 0.0)
                 s["stone_stock"] = float(s.get("stone_stock", 0)) + stone_add
                 self.metrics["mine_stone_total"] = self.metrics.get("mine_stone_total", 0) + stone_add
-            if has_workshop:
-                tools_add = workshop_tools
-                if "craft" in subjects:
-                    tools_add += float(SETTLEMENT_RULES.get("craft_tools_bonus", 0.1))
+            if has_workshop or has_foundry:
+                tools_add = 0.0
+                if has_workshop:
+                    tools_add += workshop_tools
+                    if "craft" in subjects:
+                        tools_add += float(SETTLEMENT_RULES.get("craft_tools_bonus", 0.1))
+                if has_foundry:
+                    tools_add += float(SETTLEMENT_RULES.get("foundry_tools_bonus", 0.15))
                 s["tools_stock"] = float(s.get("tools_stock", 0.0)) + tools_add
                 self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + tools_add
             if has_barracks:
@@ -379,7 +389,7 @@ class SettlementManager:
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "has_irrigation": has_irrigation, "has_library": has_library,
-                    "subjects": subjects, "era": era,
+                    "has_foundry": has_foundry, "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
