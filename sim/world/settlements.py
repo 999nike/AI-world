@@ -43,6 +43,19 @@ SETTLEMENT_RULES = {
     # E3.2 Temple
     "temple_food_per_tick": 0.25,
     "temple_surplus_ticks": 3,  # faster growth when temple present (default 5)
+    # E3.3 Academy
+    "academy_knowledge_per_tick": 0.3,
+    # Subject costs (knowledge)
+    "subject_agriculture_cost": 8,
+    "subject_craft_cost": 10,
+    "subject_organisation_cost": 12,
+    "subject_strategy_cost": 15,
+    "subject_inquiry_cost": 20,
+    # Subject effects
+    "agriculture_farm_bonus": 0.15,
+    "craft_tools_bonus": 0.1,
+    "organisation_surplus_reduction": 1,
+    "strategy_defend_bonus": 0.1,
 }
 
 
@@ -65,6 +78,8 @@ class SettlementManager:
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0,  # E2.3
             "soldiers": 0.0,     # E2.4
+            "knowledge": 0.0,    # E3.3
+            "subjects": [],      # E3.3 unlocked subject names
             "era": 2,            # E3.0 — start in Era 2; age up to 3
             "starve_ticks": 0, "surplus_ticks": 0,
         }
@@ -146,6 +161,9 @@ class SettlementManager:
     def settlement_has_temple(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "temple", world) >= 1
 
+    def settlement_has_academy(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "academy", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -204,7 +222,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -222,6 +240,10 @@ class SettlementManager:
                     has_market = True
                 elif stx.type == "temple":
                     has_temple = True
+                elif stx.type == "academy":
+                    has_academy = True
+
+            subjects = list(s.get("subjects") or [])
 
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if has_workshop and farm_yield > 0:
@@ -229,6 +251,10 @@ class SettlementManager:
             # E3.0: Era 3 prosperity bonus
             if int(s.get("era", 2)) >= 3 and farms > 0:
                 farm_yield += farms * float(SETTLEMENT_RULES.get("era3_farm_bonus", 0.25))
+            # E3.3 Agriculture subject
+            if "agriculture" in subjects and farms > 0:
+                farm_yield += farms * float(SETTLEMENT_RULES.get("agriculture_farm_bonus", 0.15))
+
             bonus = granary_food if has_granary else 0.0
             if farm_yield > 0 or bonus > 0:
                 s["food_stock"] = stock_at_start + farm_yield + bonus
@@ -242,8 +268,11 @@ class SettlementManager:
                 s["stone_stock"] = float(s.get("stone_stock", 0)) + stone_add
                 self.metrics["mine_stone_total"] = self.metrics.get("mine_stone_total", 0) + stone_add
             if has_workshop:
-                s["tools_stock"] = float(s.get("tools_stock", 0.0)) + workshop_tools
-                self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + workshop_tools
+                tools_add = workshop_tools
+                if "craft" in subjects:
+                    tools_add += float(SETTLEMENT_RULES.get("craft_tools_bonus", 0.1))
+                s["tools_stock"] = float(s.get("tools_stock", 0.0)) + tools_add
+                self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + tools_add
             if has_barracks:
                 barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.25))
                 s["soldiers"] = float(s.get("soldiers", 0.0)) + barracks_soldiers
@@ -260,11 +289,21 @@ class SettlementManager:
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
                 self.metrics["temple_food_total"] = self.metrics.get("temple_food_total", 0) + tf
 
+            # E3.3 Academy knowledge production + subject unlocks
+            if has_academy:
+                k_add = float(SETTLEMENT_RULES.get("academy_knowledge_per_tick", 0.3))
+                s["knowledge"] = float(s.get("knowledge", 0.0)) + k_add
+                self.metrics["academy_knowledge_total"] = self.metrics.get("academy_knowledge_total", 0) + k_add
+                self._try_unlock_subjects(sid, s, tick)
+
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
             starve_needed = granary_starve if has_granary else starve_needed_default
-            # E3.2: temple speeds growth
+            # E3.2: temple speeds growth; E3.3 Organisation further reduces surplus needed
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
+            if "organisation" in subjects:
+                local_surplus_needed = max(1, local_surplus_needed - int(SETTLEMENT_RULES.get("organisation_surplus_reduction", 1)))
+
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
             if "starve_ticks" not in s:
@@ -288,8 +327,11 @@ class SettlementManager:
                 s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
                 if int(s["starve_ticks"]) >= starve_needed:
                     # E2.5: soldiers can absorb the loss (light defense)
+                    # E3.3 Strategy: slightly better defend value
                     soldiers = float(s.get("soldiers", 0.0))
                     defend_cost = float(SETTLEMENT_RULES.get("soldier_defend_cost", 1.0))
+                    if "strategy" in subjects:
+                        defend_cost = max(0.5, defend_cost - float(SETTLEMENT_RULES.get("strategy_defend_bonus", 0.1)))
                     if soldiers >= defend_cost:
                         s["soldiers"] = soldiers - defend_cost
                         s["starve_ticks"] = 0
@@ -322,13 +364,46 @@ class SettlementManager:
                     "food_before": stock_at_start, "food_after": food_after,
                     "farm_yield": farm_yield, "granary_bonus": bonus, "need": need,
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
-                    "has_barracks": has_barracks,
+                    "has_barracks": has_barracks, "has_academy": has_academy,
+                    "subjects": subjects,
                 })
 
         # E2.6 Light raids (multi-settlement only)
         self._try_raids(world, tick)
         # E3.0 Age transition
         self._try_age_up(world, tick)
+
+    def _try_unlock_subjects(self, sid: str, s: Dict[str, Any], tick: int) -> None:
+        """Unlock subjects when knowledge thresholds are met. Permanent."""
+        subjects = list(s.get("subjects") or [])
+        knowledge = float(s.get("knowledge", 0.0))
+
+        candidates = [
+            ("agriculture", float(SETTLEMENT_RULES.get("subject_agriculture_cost", 8))),
+            ("craft", float(SETTLEMENT_RULES.get("subject_craft_cost", 10))),
+            ("organisation", float(SETTLEMENT_RULES.get("subject_organisation_cost", 12))),
+            ("strategy", float(SETTLEMENT_RULES.get("subject_strategy_cost", 15))),
+            ("inquiry", float(SETTLEMENT_RULES.get("subject_inquiry_cost", 20))),
+        ]
+
+        for name, cost in candidates:
+            if name in subjects:
+                continue
+            if knowledge >= cost:
+                subjects.append(name)
+                s["subjects"] = subjects
+                s["knowledge"] = knowledge - cost  # spend the knowledge
+                knowledge = float(s["knowledge"])
+                self.metrics["subject_unlock_events"] = self.metrics.get("subject_unlock_events", 0) + 1
+                self.logger.event({
+                    "type": "subject_unlocked",
+                    "tick": tick,
+                    "settlement_id": sid,
+                    "subject": name,
+                    "cost": cost,
+                    "knowledge_remaining": knowledge,
+                    "subjects_now": list(subjects),
+                })
 
     def _try_raids(self, world, tick: int) -> None:
         interval = int(SETTLEMENT_RULES.get("raid_interval", 25))
@@ -340,13 +415,11 @@ class SettlementManager:
         loot_s = int(SETTLEMENT_RULES.get("raid_loot_stone", 2))
         loot_f = int(SETTLEMENT_RULES.get("raid_loot_food", 2))
 
-        # Attacker = highest soldiers; target = any other settlement (prefer lowest soldiers)
         all_s = list(self.settlements.items())
         ranked = sorted(all_s, key=lambda x: float(x[1].get("soldiers", 0)), reverse=True)
         atk_sid, atk = ranked[0]
         if float(atk.get("soldiers", 0)) < min_soldiers:
             return
-        # Target = lowest soldiers among the rest (or any other)
         others = [(sid, s) for sid, s in all_s if sid != atk_sid]
         if not others:
             return
@@ -355,12 +428,11 @@ class SettlementManager:
         if float(atk.get("soldiers", 0)) < cost:
             return
 
-        # Steal what target actually has
         take_w = min(loot_w, int(tgt.get("wood_stock", 0)))
         take_s = min(loot_s, int(tgt.get("stone_stock", 0)))
         take_f = min(loot_f, int(float(tgt.get("food_stock", 0))))
         if take_w + take_s + take_f == 0:
-            return  # nothing to steal
+            return
 
         atk["soldiers"] = float(atk.get("soldiers", 0)) - cost
         tgt["wood_stock"] = int(tgt.get("wood_stock", 0)) - take_w
