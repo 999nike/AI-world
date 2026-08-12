@@ -13,7 +13,7 @@ from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import (
     resolve_building, can_build_hut, can_build_granary, can_build_mine, can_build_road,
     can_build_workshop, can_build_barracks, can_build_market, can_build_temple,
-    can_build_academy, can_build_walls,
+    can_build_academy, can_build_walls, can_build_irrigation,
 )
 from sim.core.governor import Governor
 from sim.core.scenario import Scenario
@@ -28,17 +28,18 @@ BUILD_COSTS = {
     "farm": {"wood": 2, "stone": 0},
     "granary": {"wood": 3, "stone": 1},
     "mine": {"wood": 2, "stone": 3},
-    "road": {"wood": 1, "stone": 0},  # E2.2
-    "workshop": {"wood": 4, "stone": 2},  # E2.3
-    "barracks": {"wood": 3, "stone": 3},  # E2.4
-    "market": {"wood": 4, "stone": 3},  # E3.1
-    "temple": {"wood": 3, "stone": 4},  # E3.2
-    "academy": {"wood": 5, "stone": 4},  # E3.3
-    "walls": {"wood": 2, "stone": 3},  # E3.4
+    "road": {"wood": 1, "stone": 0},
+    "workshop": {"wood": 4, "stone": 2},
+    "barracks": {"wood": 3, "stone": 3},
+    "market": {"wood": 4, "stone": 3},
+    "temple": {"wood": 3, "stone": 4},
+    "academy": {"wood": 5, "stone": 4},
+    "walls": {"wood": 2, "stone": 3},
+    "irrigation": {"wood": 3, "stone": 2},  # E4.1
 }
 
-# Structures that can share a tile conceptually / not block the same way
-STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks", "market", "temple", "academy", "walls"}
+STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks",
+             "market", "temple", "academy", "walls", "irrigation"}
 
 
 def run_sim(
@@ -98,7 +99,7 @@ def run_sim(
         "population_grew_events": 0, "population_starved_events": 0, "population_net_change": 0,
         "build_hut": 0, "build_storage": 0, "build_farm": 0,
         "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0,
-        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0,
+        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0, "build_irrigation": 0,
         "farm_harvest_events": 0, "farm_food_total": 0,
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
         "tools_boost_events": 0,
@@ -106,6 +107,7 @@ def run_sim(
         "raid_events": 0,
         "raid_loot_total": 0,
         "age_up_events": 0,
+        "age_up4_events": 0,
         "market_wood_total": 0,
         "market_stone_total": 0,
         "temple_food_total": 0,
@@ -164,9 +166,6 @@ def run_sim(
             )
             action = brains[a.agent_id].act(obs, rng)
 
-            # Hard food-force guard removed (E2.3+). Utility agent already
-            # has food_pressure scoring; hard override fought agent decisions.
-
             logger.event({"type": "action_attempted", "tick": t, "agent_id": a.agent_id,
                           "action": action.to_dict(), "pos": {"x": a.x, "y": a.y},
                           "tile": tile.to_dict(), "inv": a.inv_dict(),
@@ -190,7 +189,6 @@ def run_sim(
                     if getattr(cur, res) >= 1:
                         setattr(cur, res, getattr(cur, res) - 1)
                         setattr(a, attr, getattr(a, attr) + 1)
-                        # E2.3: Workshop tools boost (extra +1 yield, consume tools)
                         try:
                             nearest_sid = sm.nearest(a.x, a.y)
                             if nearest_sid is not None and sm.settlement_has_workshop(nearest_sid, world):
@@ -252,13 +250,16 @@ def run_sim(
                     allowed, gate_note = can_build_walls(a.x, a.y, sm, world)
                     if not allowed:
                         ok, note = False, gate_note
+                elif b == "irrigation":
+                    allowed, gate_note = can_build_irrigation(a.x, a.y, sm, world)
+                    if not allowed:
+                        ok, note = False, gate_note
 
                 if ok and b not in BUILD_COSTS:
                     ok, note = False, "bad_building"
                 elif ok and world.structure_at(a.x, a.y) is not None and b not in STACKABLE:
                     ok, note = False, "occupied"
                 elif ok and world.structure_at(a.x, a.y) is not None and b in STACKABLE:
-                    # Don't stack two of same type on one tile
                     existing = world.structure_at(a.x, a.y)
                     if existing and existing.type == b:
                         ok, note = False, "occupied"
@@ -313,7 +314,6 @@ def run_sim(
                             a.inv_stone += use_stone
 
                     if ok and need_wood == 0 and need_stone == 0:
-                        # For stackable, only place if tile empty or different type handled above
                         if world.structure_at(a.x, a.y) is None:
                             world.structures.append(Structure(type=b, x=a.x, y=a.y, owner_id=a.agent_id))
                             note = f"built_{b}"
