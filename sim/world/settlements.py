@@ -468,7 +468,7 @@ class SettlementManager:
         atk["wood_stock"] = int(atk.get("wood_stock", 0)) + take_w
         atk["stone_stock"] = int(atk.get("stone_stock", 0)) + take_s
         atk["food_stock"] = float(atk.get("food_stock", 0)) + take_f
-        self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + take_w + take_s + take_f
+        self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + 1
         self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
         self.logger.event({
             "type": "raid", "tick": tick, "attacker": atk_sid, "target": tgt_sid,
