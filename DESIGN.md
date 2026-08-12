@@ -3,7 +3,7 @@
 This document describes current mechanics, limitations, and roadmap.
 It is the internal truth for development sessions.
 
-**Last updated:** 2026-08-12 (human roles + tools session)  
+**Last updated:** 2026-08-12 (P9.0 configurable agents)  
 **Era 1 status:** LOCKED  
 **Era 2 status:** Draft only — do not implement until multi-seed validation is done and reviewed.
 
@@ -17,8 +17,9 @@ Logging and replay are first-class. Humans can participate, not only spectate.
 Long-term vision shaped by:
 - **Civilization VI** — ages, tech gates, long time horizon, meaningful unlocks
 - **The Settlers** — resource chains, haul labour, specialised buildings, roads
+- **Research / training environment** — eventually support learnable agents (same Observation → Action contract). This remains a core direction but is deliberately deferred until the world is stable.
 
-Pipeline: headless sim → rich logs → god-view → human roles.
+Pipeline: headless sim → rich logs → god-view → human roles → (later) trainable policies.
 
 ---
 
@@ -38,10 +39,11 @@ Pipeline: headless sim → rich logs → god-view → human roles.
 - Deterministic regrowth every 5 ticks
 
 ### Agents
-- 4 agents (A0–A3)
+- Configurable count (default **4**, via `--agents N` or scenario `agents N`)
+- Agent IDs: A0, A1, A2 …
 - Actions: move / gather / build
 - Inventory: food / wood / stone
-- Brain: UtilityAgent (weighted utilities + ε-greedy)
+- Brain: UtilityAgent (weighted utilities + ε-greedy) by default
 - Observation includes: local tile, inventory, structures, settlements, nearest_settlement
 
 ### Buildings & costs
@@ -83,7 +85,7 @@ starting_population      = 1
 score = pop*10 + settlements*25 + structures*5 + food_deposited - starved_events*5
 ```
 
-### Reference run (seed 42, 300 ticks)
+### Reference run (seed 42, 300 ticks, 4 agents)
 - Score ≈ 241
 - Huts / Storage / Farms ≈ 12 / 1 / 3
 - Net pop positive, starvation present but controlled
@@ -108,7 +110,7 @@ sim/
     utility_agent.py
     controlled_agent.py # drop-in human control (P8.0)
   log/
-  train/
+  train/                # future home of learning loops (stub exists)
 tools/
   view_run.py           # economy / event log viewer
   multi_seed_validate.py
@@ -139,11 +141,11 @@ Commands: `focus food|build|expand`, `build farm|hut|storage|none`, `clear`
 Starting conditions + timed events.
 
 ```bash
-python -m sim run --scenario "seed 42; start_food 6; event drought 120"
+python -m sim run --scenario "seed 42; agents 6; start_food 6; event drought 120"
 python -m sim run --scenario "seed 7; ticks 500; event boom 80"
 ```
 
-Commands: `seed N`, `ticks N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`
+Commands: `seed N`, `ticks N`, `agents N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`
 
 ### 3. Drop-in agent (P8.0)
 Take direct control of one agent.
@@ -175,6 +177,7 @@ Policies: `gather_food`, `gather_wood`, `gather_stone`, `build_farm`, `build_hut
 - No tech / ages yet
 - God-view is ASCII only (no animation window)
 - Governor / Scenario / Drop-in are minimal first versions
+- Learnable / thinking agents not yet implemented (deliberately deferred)
 
 ---
 
@@ -188,6 +191,7 @@ Policies: `gather_food`, `gather_wood`, `gather_stone`, `build_farm`, `build_hut
 3. Implement Era 2 draft below
 4. First military unit + light combat (logged)
 5. Later eras (Medieval → Industrial → Modern → Future / nukes)
+6. **Much later:** learnable agent interface + training loops (research path)
 
 ---
 
@@ -257,3 +261,4 @@ Pick **one** primary gate for clarity in logs, e.g.:
 4. Prefer extraction + cleanup before new features
 5. Small patches → approve → push → update ledger
 6. No Era 2 code until Era 1 multi-seed validation passes
+7. Learnable agents are a core long-term direction — introduce only when the world is stable enough to support them cleanly
