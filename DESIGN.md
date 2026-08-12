@@ -45,6 +45,14 @@ E4.5 strategy subject building (TBD)
 
 ---
 
+## Longer vision (Era 6+)
+
+Science labs → physics-style experiments / tech unlocks.  
+Modern-era buildings as late content.  
+Still pure lab-sim (deterministic + logged). Civ flavour, our style.
+
+---
+
 ## God-view
 
 `--play` auto-steps snapshots with key event callouts.  
