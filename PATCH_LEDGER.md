@@ -1,38 +1,31 @@
 # AI-world Patch Ledger
 
-**Status:** Era 1 validated — Era 2 started  
+**Status:** Era 2 in progress  
 **Last updated:** 2026-08-12
 
 ---
 
-## Era 1 validation
+## Era 2 stages
 
-- Multi-seed + stress test: **32/32 PASS (100%)**
-- Farm soft-cap fixed (P12.0)
-- Bootstrap / seed-999 failure fixed (P13.0)
-- Stress tool added (P14.0)
+| Stage | System | Status |
+|-------|--------|--------|
+| 0 | Granary (Pottery) | Done (E2.0) |
+| 1 | Mine | Done (E2.1) |
+| 2 | Wheel / Roads | Next |
+| 3 | Workshop | Later |
 
 ---
 
-## Completed this session
+## Recent patches
 
 | ID | Patch | Status |
 |----|-------|--------|
-| P12.0 | Fix farm soft-cap bypass | Done |
-| P13.0 | Fix seed-999 bootstrap failure | Done |
-| P14.0 | Automated seed stress testing | Done |
-| E2.0 | Granary (first Era 2 building) | Done |
+| P12.0–P14.0 | Farm soft-cap, bootstrap, stress test | Done |
+| E2.0 | Granary | Done |
+| E2.1 | Mine | Done |
 
 ---
 
-## Era 1 reference (historical)
+## Next
 
-- Seed 42 @ 300 ticks ≈ score 241 (pre-bootstrap-fix)
-- Post-fix stress: seed 42 @ 500 ticks ≈ 477, all seeds pass
-
----
-
-## Next (Era 2)
-
-- Observe granary uptake in runs
-- Next tech candidates: Mine / Wheel (roads) / Workshop
+- Stage 2: Wheel / Roads
