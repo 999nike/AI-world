@@ -13,7 +13,7 @@ from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import (
     resolve_building, can_build_hut, can_build_granary, can_build_mine, can_build_road,
     can_build_workshop, can_build_barracks, can_build_market, can_build_temple,
-    can_build_academy, can_build_walls, can_build_irrigation,
+    can_build_academy, can_build_walls, can_build_irrigation, can_build_library,
 )
 from sim.core.governor import Governor
 from sim.core.scenario import Scenario
@@ -35,11 +35,12 @@ BUILD_COSTS = {
     "temple": {"wood": 3, "stone": 4},
     "academy": {"wood": 5, "stone": 4},
     "walls": {"wood": 2, "stone": 3},
-    "irrigation": {"wood": 2, "stone": 2},  # E4.1
+    "irrigation": {"wood": 2, "stone": 2},
+    "library": {"wood": 3, "stone": 3},  # E4.2
 }
 
 STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks",
-             "market", "temple", "academy", "walls", "irrigation"}
+             "market", "temple", "academy", "walls", "irrigation", "library"}
 
 
 def run_sim(
@@ -99,7 +100,8 @@ def run_sim(
         "population_grew_events": 0, "population_starved_events": 0, "population_net_change": 0,
         "build_hut": 0, "build_storage": 0, "build_farm": 0,
         "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0,
-        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0, "build_irrigation": 0,
+        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0,
+        "build_irrigation": 0, "build_library": 0,
         "farm_harvest_events": 0, "farm_food_total": 0,
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
         "tools_boost_events": 0, "soldier_defend_events": 0, "raid_events": 0, "raid_loot_total": 0,
@@ -235,6 +237,9 @@ def run_sim(
                     if not allowed: ok, note = False, gate_note
                 elif b == "irrigation":
                     allowed, gate_note = can_build_irrigation(a.x, a.y, sm, world)
+                    if not allowed: ok, note = False, gate_note
+                elif b == "library":
+                    allowed, gate_note = can_build_library(a.x, a.y, sm, world)
                     if not allowed: ok, note = False, gate_note
 
                 if ok and b not in BUILD_COSTS:
