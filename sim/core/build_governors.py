@@ -12,7 +12,7 @@ BUILD_ALIASES = {
     "grain": "granary", "gran": "granary",
     "quarry": "mine",
     "path": "road", "track": "road",
-    "shop": "workshop", "forge": "workshop", "toolshed": "workshop", "ws": "workshop",
+    "shop": "workshop", "toolshed": "workshop", "ws": "workshop",
     "barrack": "barracks", "military": "barracks", "fort": "barracks",
     "trade": "market", "bazaar": "market", "shop_market": "market",
     "shrine": "temple", "church": "temple", "sanctuary": "temple",
@@ -20,6 +20,7 @@ BUILD_ALIASES = {
     "wall": "walls", "fortification": "walls", "rampart": "walls",
     "irrigate": "irrigation", "canal": "irrigation", "ditch": "irrigation",
     "archive": "library", "scriptorium": "library",
+    "forge": "foundry", "smelter": "foundry", "foundary": "foundry",
 }
 
 FARM_SOFT_CAP = 3
@@ -46,10 +47,12 @@ def _settlement_struct_counts(sid, sm, world):
     walls = sm.count_structures_of_type(sid, "walls", world)
     irrigation = sm.count_structures_of_type(sid, "irrigation", world)
     library = sm.count_structures_of_type(sid, "library", world)
+    foundry = sm.count_structures_of_type(sid, "foundry", world)
     total = (farms + stor + gran + mine + road + workshop + barracks +
-             market + temple + academy + walls + irrigation + library +
+             market + temple + academy + walls + irrigation + library + foundry +
              sm.count_structures_of_type(sid, "hut", world))
-    return farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total
+    return (farms, stor, gran, mine, road, workshop, barracks, market, temple,
+            academy, walls, irrigation, library, foundry, total)
 
 
 def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
@@ -64,7 +67,8 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     if best_sid is None:
         return "farm", "bootstrap_force_farm"
 
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    (farms, stor, gran, mine, road, workshop, barracks, market, temple,
+     academy, walls, irrigation, library, foundry, total) = _settlement_struct_counts(best_sid, sm, world)
 
     if farms == 0:
         return "farm", "redirected_to_farm" if b != "farm" else ""
@@ -155,6 +159,15 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
         if "inquiry" not in (s.get("subjects") or []):
             return "hut", "library_needs_inquiry"
 
+    if b == "foundry":
+        if foundry >= 1:
+            return "hut", "foundry_capped_to_hut"
+        s = sm.get(best_sid)
+        if int(s.get("era", 2)) < 4:
+            return "hut", "foundry_needs_era4"
+        if "craft" not in (s.get("subjects") or []):
+            return "hut", "foundry_needs_craft"
+
     return b, note
 
 
@@ -207,7 +220,7 @@ def can_build_road(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "road_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if mine < 1 and total < 4:
         return False, "road_needs_mine_or_growth"
     return True, ""
@@ -219,7 +232,7 @@ def can_build_workshop(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "workshop_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if mine < 1:
         return False, "workshop_needs_mine"
     if gran < 1 and road < 1:
@@ -235,7 +248,7 @@ def can_build_barracks(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "barracks_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if workshop < 1:
         return False, "barracks_needs_workshop"
     if barracks >= 1:
@@ -252,7 +265,7 @@ def can_build_market(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     s = sm.get(best_sid)
     if int(s.get("era", 2)) < 3:
         return False, "market_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if barracks < 1:
         return False, "market_needs_barracks"
     if market >= 1:
@@ -269,7 +282,7 @@ def can_build_temple(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     s = sm.get(best_sid)
     if int(s.get("era", 2)) < 3:
         return False, "temple_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if market < 1:
         return False, "temple_needs_market"
     if temple >= 1:
@@ -286,7 +299,7 @@ def can_build_academy(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     s = sm.get(best_sid)
     if int(s.get("era", 2)) < 3:
         return False, "academy_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if temple < 1:
         return False, "academy_needs_temple"
     if academy >= 1:
@@ -303,7 +316,7 @@ def can_build_walls(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     s = sm.get(best_sid)
     if int(s.get("era", 2)) < 3:
         return False, "walls_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, total = _settlement_struct_counts(best_sid, sm, world)
     if barracks < 1:
         return False, "walls_needs_barracks"
     if walls >= 1:
@@ -340,4 +353,20 @@ def can_build_library(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
         return False, "library_needs_inquiry"
     if sm.count_structures_of_type(best_sid, "library", world) >= 1:
         return False, "library_already_exists"
+    return True, ""
+
+
+def can_build_foundry(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "foundry_needs_settlement"
+    best_sid = sm.nearest(agent_x, agent_y)
+    if best_sid is None:
+        return False, "foundry_needs_settlement"
+    s = sm.get(best_sid)
+    if int(s.get("era", 2)) < 4:
+        return False, "foundry_needs_era4"
+    if "craft" not in (s.get("subjects") or []):
+        return False, "foundry_needs_craft"
+    if sm.count_structures_of_type(best_sid, "foundry", world) >= 1:
+        return False, "foundry_already_exists"
     return True, ""
