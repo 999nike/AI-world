@@ -1,446 +1,143 @@
-That’s clean.
-That’s professional.
-That’s GitHub-ready.
+# AI-world Design Notes (Internal)
+
+This document describes current mechanics, limitations, and roadmap.
+It is the internal truth for development sessions.
+
+**Last locked:** 2026-08-12 (Era 1 stabilisation session)
 
 ---
 
-# 📘 `DESIGN.md` (Internal Truth)
-
-### DESIGN.md (internal design + roadmap)
-
-```bash
-cat > DESIGN.md <<'EOF'
-# AI-world Design Notes (Internal)
-
 ## Intent
-This project is a **civilization simulation lab**.  
-Goal: create a stable deterministic world where agents can develop strategies under scarcity.
-UI/visuals come later. Logging/replay is first-class.
 
-## Determinism
-- Seed controls RNG.
-- Same seed + same code/config => same outcome.
-- Logs are for replay/analysis.
+Civilisation simulation lab. Deterministic world where agents develop strategies under scarcity.
+UI/visuals come later. Logging and replay are first-class.
+Long-term vision: Civ-style ages (Stone → later eras with deeper systems, physics, monuments).
 
-## Current mechanics (v0, Feb 2026)
+---
+
+## Determinism (sacred)
+
+- Seed controls all RNG
+- Same seed + same code/config → same outcome
+- Logs exist for replay and analysis
+
+---
+
+## Era 1 — Settlement Survival (LOCKED 2026-08-12)
+
 ### World
-- 32x32 grid (config-driven)
+- 32×32 grid
 - Tiles: food, wood, stone
-- Simple regrowth every N ticks (deterministic)
+- Deterministic regrowth every 5 ticks
 
 ### Agents
-- Baseline agent kinds: random + utility agent
+- 4 agents
 - Actions: move / gather / build
-- Inventory: food/wood/stone
+- Inventory: food / wood / stone
+- Brain: UtilityAgent (weighted utilities + ε-greedy)
+- Observation includes: local tile, inventory, structures, **settlements**, **nearest_settlement**
+
+### Buildings & costs
+| Building | Wood | Stone | Notes |
+|----------|------|-------|-------|
+| farm     | 2    | 0     | Soft-capped at 3 per settlement |
+| storage  | 3    | 2     | Max 1 per settlement |
+| hut      | 2    | 1     | Requires storage; blocked while starving |
+
+### Build governors
+1. First building priority → farm (if none exist)
+2. Storage capped at 1 → further storage attempts become huts
+3. Farm soft-cap at 3 → further farm attempts become huts
+4. Hut requires storage present + `starve_ticks == 0`
 
 ### Settlements
-- Created when structures appear; linked via `struct_to_settlement`
-- Stocks: food/wood/stone
-- Population consumes food per tick
-- Starvation can reduce population to zero
-- Early “starter food” seeding exists to prevent immediate collapse
+- Created when first structure is linked
+- Stocks: food / wood / stone
+- Agents auto-deposit when within distance 2 of settlement anchor
+- Buildings can be funded from agent inventory, tile, or settlement stock
 
-### Economy-lite
-- Agents auto-deposit inventory into settlement stock when standing on a settlement-linked structure
-- Buildings can be funded from agent inventory, tile resources (storage), and settlement stock (when present)
+### Population rules (SETTLEMENT_RULES)
+```
+food_per_pop_per_tick   = 0.25
+farm_yield_per_tick     = 1.5
+growth_food_buffer      = 3
+surplus_ticks_for_growth = 5
+starve_ticks_for_loss    = 3
+max_pop_growth_per_tick  = 1
+starting_population      = 1
+```
 
-## Known issues (current)
-- Population tends to collapse after early hut growth
-- Starvation pressure is still high; needs tuning
-- Huts may increase population pressure without productivity benefit
-- Multiple settlements can form quickly (distance threshold / linkage logic)
+**Growth:** 5 consecutive ticks with food surplus ≥ need + buffer → +1 pop  
+**Starvation:** 3 consecutive ticks where post-harvest food < need → −1 pop  
+(Starvation uses **net deficit after farm yield**, not empty pantry before harvest.)
 
-## Current “working” milestone
-We restored full run loop with:
-- settlement creation
-- deposit events
-- building events (storage/hut)
-- non-zero scores
-- multiple settlements and structures appearing
+### Score (v0)
+```
+score = pop*10 + settlements*25 + structures*5 + food_deposited - starved_events*5
+```
 
-Example recent run stats:
-- score ~154
-- settlements ~5
-- storage built ~4, huts ~11
-- starvation events ~5, net pop negative
+### Reference run (seed 42, 300 ticks, post-balance)
+- Score ≈ 241
+- Huts / Storage / Farms ≈ 12 / 1 / 3
+- Net pop positive
+- Starvation present but non-catastrophic
 
-## Next tuning levers (no new systems yet)
-- Adjust `SETTLEMENT_RULES`:
-  - `food_per_pop_per_tick`
-  - `growth_food_buffer`
-  - `starting_population`
-- Policy tuning for UtilityAgent:
-  - stop overbuilding huts when food stock is low
-  - bias gather-food when settlement food below threshold
-- Add simple “build gate”:
-  - only allow hut build if settlement food_stock >= pop*(consumption)+buffer
+---
 
-## Next features (after stability)
-- Minimal replay viewer (CLI -> ASCII grid or simple renderer)
-- Role hints (gatherer/builder) as soft biases
-- Memory v0 (JSONL lessons per agent) AFTER stability
-EOF
+## Architecture (post-refactor)
 
+```
+sim/
+  core/
+    simloop.py          # tick loop (slimmed)
+    build_governors.py  # resolve_building, can_build_hut
+    rng.py
+  world/
+    settlements.py      # SettlementManager (create, deposit, tick, link)
+    state.py / map.py / config.py
+  agents/
+    types.py            # Observation (includes settlements)
+    utility_agent.py
+  log/
+  train/
+tools/
+  view_run.py           # filtered economy / build / pop viewer
+PATCH_LEDGER.md         # patch history for this cleanup
+```
 
-.............. — you’re describing an agent-based civilization simulator that’s built first as a learning laboratory, and only later gets a “god-view” visualizer so you (and humans) can watch the ants build empires.
-Below is a master template README you can drop into a repo and build from. It’s opinionated, practical, and aimed at 4 AIs learning behaviors (economy, planning, cooperation, conflict, governance) inside a persistent world.
-MASTER TEMPLATE README — “CIVSIM LAB”
-Agent-based world simulator for 4 AI agents to progress, learn skills, build villages → cities, develop tech ages, and evolve an economy. Human-facing UI is a spectator “god view”, not a game.
-0) Design goals
-Primary
-Train and observe emergent AI behavior under constraints (scarcity, risk, partial info).
-Support long-horizon planning (days → decades → ages).
-Generate high-quality logs for analysis and replay.
-Secondary
-“God view” visualization (spectator) for humans: watch, time-lapse, inspect agents.
-Non-goals (early)
-No handcrafted storylines, no scripted quests, no “player fun loop”.
-No PvP twitch mechanics, no micro-management UI.
-1) Core pillars
-Lawful simulation
-Same physics/econ rules every run. Random seeds only change initial conditions.
-Partial observability
-Agents don’t get the full map state. They must explore and infer.
-Scarcity + tradeoffs
-Time, labor, food, materials, safety, social trust. Everything costs something.
-Emergence over scripting
-Systems create problems; agents invent solutions.
-Instrumented world
-Every action produces events + metrics. Replays are first-class.
-2) High-level loop
-Simulation proceeds in ticks.
-Per tick:
-Environment updates (weather, crops growth, decay, NPC faction moves)
-Each agent receives an observation (limited, noisy)
-Each agent chooses actions (possibly invalid)
-Resolver applies actions (costs, conflicts, movement, crafting)
-World state updates (economy, population, health, buildings)
-Log everything (events + snapshots)
-Optionally render (headless early; later god-view)
-3) World model
-3.1 Map
-Tile/grid or navmesh (start grid for simplicity)
-Biomes: plains, forest, mountain, river, coast, desert
-Resources distributed with regeneration rules:
-renewable: wood, animals, fish
-semi-renewable: soil fertility
-non-renewable: ore, stone, rare metals
-3.2 Time and ages
-Use two time scales:
-tick time: minute/hour equivalent
-season/year time: drives farming, winter, disease, trade cycles
-Ages are unlocked by tech prerequisites, not scripted:
-Stone → Bronze → Iron → Medieval-ish → Early Industry (or whatever you choose)
-4) Agents (your 4 AIs)
-Each agent is a “civilization brain” controlling a group, not a single person (you can scale down later).
-4.1 Agent state
-Attributes: risk tolerance, cooperation tendency, planning horizon, curiosity, aggression
-Memory: discovered tiles, known prices, known treaties, past conflicts
-Resources: food, materials, tools, population, morale
-Policy: decision-making model (RL, planning, LLM tool use, etc.)
-Meta-learning: optional “rules to modify rules” (policy improvement)
-4.2 Actions (minimum set)
-Explore(tile)
-Gather(resource)
-Craft(item)
-Build(structure)
-AssignLabor(role, count)
-Trade(offer, request, partner)
-Diplomacy(propose treaty / break treaty / threaten)
-Research(tech)
-Tax/Redistribute(policy)
-Defend/Attack(target) (optional; keep for later)
-4.3 Observation (partial info)
-Each tick, agent gets:
-Local map in radius R (fog-of-war)
-Own resources + population stats
-Nearby settlements known (not all)
-Market prices they’ve observed
-Diplomatic messages received
-Recent events (attacks, famine, disease)
-5) Economy and production (simple first, deep later)
-5.1 Goods
-Start with a clean production graph:
-Food (berries/fish/grain)
-Wood
-Stone
-Ore
-Tools
-Housing
-Luxuries (optional)
-5.2 Production
-Labor converts inputs → outputs with efficiencies
-Tools increase efficiency (classic old-school loop)
-Transport costs matter (distance adds friction)
-5.3 Market
-Two options (start easy):
-Local markets per settlement (prices drift by scarcity + trade)
-Global market (simpler but less realistic)
-Let agents learn:
-arbitrage
-hoarding vs liquidity
-long-term investment (tools/infrastructure)
-6) Settlement growth: village → town → city
-6.1 Buildings
-Hut/House
-Farm
-Storage
-Workshop
-Mine
-Market
-Road (increases movement speed)
-Wall/Guard post (later)
-6.2 Growth constraints
-Population grows if:
-Food surplus
-Housing available
-Morale/health stable
-Population shrinks if:
-starvation, disease, war, cold exposure
-7) “God view” spectator UI (later, but plan now)
-Design the sim to be headless and render-optional.
-UI goals
-Time controls: pause, 1x, 5x, 20x, timelapse
-Layers: terrain, resources, ownership, trade routes, happiness, tech
-Click agent → see:
-current goals
-internal state (allowed subset)
-memory map (what it knows)
-recent decisions + rationale (if available)
-Replay viewer: jump to tick, inspect events
-Important: UI should never be required for the sim to run.
-8) Data + logging (this is the secret sauce)
-If you want to “learn from them,” logging is everything.
-8.1 Event log (append-only)
-Store every meaningful event:
-action_attempted
-action_resolved
-trade_made
-structure_built
-tech_unlocked
-treaty_signed/broken
-famine_started/ended
-conflict_started/ended
-8.2 Snapshots
-Every N ticks store:
-full world state summary
-per-agent summary
-market state
-8.3 Replays
-A replay is:
-seed
-initial config
-event log
-deterministic sim version
-If you do this right, you can re-render old worlds later.
-9) Reward / learning signals (optional but recommended)
-Don’t overfit the agents to dumb scores. Use multi-objective signals.
-Possible metrics:
-survival years
-population health
-tech progress rate
-trade volume efficiency
-stability (low rebellion, low famine)
-diplomacy reputation (kept promises)
-Also track “interestingness” for you:
-novelty of strategies
-diversity of policies
-emergent cooperation/war cycles
-10) Demonstration milestones (build order)
-Here’s the build path that won’t collapse under ambition:
-Milestone A — “Ants in a box”
-Grid map + fog-of-war
-Gather + move + build hut + food decay
-4 agents run headless
-Event logging + deterministic seed replay
-Milestone B — “Villages”
-Farms + seasons
-Population growth
-Craft tools improves efficiency
-Local markets with price drift
-Milestone C — “Towns & trade”
-Trade routes (distance cost)
-Specialization (mine town, farm town)
-Diplomacy messaging API
-Milestone D — “Ages”
-Tech tree
-Buildings unlock by tech
-More goods + deeper production chains
-Milestone E — “God view”
-Minimal renderer (top-down)
-Timeline scrubber + inspector panel
-Replay playback
-11) Repo template structure
-Use something like:
-/sim
-/core (tick loop, determinism, RNG, scheduler)
-/world (map, resources, buildings, rules)
-/economy (goods, production, markets)
-/agents
-agent_interface
-baseline_agents (random, greedy, planner)
-/events (event schema, logger, replay)
-/metrics (KPIs, charts exports)
-/ui (later)
-renderer
-replay_viewer
-/configs
-world_small.yaml
-world_medium.yaml
-tech_tree.yaml
-/docs
-DESIGN.md
-EVENT_SCHEMA.md
-API.md
-/runs (output logs, replays)
-12) Agent API (clean contract)
-Define a strict interface so you can swap brains:
-Input: Observation
-local tiles
-visible entities
-own stats
-message inbox
-known prices (optional)
-Output: Action[]
-structured actions
-bounded per tick (e.g., max 5)
-Simulator guarantees:
-deterministic resolution given seed + actions
-invalid actions return errors (logged)
-13) Baseline agents you should ship day 1
-These help you debug and benchmark:
-Random walker
-Greedy gatherer (food-first)
-Builder (prioritizes housing/storage)
-Trader (seeks price differences)
-Pacifist diplomat vs aggressive raider (later)
-If your learned AIs can’t beat these, you know you’ve got a systems or reward problem.
-14) Launch checklist (your “game launch” but for sims)
-Alpha (you only)
-deterministic runs
-event logs validated
-1000-tick stable no crashes
-replay reproduces same results
-Beta (watchable)
-god view basic
-performance: 10k+ ticks fast-forward
-inspector tools
-Public demo
-“seed of the day”
-timelapse exports
-curated scenarios (drought, resource-rich, hostile neighbors)
-15) A sane first scenario
-Start with:
-small map
-4 agents spawned far apart
-mild climate
-enough food sources to survive
-scarce ore (forces trade/exploration)
-no combat initially (combat later)
-You want learning, not immediate extinction.
+---
 
+## Known limitations (Era 1)
 
-Good. We won’t rewrite the whole thing.
-We’ll update reality, tighten the checklist, and reflect what you’ve actually proven (5k tick stability, farm system rules, etc.).
-Below is a clean replacement block for the section you pasted.
-It removes outdated uncertainty and reflects current stability.
-AI-world
-Agent-Based Civilization Simulator Lab
-v0 — Current State (Reality-Checked)
-Core Simulation ✅
-[x] Deterministic tick-based simulation
-[x] Seeded, replayable runs
-[x] Discrete time (ticks)
-[x] Event logging (events.jsonl)
-[x] Periodic snapshots (snapshots.jsonl)
-[x] Final run summary (summary.json)
-[x] Metrics aggregation
-[x] Simple global score function
-[x] 100–5000 tick stability confirmed across multiple seeds
-Agents ✅
-[x] Grid movement
-[x] Resource gathering (food / wood / stone)
-[x] Inventory system
-[x] Building actions (hut / storage / farm)
-[x] Baseline agent policy (priority-based, non-random)
-[x] Settlement-aware behavior (food delivery bias)
-[x] Infrastructure ordering rules (storage before huts)
-Settlements (CORE SYSTEM STABLE) ✅
-[x] Settlement creation
-[x] Spatial settlement anchors
-[x] Population per settlement
-[x] Food stockpiles
-[x] Wood & stone stockpiles
-[x] Automatic agent deposits
-[x] Food consumption per tick
-[x] Growth rule (3-tick surplus requirement)
-[x] Starvation rule (3-tick deficit collapse)
-[x] Settlement-linked structures
-[x] Settlement-funded construction
-[x] Settlement → structure ownership mapping
-Single-settlement survival loop is stable under deterministic replay.
-Economy (Lite but Functional) ✅
-[x] Shared settlement resource pools
-[x] Resource inflow/outflow tracking
-[x] Farm production (1.0 yield per tick per farm)
-[x] Deposit & consumption events logged
-[x] Build funding events logged
-[x] Metrics visibility for tuning
-Analysis & Debugging ✅
-[x] Human-readable JSON outputs
-[x] Grep-friendly logs
-[x] Deterministic reproduction of runs
-[x] Multi-seed validation (5k tick test batch)
-[x] Population, starvation, and growth metrics confirmed stable
-Known Limitations (Intentional for v0) ⚠️
-No long-term planning policies
-No explicit agent roles (farmer / builder / hauler yet)
-No trade or redistribution between settlements
-No spoilage, decay, or transport cost
-No terrain cost modifiers
-No visualisation layer (CLI only)
-These are scope boundaries, not defects.
-v0.1 Next Targets (Minimal, High Impact)
-Multi-settlement stability testing
-Settlement build gating (prevent overpopulation via huts)
-Role bias per settlement (soft specialization)
-Food buffer tuning for long-horizon equilibrium
-Courier redistribution (proto-economy)
-Minimal grid replay renderer
-Project Scope
-AI-world is an agent-based civilisation simulation lab focused on:
-Emergent behavior
-Resource-constrained growth
-Economic feedback loops
-Deterministic experimentation
-Policy evolution under scarcity
-This is not a game yet.
-It is the simulation engine beneath one.
-Dev Rules (Locked)
-Determinism always preserved
-Logs > visuals > polish
-One major axis of change at a time
-No system layering before stability
-🟢 Status:
-Single-settlement economy stable.
-Entering multi-settlement expansion phase.
-Now — straight answer:
-Do not touch DESIGN.md beyond adding that internal header note.
-README = contract with reality.
-DESIGN.md = thinking sandbox.
-You’re doing this correctly.
-Next move is yours.
-.................
+- Single settlement is the common case; multi-settlement under-tested
+- No roles / specialisation
+- No inter-settlement trade or couriers
+- No tech / ages yet
+- Hard food/haul guards still exist in simloop as safety net
+- No god-view renderer (CLI + JSONL only)
 
-We don’t trim it.
-We don’t hide rough edges.
-We keep the “Known Rough Edges” section.
+---
 
-At the top of DESIGN.md, add:
+## Roadmap (after Era 1 lock)
 
-```markdown
-# AI-world Design Notes (Internal)
+### Near
+- Multi-seed validation (several seeds × 500–1000 ticks)
+- Soften or remove remaining hard guards (P2.2)
+- Minimal ASCII / CLI replay viewer improvements
 
-This document describes current mechanics, limitations,
-and forward roadmap. It may contain unstable or experimental
-design details not reflected in the public README.
+### Era 2 direction (not started)
+- Tech / ages progression
+- Additional buildings (workshop, mine, …)
+- Deeper production chains
+- Soft agent roles
+- Later: physics experiments, monuments (pyramids etc.) as long-horizon goals
+
+---
+
+## Dev rules
+
+1. Determinism is sacred
+2. One major axis of change at a time
+3. Logs > visuals > polish
+4. Prefer extraction + cleanup before new features
+5. Small patches → approve → push → update ledger
