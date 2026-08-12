@@ -31,9 +31,9 @@ def main():
 
     results = []
     print()
-    print("=" * 96)
+    print("=" * 104)
     print(f"  AI-WORLD MULTI-SEED VALIDATION (Era 4)  |  ticks={args.ticks}")
-    print("=" * 96)
+    print("=" * 104)
     print()
 
     for seed in args.seeds:
@@ -60,33 +60,33 @@ def main():
             "net_pop": m.get("population_net_change", 0),
             "starved": m.get("population_starved_events", 0),
             "max_era": max_era,
-            "age_ups": m.get("age_up_events", 0),
             "age_up4": m.get("age_up4_events", 0),
             "academy": m.get("build_academy", 0),
             "walls": m.get("build_walls", 0),
             "irrigation": m.get("build_irrigation", 0),
+            "library": m.get("build_library", 0),
             "subjects": m.get("subject_unlock_events", 0),
             "knowledge": round(total_knowledge, 1),
             "subject_list": sorted(all_subjects),
         })
         print(f"  done → score={summary.get('score')} era={max_era} "
               f"acad={m.get('build_academy',0)} wall={m.get('build_walls',0)} "
-              f"irrig={m.get('build_irrigation',0)} rid={run_id}")
+              f"irrig={m.get('build_irrigation',0)} lib={m.get('build_library',0)} rid={run_id}")
         print()
 
     print()
-    print("=" * 96)
+    print("=" * 104)
     print("  RESULTS")
-    print("=" * 96)
+    print("=" * 104)
     print(f"{'Seed':>6}  {'Score':>6}  {'NetPop':>6}  {'Starve':>6}  "
-          f"{'Era':>3}  {'A4':>3}  {'Acad':>4}  {'Wall':>4}  {'Irrig':>5}  "
+          f"{'Era':>3}  {'A4':>3}  {'Acad':>4}  {'Wall':>4}  {'Irrig':>5}  {'Lib':>3}  "
           f"{'Subj':>4}  {'Know':>5}  Run ID")
-    print("-" * 96)
+    print("-" * 104)
     for r in results:
         print(f"{r['seed']:>6}  {r['score']:>6}  {r['net_pop']:>6}  {r['starved']:>6}  "
               f"{r['max_era']:>3}  {r['age_up4']:>3}  {r['academy']:>4}  {r['walls']:>4}  "
-              f"{r['irrigation']:>5}  {r['subjects']:>4}  {r['knowledge']:>5}  {r['run_id']}")
-    print("-" * 96)
+              f"{r['irrigation']:>5}  {r['library']:>3}  {r['subjects']:>4}  {r['knowledge']:>5}  {r['run_id']}")
+    print("-" * 104)
     print()
 
     for r in results:

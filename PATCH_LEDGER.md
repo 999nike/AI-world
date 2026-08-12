@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E4.0–E4.2 live + god-view animation  
+**Status:** Era 4 LOCKED (E4.0–E4.2) + god-view animation  
 **Last updated:** 2026-08-12
 
 ---
@@ -9,13 +9,13 @@
 
 ```
 Era 1–3 complete
-E4.0 age-up (Inquiry)
+E4.0 Inquiry age-up
 E4.1 Irrigation (agriculture)
-E4.2 Library (inquiry | +0.2 knowledge/tick | 3w3s)
+E4.2 Library (inquiry) — confirmed on seed 100 (L on map, k boost)
 
 God-view --play with event callouts
 
-Next: validate Library rate | more E4 | richer visuals
+NEXT: E4.3 craft expansion (Foundry?) | E5 age-up design | richer visuals
 ```
 
 ---
@@ -23,7 +23,7 @@ Next: validate Library rate | more E4 | richer visuals
 | System | Status |
 |--------|--------|
 | Era 1–3 | **Live** |
-| E4.0–E4.2 | **Live** |
+| E4.0–E4.2 | **LOCKED** |
 | God-view --play | **Live** |
 
 ---
