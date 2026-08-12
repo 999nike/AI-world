@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 in progress (stages 0–2 live)  
+**Status:** Era 2 in progress (stages 0–3 live)  
 **Last updated:** 2026-08-12
 
 ---
@@ -21,7 +21,7 @@
 | 0 | Granary | E2.0 | **Live** | +0.5 food/tick, softer starve; gate: storage+farm |
 | 1 | Mine | E2.1 | **Live** | +0.75 stone/tick; gate: storage+farm |
 | 2 | Roads | E2.2 | **Live** | Deposit range 2→3; gate: mine OR 4+ structures |
-| 3 | Workshop | — | **Next** | Tools / production boost |
+| 3 | Workshop | E2.3 | **Live** | Cost 4w2s; gate mine+(granary|road) max1; tools +0.4/tick; farm/mine bonus; gather +1 (tools consume) |
 
 ### Seed 42 @ 500 ticks (post E2.2)
 - Score ~1012
@@ -41,13 +41,14 @@
 | E2.0 | Granary |
 | E2.1 | Mine |
 | E2.2 | Roads |
+| E2.3 | Workshop |
 
 ---
 
 ## Next session
 
-1. Stage 3: **Workshop** (wood+stone → tools, boost gather/build)
-2. Optional: re-run stress test under Era 2 buildings
-3. Later: military light / age transition gates
+1. Optional: re-run stress test under full Era 2 (incl. Workshop)
+2. Later: military light / age transition gates
+3. Validate multi-seed with Workshop present
 
 Determinism still sacred. No learnable agents until world stays stable.

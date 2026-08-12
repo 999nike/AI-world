@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-12  
 **Era 1:** VALIDATED (32/32 stress pass)  
-**Era 2:** Stages 0–2 live (Granary, Mine, Roads). Workshop next.
+**Era 2:** Stages 0–3 live (Granary, Mine, Roads, Workshop).
 
 ---
 
@@ -35,7 +35,7 @@ Same seed + same code → same outcome. Logs are source of truth.
 | 0 | **granary** | 3w 1s | storage + farm, max 1 | +0.5 food/tick; starve ticks 4 |
 | 1 | **mine** | 2w 3s | storage + farm, max 1 | +0.75 stone/tick |
 | 2 | **road** | 1w | mine OR 4+ structs | deposit range → 3 |
-| 3 | **workshop** | TBD | next | tools / production |
+| 3 | **workshop** | 4w 2s | mine + (granary OR road), max 1 | tools_stock +0.4/tick; farm +0.25/farm; mine +0.25; gather +1 extra when tools≥1 (consume 0.5) |
 
 Human roles (Governor, Scenario, Drop-in) and tools (view_run, god_view, multi_seed, stress_test) remain as implemented.
 
