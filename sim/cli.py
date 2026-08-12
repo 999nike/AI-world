@@ -13,6 +13,10 @@ def main():
                       help="Governor command, e.g. 'focus food' or 'build hut'")
     runp.add_argument("--scenario", type=str, default=None,
                       help="Scenario commands, e.g. 'seed 42; start_food 6; event drought 100'")
+    runp.add_argument("--control", type=str, default=None,
+                      help="Agent ID to control, e.g. A0")
+    runp.add_argument("--control-policy", type=str, default="idle",
+                      help="Policy for controlled agent: gather_food, gather_wood, gather_stone, build_farm, build_hut, build_storage, idle")
 
     args = p.parse_args()
 
@@ -23,4 +27,6 @@ def main():
             snapshot_every=args.snapshot_every,
             governor_command=args.governor,
             scenario_commands=args.scenario,
+            control_agent_id=args.control,
+            control_policy=args.control_policy,
         )

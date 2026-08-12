@@ -15,6 +15,7 @@ from sim.core.governor import Governor
 from sim.core.scenario import Scenario
 from sim.agents.types import Observation, Action
 from sim.agents.baseline_random import RandomAgent
+from sim.agents.controlled_agent import ControlledAgent
 
 
 BUILD_COSTS = {
@@ -33,6 +34,8 @@ def run_sim(
     return_score: bool = False,
     governor_command: Optional[str] = None,
     scenario_commands: Optional[str] = None,
+    control_agent_id: Optional[str] = None,
+    control_policy: str = "idle",
 ):
     # P7.0 Scenario first so it can override seed/ticks
     scenario = Scenario()
@@ -86,6 +89,7 @@ def run_sim(
             "state": scenario.to_dict(),
         })
 
+    # Build brains
     if agent_kind == "utility":
         from sim.agents.utility_agent import UtilityAgent
         w = policy_weights or {}
@@ -96,6 +100,24 @@ def run_sim(
         }
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
+
+    # P8.0 Drop-in control
+    if control_agent_id:
+        if control_agent_id in brains:
+            brains[control_agent_id] = ControlledAgent(control_agent_id, policy=control_policy)
+            logger.event({
+                "type": "agent_controlled",
+                "tick": 0,
+                "agent_id": control_agent_id,
+                "policy": control_policy,
+            })
+        else:
+            logger.event({
+                "type": "agent_control_failed",
+                "tick": 0,
+                "agent_id": control_agent_id,
+                "note": "agent_id not found",
+            })
 
     metrics = {
         "settlements_created": 0,
@@ -132,6 +154,8 @@ def run_sim(
                 "governor": gov.to_dict(),
                 "governor_command": governor_command,
                 "scenario": scenario.to_dict(),
+                "control_agent_id": control_agent_id,
+                "control_policy": control_policy,
             },
             indent=2,
         ),
@@ -150,7 +174,6 @@ def run_sim(
                 drought_active = True
                 logger.event({"type": "scenario_event", "tick": t, "kind": "drought", "note": "food regrowth reduced"})
             elif ev.kind == "boom":
-                # Spike resources on the map
                 for _ in range(40):
                     x = rng.randint(0, world.width - 1)
                     y = rng.randint(0, world.height - 1)
@@ -441,6 +464,8 @@ def run_sim(
         "score": score,
         "governor": gov.to_dict(),
         "scenario": scenario.to_dict(),
+        "control_agent_id": control_agent_id,
+        "control_policy": control_policy,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

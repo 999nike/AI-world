@@ -25,6 +25,7 @@
 | P5.0 | Minimal god-view tool | Done |
 | P6.0 | Minimal Governor support | Done |
 | P7.0 | Minimal Scenario designer | Done |
+| P8.0 | Minimal Drop-in agent | Done |
 
 ---
 
@@ -39,5 +40,4 @@
 ## Next (post lock)
 
 - Multi-seed validation (tool ready — run when ready to view)
-- Drop-in agent (later)
 - Only then: Era 2 systems
