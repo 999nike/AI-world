@@ -28,6 +28,7 @@
 | P8.0 | Minimal Drop-in agent | Done |
 | P9.0 | Configurable agent count | Done |
 | P10.0 | CLI help cleanup | Done |
+| P11.0 | README rewrite + god_view header polish | Done |
 
 ---
 

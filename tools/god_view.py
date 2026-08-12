@@ -7,8 +7,8 @@ of the world at any tick. Pure inspection tool — does not touch the sim.
 Usage:
   python tools/god_view.py --rid latest
   python tools/god_view.py --rid 20260812_123456_abcdef --tick 120
-  python tools/god_view.py --rid latest --list          # list available snapshot ticks
-  python tools/god_view.py --rid latest --step          # interactive step through
+  python tools/god_view.py --rid latest --list
+  python tools/god_view.py --rid latest --step
 """
 
 from __future__ import annotations
@@ -64,13 +64,11 @@ def build_grid(snap: dict) -> list[list[str]]:
     height = snap.get("height", 32)
     grid = [[ICON["empty"] for _ in range(width)] for _ in range(height)]
 
-    # Settlements first (under everything)
     for s in snap.get("settlements", []):
         x, y = int(s.get("x", 0)), int(s.get("y", 0))
         if 0 <= x < width and 0 <= y < height:
             grid[y][x] = ICON["settlement"]
 
-    # Structures
     for st in snap.get("structures", []):
         x, y = int(st.get("x", 0)), int(st.get("y", 0))
         typ = st.get("type", "")
@@ -82,7 +80,6 @@ def build_grid(snap: dict) -> list[list[str]]:
             elif typ == "farm":
                 grid[y][x] = ICON["farm"]
 
-    # Agents on top
     for a in snap.get("agents", []):
         x, y = int(a.get("x", 0)), int(a.get("y", 0))
         if 0 <= x < width and 0 <= y < height:
@@ -91,7 +88,20 @@ def build_grid(snap: dict) -> list[list[str]]:
     return grid
 
 
-def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None):
+def settlement_summary(snap: dict) -> str:
+    settlements = snap.get("settlements", [])
+    if not settlements:
+        return "no settlements"
+    parts = []
+    for s in settlements:
+        sid = s.get("id", "?")
+        pop = s.get("population", "?")
+        food = s.get("food_stock", "?")
+        parts.append(f"{sid}:pop={pop},food={food}")
+    return " | ".join(parts)
+
+
+def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, snap: dict | None = None):
     height = len(grid)
     width = len(grid[0]) if height else 0
 
@@ -104,9 +114,10 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None):
               f"Huts:{m.get('build_hut', 0)}  Stor:{m.get('build_storage', 0)}  "
               f"Farms:{m.get('build_farm', 0)}  "
               f"NetPop:{m.get('population_net_change', 0)}")
+    if snap:
+        print(f"  {settlement_summary(snap)}")
     print("=" * (width + 4))
 
-    # Column numbers (every 5)
     header = "  "
     for x in range(width):
         header += str(x % 10)
@@ -150,7 +161,6 @@ def main():
 
     summary = load_summary(run_dir)
 
-    # Build tick → snap map
     by_tick = {}
     for s in snaps:
         t = s.get("tick")
@@ -168,7 +178,7 @@ def main():
         idx = 0
         while True:
             t = ticks[idx]
-            print_grid(build_grid(by_tick[t]), t, summary)
+            print_grid(build_grid(by_tick[t]), t, summary, by_tick[t])
             print(f"[{idx+1}/{len(ticks)}]  tick {t}")
             cmd = input("  [n]ext  [p]rev  [q]uit  or tick number > ").strip().lower()
             if cmd in ("q", "quit", "exit"):
@@ -180,26 +190,22 @@ def main():
             else:
                 try:
                     target = int(cmd)
-                    # find closest
                     closest = min(ticks, key=lambda x: abs(x - target))
                     idx = ticks.index(closest)
                 except ValueError:
                     print("  unknown command")
         return
 
-    # Single tick mode
     if args.tick is not None:
         if args.tick in by_tick:
-            print_grid(build_grid(by_tick[args.tick]), args.tick, summary)
+            print_grid(build_grid(by_tick[args.tick]), args.tick, summary, by_tick[args.tick])
         else:
-            # nearest
             closest = min(ticks, key=lambda x: abs(x - args.tick))
             print(f"Tick {args.tick} not found. Showing nearest: {closest}")
-            print_grid(build_grid(by_tick[closest]), closest, summary)
+            print_grid(build_grid(by_tick[closest]), closest, summary, by_tick[closest])
     else:
-        # default: last snapshot
         last = ticks[-1]
-        print_grid(build_grid(by_tick[last]), last, summary)
+        print_grid(build_grid(by_tick[last]), last, summary, by_tick[last])
 
 
 if __name__ == "__main__":

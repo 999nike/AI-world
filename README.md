@@ -1,99 +1,90 @@
 # AI-world
-### Deterministic Agent Civilization Simulator
 
-AI-world is a deterministic, tick-based multi-agent civilization simulator.
+Deterministic civilisation simulation lab.
 
-It is built as a **systems laboratory first**, and a game second.
+Four (or more) agents survive, build, and manage settlements under scarcity.
+Everything is seed-controlled and fully logged. Humans can steer, design scenarios, or take control of an agent. The long-term goal includes using this as a training environment for learnable agents.
 
-Four autonomous agents operate under shared physical and economic constraints (food, wood, stone), attempting to survive, expand settlements, and manage long-term resource stability in a persistent world.
-
-There is no player control loop.  
-This project studies emergence — not scripting.
+**Era 1 status: LOCKED** (2026-08-12)
 
 ---
 
-## 🧠 Current State — v0 (Feb 2026)
-
-### Engine
-- Deterministic tick-based simulation core
-- Seed-controlled reproducibility
-- Grid world with deterministic resource regrowth
-- Headless CLI execution
-- JSONL event logging (`events.jsonl`)
-- Snapshot logging (`snapshots.jsonl`)
-- Structured run summary (`summary.json`)
-- Verified stability across 100–5000 tick multi-seed runs
-
-### Agents
-- Move / gather / build (hut, storage, farm)
-- Inventory system (food / wood / stone)
-- Utility-based baseline decision policy
-- Settlement-aware deposit behavior
-- Guarded build logic (anti-spam)
-- Infrastructure ordering (storage before expansion)
-
-### Settlements
-- Emergent creation from structures
-- Spatial anchor linkage
-- Population tracked per settlement
-- Shared resource stockpiles
-- Automatic agent deposits
-- Construction funded from:
-  - Agent inventory  
-  - Tile storage  
-  - Settlement stock  
-
-#### Demographic Model
-- Food consumed per population per tick
-- **3-tick starvation rule** → population decline under sustained deficit
-- **3-tick surplus rule** → population growth under sustained surplus
-- Single-settlement survival loop confirmed stable
-
-### Economy (v0 – Lite but Stable)
-- Farms yield 1.0 food per tick
-- Shared settlement resource pooling
-- Logged inflow / outflow tracking
-- Growth and starvation metrics exposed
-- Multi-seed stability validation completed
-
-### Observability & Metrics
-- Settlements created
-- Structures built
-- Food deposited
-- Population growth events
-- Starvation events
-- Net population change
-- Aggregate score
-
-Determinism + logging are first-class citizens.
-
----
-
-## 🎯 Project Intent
-
-- Deterministic civilization simulation
-- Research systems lab
-- Controlled environment for emergent multi-agent behavior
-- Foundation for long-horizon policy experimentation
-
-This is not a game yet.  
-It is the simulation engine beneath one.
-
----
-
-## 🚫 Out of Scope (For Now)
-
-- No player-controlled RTS loop
-- No narrative scripting
-- No reinforcement learning framework
-- No visual renderer (CLI only)
-- No tech-tree progression yet
-- No inter-settlement trade
-
----
-
-## ▶ Run
+## Quick start
 
 ```bash
-python -m compileall sim
+# Basic run
 python -m sim run --seed 42 --ticks 300
+
+# More agents
+python -m sim run --agents 6 --seed 42
+
+# Soft human guidance
+python -m sim run --governor "focus food"
+
+# Scenario + event
+python -m sim run --scenario "seed 42; start_food 6; event drought 120"
+
+# Take control of one agent
+python -m sim run --control A0 --control-policy gather_food
+```
+
+On Windows if `python` is not on PATH:
+```bash
+%LocalAppData%\Programs\Python\Python312\python.exe -m sim run --seed 42 --ticks 300
+```
+
+---
+
+## Tools
+
+```bash
+# Economy / build / population log
+python tools/view_run.py --rid latest --log economy
+
+# ASCII god-view (step through ticks)
+python tools/god_view.py --rid latest --step
+
+# Multi-seed comparison table
+python tools/multi_seed_validate.py
+```
+
+---
+
+## Human roles (minimal versions)
+
+| Role | Flag | Purpose |
+|------|------|--------|
+| **Governor** | `--governor "focus food"` | Soft bias on all agents |
+| **Scenario** | `--scenario "..."` | Starting conditions + timed events |
+| **Drop-in** | `--control A0 --control-policy gather_food` | Direct control of one agent |
+
+Governor commands: `focus food|build|expand`, `build farm|hut|storage|none`, `clear`  
+Scenario commands: `seed N`, `ticks N`, `agents N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`  
+Control policies: `gather_food`, `gather_wood`, `gather_stone`, `build_farm`, `build_hut`, `build_storage`, `idle`
+
+---
+
+## Current systems (Era 1)
+
+- 32×32 grid, food / wood / stone
+- Deterministic regrowth
+- Buildings: farm, storage, hut (with soft caps and gates)
+- Settlements with shared stock + population
+- Growth / starvation rules (net deficit after farm yield)
+- Score based on pop, settlements, structures, food deposited, starvation events
+- Full event + snapshot logging
+
+Reference (seed 42, 300 ticks, 4 agents): score ≈ 241
+
+---
+
+## Project direction
+
+1. Keep Era 1 stable
+2. Multi-seed validation
+3. Era 2 (tech, roads, light military) — only after validation
+4. Much later: learnable / thinking agents (research path)
+
+Determinism is sacred. Logs are the source of truth. Visuals come after systems.
+
+See `DESIGN.md` for full internal notes and `PATCH_LEDGER.md` for patch history.
