@@ -18,6 +18,8 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_barracks": 3.0,  # E2.4
     "w_build_market": 3.2,  # E3.1
     "w_build_temple": 3.0,  # E3.2
+    "w_build_academy": 2.8,  # E3.3
+    "w_build_walls": 2.6,  # E3.4
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -78,7 +80,8 @@ class UtilityAgent:
             if obs.tile.get(r, 0) > 0:
                 c.append(Action(type="gather", resource=r))
         if obs.structure is None:
-            for b in ("farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market", "temple"):
+            for b in ("farm", "storage", "hut", "granary", "mine", "road",
+                      "workshop", "barracks", "market", "temple", "academy", "walls"):
                 c.append(Action(type="build", building=b))
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -152,7 +155,6 @@ class UtilityAgent:
                 can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 3 else 0.2
                 return w["w_build_mine"] * can + 2.5 + inv_term - hunger * 0.3
             if b == "road":
-                # Prefer after mine or once settlement is established
                 if not has_storage or not has_farm:
                     return -2.0
                 if not has_mine and len(structures) < 4:
@@ -180,7 +182,6 @@ class UtilityAgent:
                 has_market = "market" in types
                 if not has_barracks or has_market:
                     return -3.0 if has_market else -1.5
-                # era gate enforced in can_build; soft prefer when stocked
                 can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 3 else 0.2
                 return w["w_build_market"] * can + 2.0 + inv_term - hunger * 0.2
             if b == "temple":
@@ -190,6 +191,20 @@ class UtilityAgent:
                     return -3.0 if has_temple else -1.5
                 can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 4 else 0.2
                 return w["w_build_temple"] * can + 1.9 + inv_term - hunger * 0.2
+            if b == "academy":
+                has_temple = "temple" in types
+                has_academy = "academy" in types
+                if not has_temple or has_academy:
+                    return -3.0 if has_academy else -1.5
+                can = 1.0 if inv.get("wood", 0) >= 5 and inv.get("stone", 0) >= 4 else 0.2
+                return w["w_build_academy"] * can + 1.7 + inv_term - hunger * 0.15
+            if b == "walls":
+                has_barracks = "barracks" in types
+                has_walls = "walls" in types
+                if not has_barracks or has_walls:
+                    return -3.0 if has_walls else -1.5
+                can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 3 else 0.2
+                return w["w_build_walls"] * can + 1.6 + inv_term - hunger * 0.15
             return -5.0
 
         if a.type == "move":
