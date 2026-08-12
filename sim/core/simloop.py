@@ -99,6 +99,7 @@ def run_sim(
         "soldier_defend_events": 0,
         "raid_events": 0,
         "raid_loot_total": 0,
+        "age_up_events": 0,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
