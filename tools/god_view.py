@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Minimal god-view for AI-world.
+"""God-view for AI-world (Era 2 aware).
 
-Reads snapshots.jsonl from a finished run and shows a simple ASCII grid
-of the world at any tick. Pure inspection tool — does not touch the sim.
+Reads snapshots.jsonl from a finished run and shows an ASCII grid
+plus settlement / combat summary. Pure inspection — does not touch the sim.
 
 Usage:
   python tools/god_view.py --rid latest
   python tools/god_view.py --rid 20260812_123456_abcdef --tick 120
   python tools/god_view.py --rid latest --list
   python tools/god_view.py --rid latest --step
+  python tools/god_view.py --rid latest --final
 """
 
 from __future__ import annotations
@@ -23,6 +24,11 @@ ICON = {
     "hut": "H",
     "storage": "S",
     "farm": "F",
+    "granary": "G",
+    "mine": "M",
+    "road": "=",
+    "workshop": "W",
+    "barracks": "B",
     "settlement": "@",
     "empty": ".",
 }
@@ -64,21 +70,19 @@ def build_grid(snap: dict) -> list[list[str]]:
     height = snap.get("height", 32)
     grid = [[ICON["empty"] for _ in range(width)] for _ in range(height)]
 
-    for s in snap.get("settlements", []):
-        x, y = int(s.get("x", 0)), int(s.get("y", 0))
-        if 0 <= x < width and 0 <= y < height:
-            grid[y][x] = ICON["settlement"]
-
+    # Structures first (so agents can overwrite)
     for st in snap.get("structures", []):
         x, y = int(st.get("x", 0)), int(st.get("y", 0))
         typ = st.get("type", "")
         if 0 <= x < width and 0 <= y < height:
-            if typ == "hut":
-                grid[y][x] = ICON["hut"]
-            elif typ == "storage":
-                grid[y][x] = ICON["storage"]
-            elif typ == "farm":
-                grid[y][x] = ICON["farm"]
+            grid[y][x] = ICON.get(typ, "?")
+
+    for s in snap.get("settlements", []):
+        x, y = int(s.get("x", 0)), int(s.get("y", 0))
+        if 0 <= x < width and 0 <= y < height:
+            # Only mark if tile still empty / not a key building
+            if grid[y][x] in (ICON["empty"], ICON["road"]):
+                grid[y][x] = ICON["settlement"]
 
     for a in snap.get("agents", []):
         x, y = int(a.get("x", 0)), int(a.get("y", 0))
@@ -96,9 +100,23 @@ def settlement_summary(snap: dict) -> str:
     for s in settlements:
         sid = s.get("id", "?")
         pop = s.get("population", "?")
-        food = s.get("food_stock", "?")
-        parts.append(f"{sid}:pop={pop},food={food}")
+        food = round(float(s.get("food_stock", 0)), 1)
+        wood = s.get("wood_stock", 0)
+        stone = s.get("stone_stock", 0)
+        tools = round(float(s.get("tools_stock", 0)), 1)
+        soldiers = round(float(s.get("soldiers", 0)), 1)
+        parts.append(
+            f"{sid}:pop={pop} food={food} w={wood} s={stone} tools={tools} sol={soldiers}"
+        )
     return " | ".join(parts)
+
+
+def structure_counts(snap: dict) -> str:
+    from collections import Counter
+    c = Counter(st.get("type") for st in snap.get("structures", []))
+    order = ["farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks"]
+    bits = [f"{t}:{c[t]}" for t in order if c.get(t)]
+    return "  ".join(bits) if bits else "none"
 
 
 def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, snap: dict | None = None):
@@ -106,17 +124,27 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
     width = len(grid[0]) if height else 0
 
     print()
-    print("=" * (width + 4))
+    print("=" * max(width + 4, 60))
     print(f"  GOD VIEW  |  tick {tick}")
     if summary:
         m = summary.get("metrics", {})
-        print(f"  Score: {summary.get('score')}  |  "
-              f"Huts:{m.get('build_hut', 0)}  Stor:{m.get('build_storage', 0)}  "
-              f"Farms:{m.get('build_farm', 0)}  "
-              f"NetPop:{m.get('population_net_change', 0)}")
+        print(
+            f"  Score:{summary.get('score')}  "
+            f"NetPop:{m.get('population_net_change', 0)}  "
+            f"Defend:{m.get('soldier_defend_events', 0)}  "
+            f"Raids:{m.get('raid_events', 0)}  "
+            f"Loot:{m.get('raid_loot_total', 0)}"
+        )
+        print(
+            f"  Builds  H:{m.get('build_hut', 0)} S:{m.get('build_storage', 0)} "
+            f"F:{m.get('build_farm', 0)} G:{m.get('build_granary', 0)} "
+            f"M:{m.get('build_mine', 0)} R:{m.get('build_road', 0)} "
+            f"W:{m.get('build_workshop', 0)} B:{m.get('build_barracks', 0)}"
+        )
     if snap:
+        print(f"  Structs  {structure_counts(snap)}")
         print(f"  {settlement_summary(snap)}")
-    print("=" * (width + 4))
+    print("=" * max(width + 4, 60))
 
     header = "  "
     for x in range(width):
@@ -128,16 +156,18 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
         print(line)
 
     print()
-    print("  Legend:  A=agent  H=hut  S=storage  F=farm  @=settlement  .=empty")
+    print("  Legend: A=agent  H=hut  S=storage  F=farm  G=granary  M=mine")
+    print("          =road  W=workshop  B=barracks  @=settlement  .=empty")
     print()
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world minimal god-view")
+    p = argparse.ArgumentParser(description="AI-world god-view (Era 2)")
     p.add_argument("--rid", default="latest", help="Run ID or 'latest'")
     p.add_argument("--tick", type=int, default=None, help="Show specific tick")
     p.add_argument("--list", action="store_true", help="List available snapshot ticks")
     p.add_argument("--step", action="store_true", help="Interactive step through snapshots")
+    p.add_argument("--final", action="store_true", help="Show final summary.json state (no grid)")
     p.add_argument("--runs", default="runs", help="Runs directory")
     args = p.parse_args()
 
@@ -155,11 +185,34 @@ def main():
         print(f"Run folder not found: {run_dir}")
         return
 
+    summary = load_summary(run_dir)
+
+    if args.final:
+        if not summary:
+            print("No summary.json")
+            return
+        print()
+        print("=" * 60)
+        print(f"  FINAL  |  {rid}")
+        print(f"  Score: {summary.get('score')}  Seed: {summary.get('seed')}  Ticks: {summary.get('ticks')}")
+        m = summary.get("metrics", {})
+        print(f"  Defend:{m.get('soldier_defend_events', 0)}  Raids:{m.get('raid_events', 0)}  "
+              f"Loot:{m.get('raid_loot_total', 0)}  Tools:{round(m.get('workshop_tools_total', 0),1)}  "
+              f"Soldiers:{round(m.get('barracks_soldiers_total', 0),1)}")
+        print(f"  Builds  H:{m.get('build_hut',0)} S:{m.get('build_storage',0)} F:{m.get('build_farm',0)} "
+              f"G:{m.get('build_granary',0)} M:{m.get('build_mine',0)} R:{m.get('build_road',0)} "
+              f"W:{m.get('build_workshop',0)} B:{m.get('build_barracks',0)}")
+        final = summary.get("final", {})
+        for s in final.get("settlements", []):
+            print(f"  {s.get('id')}: pop={s.get('population')} food={round(float(s.get('food_stock',0)),1)} "
+                  f"w={s.get('wood_stock')} s={s.get('stone_stock')} "
+                  f"tools={round(float(s.get('tools_stock',0)),1)} sol={round(float(s.get('soldiers',0)),1)}")
+        print("=" * 60)
+        return
+
     snaps = load_snapshots(run_dir)
     if not snaps:
         return
-
-    summary = load_summary(run_dir)
 
     by_tick = {}
     for s in snaps:
