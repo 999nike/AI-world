@@ -3,7 +3,7 @@
 **Last updated:** 2026-08-12  
 **Era 1:** LOCKED  
 **Era 2:** COMPLETE  
-**Era 3:** E3.0–E3.3 live (age-up, Market, Temple, Academy)
+**Era 3:** E3.0–E3.4 live (age-up, Market, Temple, Academy, Walls)
 
 ---
 
@@ -73,15 +73,23 @@ Granary, Mine, Road, Workshop, Barracks + light defense + raids.
 
 Subjects are stored on the settlement. Once unlocked they never reset. Academy is the single building that feeds the entire knowledge system.
 
+### E3.4 Walls
+| Cost | Gate | Max |
+|------|------|-----|
+| 2w 3s | era≥3 + barracks | 1 |
+
+**Effects:**
+- Soldier defend cost −0.25 (harder to lose population to starvation)
+- Raids against this settlement cost the attacker +1 soldier
+
 ---
 
 ## Future direction (post-E3)
 
-1. Walls (defensive structure)
-2. Polish + multi-seed validation
-3. Minimal god-view (log → grid scrub / simple animation)
-4. Era 4 (opened by Inquiry subject)
-5. Learnable / thinking agents only when world is deep enough
+1. Polish + multi-seed validation
+2. Minimal god-view (log → grid scrub / simple animation)
+3. Era 4 (opened by Inquiry subject)
+4. Learnable / thinking agents only when world is deep enough
 
 ---
 

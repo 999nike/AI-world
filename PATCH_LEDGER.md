@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E3.0–E3.3 fully live on main  
+**Status:** E3.0–E3.4 fully live on main  
 **Last updated:** 2026-08-12
 
 ---
@@ -9,15 +9,14 @@
 
 ```
 Era 1 LOCKED · Era 2 COMPLETE
-E3.0 age-up · E3.1 Market · E3.2 Temple · E3.3 Academy — all on main
+E3.0–E3.4 all live (age-up, Market, Temple, Academy, Walls)
 
-Academy: 5w4s | era≥3 + temple | max1
-  Knowledge +0.3/tick
-  Subjects: Agriculture(8), Craft(10), Organisation(12), Strategy(15), Inquiry(20)
+Walls: 2w3s | era≥3 + barracks | max1
+  defend cost -0.25 | raids vs this settlement +1 soldier cost
 
 Repo: https://github.com/999nike/AI-world
 
-Next: walls | polish | multi-seed validation
+Next: polish | multi-seed validation | god-view skeleton
 ```
 
 ---
@@ -29,6 +28,7 @@ Next: walls | polish | multi-seed validation
 | Market | E3.1 | **Live** |
 | Temple | E3.2 | **Live** |
 | Academy + Subjects | E3.3 | **Live** |
+| Walls | E3.4 | **Live** |
 
 ---
 
