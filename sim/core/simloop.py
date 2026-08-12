@@ -38,7 +38,6 @@ def run_sim(
     rng = RNG(seed)
     world = make_world(cfg, rng)
 
-    # --- brains ---
     if agent_kind == "utility":
         from sim.agents.utility_agent import UtilityAgent
         w = policy_weights or {}
@@ -46,7 +45,6 @@ def run_sim(
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    # --- Metrics counters ---
     metrics = {
         "settlements_created": 0,
         "food_deposited_total": 0,
@@ -65,7 +63,6 @@ def run_sim(
         "farm_food_total": 0,
     }
 
-    # --- Settlement system (extracted) ---
     sm = SettlementManager(metrics=metrics, logger=logger)
 
     (run_dir / "config.json").write_text(
@@ -89,7 +86,6 @@ def run_sim(
         world.tick = t
         logger.event({"type": "tick_started", "tick": t})
 
-        # deterministic regrowth
         if t % 5 == 0:
             for _ in range(10):
                 x = rng.randint(0, world.width - 1)
@@ -99,17 +95,13 @@ def run_sim(
                 tile.wood = min(tile.wood + 1, cfg.max_wood)
                 tile.stone = min(tile.stone + 1, cfg.max_stone)
 
-        # agent loop
         for a in world.agents:
             tile = world.tile_at(a.x, a.y)
             st = world.structure_at(a.x, a.y)
 
             nearest_sid = sm.nearest(a.x, a.y)
-
-            # auto-deposit when near settlement
             sm.try_deposit(a, tick=t)
 
-            # P2.1 – give agent settlement visibility
             nearest_data = sm.get(nearest_sid) if nearest_sid else None
 
             obs = Observation(
@@ -129,7 +121,6 @@ def run_sim(
 
             action = brains[a.agent_id].act(obs, rng)
 
-            ### GUARD: food / haul override (safety net – agent now has better info) ###
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
 
@@ -164,7 +155,6 @@ def run_sim(
                         action = Action(type="move", dx=dx, dy=dy)
             except Exception:
                 pass
-            ### END GUARD ###
 
             logger.event(
                 {
@@ -357,10 +347,8 @@ def run_sim(
                 }
             )
 
-        # settlement tick
         sm.tick(world, tick=t)
 
-        # snapshot
         if snapshot_every > 0 and (t % snapshot_every) == 0:
             snap = world.to_dict_summary()
             snap["settlements"] = sm.all()
@@ -388,7 +376,7 @@ def run_sim(
         + num_settlements * 25
         + num_structures * 5
         + metrics["food_deposited_total"]
-        - metrics["population_starved_events"] * 20
+        - metrics["population_starved_events"] * 5   # was 20 – softer
     )
 
     summary = {
