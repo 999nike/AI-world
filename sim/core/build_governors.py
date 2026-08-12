@@ -14,6 +14,7 @@ BUILD_ALIASES = {
     "path": "road", "track": "road",
     "shop": "workshop", "forge": "workshop", "toolshed": "workshop", "ws": "workshop",
     "barrack": "barracks", "military": "barracks", "fort": "barracks",
+    "trade": "market", "bazaar": "market", "shop_market": "market",
 }
 
 FARM_SOFT_CAP = 3
@@ -34,8 +35,9 @@ def _settlement_struct_counts(sid, sm, world):
     road = sm.count_structures_of_type(sid, "road", world)
     workshop = sm.count_structures_of_type(sid, "workshop", world)
     barracks = sm.count_structures_of_type(sid, "barracks", world)
-    total = farms + stor + gran + mine + road + workshop + barracks + sm.count_structures_of_type(sid, "hut", world)
-    return farms, stor, gran, mine, road, workshop, barracks, total
+    market = sm.count_structures_of_type(sid, "market", world)
+    total = farms + stor + gran + mine + road + workshop + barracks + market + sm.count_structures_of_type(sid, "hut", world)
+    return farms, stor, gran, mine, road, workshop, barracks, market, total
 
 
 def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
@@ -50,7 +52,7 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     if best_sid is None:
         return "farm", "bootstrap_force_farm"
 
-    farms, stor, gran, mine, road, workshop, barracks, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, total = _settlement_struct_counts(best_sid, sm, world)
 
     if farms == 0:
         return "farm", "redirected_to_farm" if b != "farm" else ""
@@ -99,6 +101,13 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
             return "hut", "barracks_capped_to_hut"
         if workshop < 1:
             return "workshop", "barracks_needs_workshop"
+
+    if b == "market":
+        if market >= 1:
+            return "hut", "market_capped_to_hut"
+        # Need era 3 — checked in can_build_market via settlement era
+        if barracks < 1:
+            return "barracks", "market_needs_barracks"
 
     return b, note
 
@@ -152,7 +161,7 @@ def can_build_road(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "road_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, total = _settlement_struct_counts(best_sid, sm, world)
     if mine < 1 and total < 4:
         return False, "road_needs_mine_or_growth"
     return True, ""
@@ -164,7 +173,7 @@ def can_build_workshop(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "workshop_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, total = _settlement_struct_counts(best_sid, sm, world)
     if mine < 1:
         return False, "workshop_needs_mine"
     if gran < 1 and road < 1:
@@ -180,9 +189,26 @@ def can_build_barracks(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return False, "barracks_needs_settlement"
-    farms, stor, gran, mine, road, workshop, barracks, total = _settlement_struct_counts(best_sid, sm, world)
+    farms, stor, gran, mine, road, workshop, barracks, market, total = _settlement_struct_counts(best_sid, sm, world)
     if workshop < 1:
         return False, "barracks_needs_workshop"
     if barracks >= 1:
         return False, "barracks_already_exists"
+    return True, ""
+
+
+def can_build_market(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "market_needs_settlement"
+    best_sid = sm.nearest(agent_x, agent_y)
+    if best_sid is None:
+        return False, "market_needs_settlement"
+    s = sm.get(best_sid)
+    if int(s.get("era", 2)) < 3:
+        return False, "market_needs_era3"
+    farms, stor, gran, mine, road, workshop, barracks, market, total = _settlement_struct_counts(best_sid, sm, world)
+    if barracks < 1:
+        return False, "market_needs_barracks"
+    if market >= 1:
+        return False, "market_already_exists"
     return True, ""
