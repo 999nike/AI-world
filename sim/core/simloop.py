@@ -148,12 +148,8 @@ def run_sim(
             )
             action = brains[a.agent_id].act(obs, rng)
 
-            try:
-                if nearest_sid is not None and float(sm.get(nearest_sid).get("food_stock", 0)) < 1.0:
-                    if not (action.type == "gather" and getattr(action, "resource", None) == "food"):
-                        action = Action(type="gather", resource="food")
-            except Exception:
-                pass
+            # Hard food-force guard removed (E2.3+). Utility agent already
+            # has food_pressure scoring; hard override fought agent decisions.
 
             logger.event({"type": "action_attempted", "tick": t, "agent_id": a.agent_id,
                           "action": action.to_dict(), "pos": {"x": a.x, "y": a.y},
