@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from sim.core.rng import RNG
 from sim.world.config import WorldConfig
@@ -11,6 +11,7 @@ from sim.log.logger import RunLogger
 from sim.world.state import Structure
 from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import resolve_building, can_build_hut
+from sim.core.governor import Governor
 from sim.agents.types import Observation, Action
 from sim.agents.baseline_random import RandomAgent
 
@@ -29,6 +30,7 @@ def run_sim(
     agent_kind: str = "utility",
     policy_weights: dict = None,
     return_score: bool = False,
+    governor_command: Optional[str] = None,
 ):
     run_id = make_run_id()
     run_dir = Path("runs") / run_id
@@ -38,10 +40,26 @@ def run_sim(
     rng = RNG(seed)
     world = make_world(cfg, rng)
 
+    # P6.0 Governor
+    gov = Governor()
+    if governor_command:
+        status = gov.apply_command(governor_command)
+        logger.event({
+            "type": "governor_command",
+            "tick": 0,
+            "command": governor_command,
+            "status": status,
+            "state": gov.to_dict(),
+        })
+
     if agent_kind == "utility":
         from sim.agents.utility_agent import UtilityAgent
         w = policy_weights or {}
-        brains = {a.agent_id: UtilityAgent(a.agent_id, w) for a in world.agents}
+        bias = gov.bias_weights()
+        brains = {
+            a.agent_id: UtilityAgent(a.agent_id, w, governor_bias=bias)
+            for a in world.agents
+        }
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
@@ -74,6 +92,8 @@ def run_sim(
                 "world": cfg.__dict__,
                 "build_costs": BUILD_COSTS,
                 "settlement_rules": SETTLEMENT_RULES,
+                "governor": gov.to_dict(),
+                "governor_command": governor_command,
             },
             indent=2,
         ),
@@ -122,9 +142,6 @@ def run_sim(
             action = brains[a.agent_id].act(obs, rng)
 
             # P2.2: Only a true emergency override remains.
-            # Force gather food only when settlement is almost empty.
-            # Removed: automatic haul-home force-move and the softer
-            # "block build when food is a bit low" override.
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
                 if nearest_sid is not None:
@@ -356,7 +373,7 @@ def run_sim(
         + num_settlements * 25
         + num_structures * 5
         + metrics["food_deposited_total"]
-        - metrics["population_starved_events"] * 5   # was 20 – softer
+        - metrics["population_starved_events"] * 5
     )
 
     summary = {
@@ -366,6 +383,7 @@ def run_sim(
         "final": final,
         "metrics": metrics,
         "score": score,
+        "governor": gov.to_dict(),
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

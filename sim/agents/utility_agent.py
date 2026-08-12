@@ -23,7 +23,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 
     # build preference
     "w_build_storage": 4.0,
-    "w_build_hut": 3.5,       # was 2.0 – give housing a real chance
+    "w_build_hut": 3.5,
     "w_build_farm": 5.0,
 
     # movement / exploration
@@ -47,6 +47,7 @@ def _diminishing(x: float, cap: float) -> float:
 class UtilityAgent:
     agent_id: str
     weights: Dict[str, float]
+    governor_bias: Optional[Dict[str, float]] = None  # P6.0
 
     def act(self, obs: Observation, rng: RNG) -> Action:
         inv = obs.inventory
@@ -130,6 +131,10 @@ class UtilityAgent:
             {k: float(v) for k, v in self.weights.items() if isinstance(v, (int, float))}
         )
 
+        # P6.0: apply governor soft biases
+        if self.governor_bias:
+            w.update(self.governor_bias)
+
         inv = obs.inventory
         tile = obs.tile
         structures = obs.structures or []
@@ -178,7 +183,6 @@ class UtilityAgent:
             if b == "hut":
                 can_pay = 1.0 if (inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 1) else 0.2
                 penalty = -3.0 if not has_storage else 0.0
-                # Only apply mild hunger penalty (was *1.5) – huts should appear in healthy phase
                 return w["w_build_hut"] * can_pay + penalty + inv_term - hunger_penalty * 0.5
 
             return -5.0
