@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""God-view for AI-world (Era 2 aware).
+"""God-view for AI-world (Era 3 aware).
 
 Reads snapshots.jsonl from a finished run and shows an ASCII grid
-plus settlement / combat summary. Pure inspection — does not touch the sim.
+plus settlement / combat / knowledge summary. Pure inspection — does not touch the sim.
 
 Usage:
   python tools/god_view.py --rid latest
@@ -31,6 +31,8 @@ ICON = {
     "barracks": "B",
     "market": "K",
     "temple": "T",
+    "academy": "C",   # C = College / Academy
+    "walls": "#",
     "settlement": "@",
     "empty": ".",
 }
@@ -82,7 +84,6 @@ def build_grid(snap: dict) -> list[list[str]]:
     for s in snap.get("settlements", []):
         x, y = int(s.get("x", 0)), int(s.get("y", 0))
         if 0 <= x < width and 0 <= y < height:
-            # Only mark if tile still empty / not a key building
             if grid[y][x] in (ICON["empty"], ICON["road"]):
                 grid[y][x] = ICON["settlement"]
 
@@ -102,13 +103,17 @@ def settlement_summary(snap: dict) -> str:
     for s in settlements:
         sid = s.get("id", "?")
         pop = s.get("population", "?")
+        era = s.get("era", 2)
         food = round(float(s.get("food_stock", 0)), 1)
         wood = s.get("wood_stock", 0)
         stone = s.get("stone_stock", 0)
         tools = round(float(s.get("tools_stock", 0)), 1)
         soldiers = round(float(s.get("soldiers", 0)), 1)
+        knowledge = round(float(s.get("knowledge", 0)), 1)
+        subjects = ",".join(s.get("subjects") or []) or "-"
         parts.append(
-            f"{sid}:pop={pop} food={food} w={wood} s={stone} tools={tools} sol={soldiers}"
+            f"{sid}:e{era} pop={pop} f={food} w={wood} s={stone} "
+            f"t={tools} sol={soldiers} k={knowledge} [{subjects}]"
         )
     return " | ".join(parts)
 
@@ -116,7 +121,8 @@ def settlement_summary(snap: dict) -> str:
 def structure_counts(snap: dict) -> str:
     from collections import Counter
     c = Counter(st.get("type") for st in snap.get("structures", []))
-    order = ["farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market", "temple"]
+    order = ["farm", "storage", "hut", "granary", "mine", "road",
+             "workshop", "barracks", "market", "temple", "academy", "walls"]
     bits = [f"{t}:{c[t]}" for t in order if c.get(t)]
     return "  ".join(bits) if bits else "none"
 
@@ -126,7 +132,7 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
     width = len(grid[0]) if height else 0
 
     print()
-    print("=" * max(width + 4, 60))
+    print("=" * max(width + 4, 72))
     print(f"  GOD VIEW  |  tick {tick}")
     if summary:
         m = summary.get("metrics", {})
@@ -135,18 +141,21 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
             f"NetPop:{m.get('population_net_change', 0)}  "
             f"Defend:{m.get('soldier_defend_events', 0)}  "
             f"Raids:{m.get('raid_events', 0)}  "
-            f"Loot:{m.get('raid_loot_total', 0)}"
+            f"AgeUp:{m.get('age_up_events', 0)}  "
+            f"Subjects:{m.get('subject_unlock_events', 0)}"
         )
         print(
             f"  Builds  H:{m.get('build_hut', 0)} S:{m.get('build_storage', 0)} "
             f"F:{m.get('build_farm', 0)} G:{m.get('build_granary', 0)} "
             f"M:{m.get('build_mine', 0)} R:{m.get('build_road', 0)} "
-            f"W:{m.get('build_workshop', 0)} B:{m.get('build_barracks', 0)}"
+            f"W:{m.get('build_workshop', 0)} B:{m.get('build_barracks', 0)} "
+            f"K:{m.get('build_market', 0)} T:{m.get('build_temple', 0)} "
+            f"C:{m.get('build_academy', 0)} #:{m.get('build_walls', 0)}"
         )
     if snap:
         print(f"  Structs  {structure_counts(snap)}")
         print(f"  {settlement_summary(snap)}")
-    print("=" * max(width + 4, 60))
+    print("=" * max(width + 4, 72))
 
     header = "  "
     for x in range(width):
@@ -159,12 +168,13 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
 
     print()
     print("  Legend: A=agent  H=hut  S=storage  F=farm  G=granary  M=mine")
-    print("          =road  W=workshop  B=barracks  K=market  T=temple  @=settlement  .=empty")
+    print("          =road  W=workshop  B=barracks  K=market  T=temple")
+    print("          C=academy  #=walls  @=settlement  .=empty")
     print()
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world god-view (Era 2)")
+    p = argparse.ArgumentParser(description="AI-world god-view (Era 3)")
     p.add_argument("--rid", default="latest", help="Run ID or 'latest'")
     p.add_argument("--tick", type=int, default=None, help="Show specific tick")
     p.add_argument("--list", action="store_true", help="List available snapshot ticks")
@@ -194,22 +204,28 @@ def main():
             print("No summary.json")
             return
         print()
-        print("=" * 60)
+        print("=" * 72)
         print(f"  FINAL  |  {rid}")
         print(f"  Score: {summary.get('score')}  Seed: {summary.get('seed')}  Ticks: {summary.get('ticks')}")
         m = summary.get("metrics", {})
         print(f"  Defend:{m.get('soldier_defend_events', 0)}  Raids:{m.get('raid_events', 0)}  "
-              f"Loot:{m.get('raid_loot_total', 0)}  Tools:{round(m.get('workshop_tools_total', 0),1)}  "
-              f"Soldiers:{round(m.get('barracks_soldiers_total', 0),1)}")
+              f"AgeUp:{m.get('age_up_events', 0)}  Subjects:{m.get('subject_unlock_events', 0)}  "
+              f"Knowledge:{round(m.get('academy_knowledge_total', 0), 1)}")
         print(f"  Builds  H:{m.get('build_hut',0)} S:{m.get('build_storage',0)} F:{m.get('build_farm',0)} "
               f"G:{m.get('build_granary',0)} M:{m.get('build_mine',0)} R:{m.get('build_road',0)} "
-              f"W:{m.get('build_workshop',0)} B:{m.get('build_barracks',0)}")
+              f"W:{m.get('build_workshop',0)} B:{m.get('build_barracks',0)} "
+              f"K:{m.get('build_market',0)} T:{m.get('build_temple',0)} "
+              f"C:{m.get('build_academy',0)} #:{m.get('build_walls',0)}")
         final = summary.get("final", {})
         for s in final.get("settlements", []):
-            print(f"  {s.get('id')}: pop={s.get('population')} food={round(float(s.get('food_stock',0)),1)} "
+            subjects = ",".join(s.get("subjects") or []) or "-"
+            print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
+                  f"food={round(float(s.get('food_stock',0)),1)} "
                   f"w={s.get('wood_stock')} s={s.get('stone_stock')} "
-                  f"tools={round(float(s.get('tools_stock',0)),1)} sol={round(float(s.get('soldiers',0)),1)}")
-        print("=" * 60)
+                  f"tools={round(float(s.get('tools_stock',0)),1)} "
+                  f"sol={round(float(s.get('soldiers',0)),1)} "
+                  f"k={round(float(s.get('knowledge',0)),1)} [{subjects}]")
+        print("=" * 72)
         return
 
     snaps = load_snapshots(run_dir)
