@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 import math
 
 from sim.agents.types import Observation, Action
@@ -10,30 +10,20 @@ from sim.core.rng import RNG
 
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    # gathering preference
     "w_food": 3.0,
     "w_wood": 1.0,
     "w_stone": 1.0,
-
-    # inventory shaping
     "w_inv_food": 0.8,
     "w_inv_wood": 0.3,
     "w_inv_stone": 0.3,
     "inv_soft_cap": 6.0,
-
-    # build preference
     "w_build_storage": 4.0,
     "w_build_hut": 3.5,
     "w_build_farm": 5.0,
-
-    # movement / exploration
+    "w_build_granary": 4.5,  # E2.0
     "w_move": 0.1,
     "w_explore": 0.2,
-
-    # exploration rate
     "epsilon": 0.05,
-
-    # settlement awareness
     "w_food_pressure": 4.0,
     "w_avoid_build_when_hungry": 6.0,
 }
@@ -47,24 +37,20 @@ def _diminishing(x: float, cap: float) -> float:
 class UtilityAgent:
     agent_id: str
     weights: Dict[str, float]
-    governor_bias: Optional[Dict[str, float]] = None  # P6.0
+    governor_bias: Optional[Dict[str, float]] = None
 
     def act(self, obs: Observation, rng: RNG) -> Action:
         inv = obs.inventory
         structure = obs.structure
         structs = obs.structures or []
 
-        # --- Bootstrap: first building should be a farm (cheaper + produces food) ---
         if structure is None and len(structs) == 0:
-            # Prefer farm as the very first structure
             if inv.get("wood", 0) >= 2:
                 return Action(type="build", building="farm")
-            # Otherwise gather wood toward that goal
             if obs.tile.get("wood", 0) > 0:
                 return Action(type="gather", resource="wood")
             return self._random_action(obs, rng)
 
-        # --- Early storage once at least one farm exists ---
         if structure is None:
             has_farm = any(s.get("type") == "farm" for s in structs)
             has_storage = any(s.get("type") == "storage" for s in structs)
@@ -72,7 +58,6 @@ class UtilityAgent:
                 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                     return Action(type="build", building="storage")
 
-        # ε-greedy
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
             return self._random_action(obs, rng)
@@ -112,6 +97,7 @@ class UtilityAgent:
             c.append(Action(type="build", building="farm"))
             c.append(Action(type="build", building="storage"))
             c.append(Action(type="build", building="hut"))
+            c.append(Action(type="build", building="granary"))
 
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -119,7 +105,6 @@ class UtilityAgent:
         return c if c else [Action(type="move", dx=1, dy=0)]
 
     def _settlement_pressure(self, obs: Observation) -> float:
-        """0 = fine, 1 = critical food shortage."""
         nearest = obs.nearest_settlement
         if not nearest:
             return 0.0
@@ -141,8 +126,6 @@ class UtilityAgent:
         w.update(
             {k: float(v) for k, v in self.weights.items() if isinstance(v, (int, float))}
         )
-
-        # P6.0: apply governor soft biases
         if self.governor_bias:
             w.update(self.governor_bias)
 
@@ -165,20 +148,17 @@ class UtilityAgent:
                 "wood": w["w_wood"],
                 "stone": w["w_stone"],
             }.get(r, -5.0)
-
             avail = float(tile.get(r, 0))
             score = base * (0.5 + 0.5 * _diminishing(avail, 3.0)) + inv_term
-
             if r == "food":
                 score += pressure * float(w["w_food_pressure"])
-
             return score
 
         if a.type == "build":
             b = a.building or ""
             has_storage = any(st.get("type") == "storage" for st in structures)
             has_farm = any(st.get("type") == "farm" for st in structures)
-
+            has_granary = any(st.get("type") == "granary" for st in structures)
             hunger_penalty = pressure * float(w["w_avoid_build_when_hungry"])
 
             if b == "farm":
@@ -195,6 +175,15 @@ class UtilityAgent:
                 can_pay = 1.0 if (inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 1) else 0.2
                 penalty = -3.0 if not has_storage else 0.0
                 return w["w_build_hut"] * can_pay + penalty + inv_term - hunger_penalty * 0.5
+
+            if b == "granary":
+                # Only valuable once storage + farm exist and no granary yet
+                if not has_storage or not has_farm:
+                    return -2.0
+                if has_granary:
+                    return -5.0
+                can_pay = 1.0 if (inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 1) else 0.25
+                return w["w_build_granary"] * can_pay + 3.0 + inv_term - hunger_penalty * 0.3
 
             return -5.0
 
