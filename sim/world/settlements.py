@@ -1,7 +1,4 @@
-"""Settlement management for AI-world.
-
-Owns creation, linkage, deposits, farm harvest, granary bonus, and population.
-"""
+"""Settlement management for AI-world."""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -15,8 +12,9 @@ SETTLEMENT_RULES = {
     "surplus_ticks_for_growth": 5,
     "starve_ticks_for_loss": 3,
     "farm_yield_per_tick": 1.5,
-    "granary_food_per_tick": 0.5,       # E2.0 passive food (less waste)
-    "granary_starve_ticks": 4,          # E2.0 slightly softer starvation
+    "granary_food_per_tick": 0.5,
+    "granary_starve_ticks": 4,
+    "mine_stone_per_tick": 0.75,  # E2.1
 }
 
 
@@ -45,7 +43,6 @@ class SettlementManager:
             "starve_ticks": 0,
             "surplus_ticks": 0,
         }
-
         try:
             tile0 = world.tile_at(x, y)
             starter = min(int(getattr(tile0, "food", 0)), 2)
@@ -56,13 +53,7 @@ class SettlementManager:
             self.settlements[sid]["food_stock"] = 2
 
         self.metrics["settlements_created"] += 1
-        self.logger.event(
-            {
-                "type": "settlement_created",
-                "tick": tick,
-                "settlement": self.settlements[sid],
-            }
-        )
+        self.logger.event({"type": "settlement_created", "tick": tick, "settlement": self.settlements[sid]})
         return sid
 
     def settlement_at_structure(self, x: int, y: int, world, tick: int) -> str:
@@ -70,12 +61,10 @@ class SettlementManager:
         sid = self.struct_to_settlement.get(k)
         if sid:
             return sid
-
         if not self.settlements:
             sid = self.create(x, y, owner_id="system", world=world, tick=tick)
             self.struct_to_settlement[k] = sid
             return sid
-
         best_sid = self.nearest(x, y)
         self.struct_to_settlement[k] = best_sid  # type: ignore
         return best_sid  # type: ignore
@@ -85,7 +74,6 @@ class SettlementManager:
             sid = self.create(x, y, owner_id=owner_id, world=world, tick=tick)
             self.struct_to_settlement[pos_key(x, y)] = sid
             return sid
-
         sid = self.settlement_at_structure(x, y, world, tick)
         s_anchor = self.settlements[sid]
         d = abs(x - s_anchor["x"]) + abs(y - s_anchor["y"])
@@ -97,13 +85,11 @@ class SettlementManager:
     def nearest(self, x: int, y: int) -> Optional[str]:
         if not self.settlements:
             return None
-        best_sid = None
-        best_d = 10**9
+        best_sid, best_d = None, 10**9
         for sid, s in self.settlements.items():
             d = abs(x - s["x"]) + abs(y - s["y"])
             if d < best_d:
-                best_d = d
-                best_sid = sid
+                best_d, best_sid = d, sid
         return best_sid
 
     def distance_to(self, sid: str, x: int, y: int) -> int:
@@ -125,68 +111,36 @@ class SettlementManager:
     def try_deposit(self, agent, tick: int) -> None:
         if not self.settlements:
             return
-
         nearest_sid = self.nearest(agent.x, agent.y)
         if nearest_sid is None:
             return
-
-        dist = self.distance_to(nearest_sid, agent.x, agent.y)
-        if dist > 2:
+        if self.distance_to(nearest_sid, agent.x, agent.y) > 2:
             return
-
-        sid = nearest_sid
-        s = self.settlements[sid]
-
+        s = self.settlements[nearest_sid]
         if agent.inv_food > 0:
             deposited = agent.inv_food
             s["food_stock"] += deposited
             agent.inv_food = 0
             self.metrics["food_deposit_events"] += 1
             self.metrics["food_deposited_total"] += deposited
-            self.logger.event(
-                {
-                    "type": "food_deposited",
-                    "tick": tick,
-                    "agent_id": agent.agent_id,
-                    "settlement_id": sid,
-                    "amount": deposited,
-                    "food_stock": s["food_stock"],
-                }
-            )
-
+            self.logger.event({"type": "food_deposited", "tick": tick, "agent_id": agent.agent_id,
+                               "settlement_id": nearest_sid, "amount": deposited, "food_stock": s["food_stock"]})
         if agent.inv_wood > 0:
             deposited = agent.inv_wood
             s["wood_stock"] += deposited
             agent.inv_wood = 0
             self.metrics["wood_deposit_events"] += 1
             self.metrics["wood_deposited_total"] += deposited
-            self.logger.event(
-                {
-                    "type": "wood_deposited",
-                    "tick": tick,
-                    "agent_id": agent.agent_id,
-                    "settlement_id": sid,
-                    "amount": deposited,
-                    "wood_stock": s["wood_stock"],
-                }
-            )
-
+            self.logger.event({"type": "wood_deposited", "tick": tick, "agent_id": agent.agent_id,
+                               "settlement_id": nearest_sid, "amount": deposited, "wood_stock": s["wood_stock"]})
         if agent.inv_stone > 0:
             deposited = agent.inv_stone
             s["stone_stock"] += deposited
             agent.inv_stone = 0
             self.metrics["stone_deposit_events"] += 1
             self.metrics["stone_deposited_total"] += deposited
-            self.logger.event(
-                {
-                    "type": "stone_deposited",
-                    "tick": tick,
-                    "agent_id": agent.agent_id,
-                    "settlement_id": sid,
-                    "amount": deposited,
-                    "stone_stock": s["stone_stock"],
-                }
-            )
+            self.logger.event({"type": "stone_deposited", "tick": tick, "agent_id": agent.agent_id,
+                               "settlement_id": nearest_sid, "amount": deposited, "stone_stock": s["stone_stock"]})
 
     def tick(self, world, tick: int) -> None:
         if not self.settlements:
@@ -200,6 +154,7 @@ class SettlementManager:
         yield_per_farm = float(SETTLEMENT_RULES.get("farm_yield_per_tick", 1.5))
         granary_food = float(SETTLEMENT_RULES.get("granary_food_per_tick", 0.5))
         granary_starve = int(SETTLEMENT_RULES.get("granary_starve_ticks", 4))
+        mine_stone = float(SETTLEMENT_RULES.get("mine_stone_per_tick", 0.75))
 
         for sid, s in self.settlements.items():
             pop_before = int(s.get("population", 0))
@@ -207,14 +162,16 @@ class SettlementManager:
 
             farms = 0
             has_granary = False
+            has_mine = False
             for stx in world.structures:
-                linked = self.structure_settlement_id(stx.x, stx.y)
-                if linked != sid:
+                if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
                 if stx.type == "farm":
                     farms += 1
                 elif stx.type == "granary":
                     has_granary = True
+                elif stx.type == "mine":
+                    has_mine = True
 
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             bonus = granary_food if has_granary else 0.0
@@ -225,6 +182,10 @@ class SettlementManager:
                     self.metrics["farm_food_total"] += farm_yield
                 if bonus > 0:
                     self.metrics["granary_food_total"] = self.metrics.get("granary_food_total", 0) + bonus
+
+            if has_mine:
+                s["stone_stock"] = float(s.get("stone_stock", 0)) + mine_stone
+                self.metrics["mine_stone_total"] = self.metrics.get("mine_stone_total", 0) + mine_stone
 
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
@@ -243,7 +204,6 @@ class SettlementManager:
             elif can_fully_feed:
                 s["food_stock"] = post_harvest - need
                 s["starve_ticks"] = 0
-
                 if float(s["food_stock"]) >= (need + buffer_food):
                     s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
                     if int(s["surplus_ticks"]) >= surplus_needed:
@@ -255,7 +215,6 @@ class SettlementManager:
                 s["food_stock"] = 0.0
                 s["surplus_ticks"] = 0
                 s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
-
                 if int(s["starve_ticks"]) >= starve_needed:
                     s["population"] = max(0, pop_before - 1)
                     s["starve_ticks"] = 0
@@ -276,21 +235,20 @@ class SettlementManager:
                     self.metrics["population_starved_events"] += 1
 
             if pop_after != pop_before or food_after != stock_at_start:
-                self.logger.event(
-                    {
-                        "type": "population_changed",
-                        "tick": tick,
-                        "settlement_id": sid,
-                        "population_before": pop_before,
-                        "population_after": pop_after,
-                        "food_before": stock_at_start,
-                        "food_after": food_after,
-                        "farm_yield": farm_yield,
-                        "granary_bonus": bonus,
-                        "need": need,
-                        "has_granary": has_granary,
-                    }
-                )
+                self.logger.event({
+                    "type": "population_changed",
+                    "tick": tick,
+                    "settlement_id": sid,
+                    "population_before": pop_before,
+                    "population_after": pop_after,
+                    "food_before": stock_at_start,
+                    "food_after": food_after,
+                    "farm_yield": farm_yield,
+                    "granary_bonus": bonus,
+                    "need": need,
+                    "has_granary": has_granary,
+                    "has_mine": has_mine,
+                })
 
     def count_structures_of_type(self, sid: str, structure_type: str, world) -> int:
         count = 0
