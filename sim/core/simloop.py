@@ -121,38 +121,18 @@ def run_sim(
 
             action = brains[a.agent_id].act(obs, rng)
 
+            # P2.2: Only a true emergency override remains.
+            # Force gather food only when settlement is almost empty.
+            # Removed: automatic haul-home force-move and the softer
+            # "block build when food is a bit low" override.
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
-
                 if nearest_sid is not None:
                     ss = sm.get(nearest_sid)
-                    pop = int(ss.get("population", 0))
-                    cons = float(SETTLEMENT_RULES.get("food_per_pop_per_tick", 1))
-                    buf = int(SETTLEMENT_RULES.get("growth_food_buffer", 0))
-                    if pop > 0:
-                        need_food = pop * cons + buf
-                        food_stock = float(ss.get("food_stock", 0))
-                        emergency = food_stock < (pop * cons)
-
-                        if emergency:
-                            if not (action.type == "gather" and getattr(action, "resource", None) == "food"):
-                                action = Action(type="gather", resource="food")
-                        elif food_stock < need_food and action.type == "build":
+                    food_stock = float(ss.get("food_stock", 0))
+                    if food_stock < 1.0:
+                        if not (action.type == "gather" and getattr(action, "resource", None) == "food"):
                             action = Action(type="gather", resource="food")
-
-                if nearest_sid is not None and getattr(a, "inv_food", 0) >= 2:
-                    ss = sm.get(nearest_sid)
-                    ax, ay = int(a.x), int(a.y)
-                    sx, sy = int(ss["x"]), int(ss["y"])
-                    dist = abs(ax - sx) + abs(ay - sy)
-                    if dist > 0:
-                        if abs(sx - ax) >= abs(sy - ay):
-                            dx = 1 if sx > ax else -1
-                            dy = 0
-                        else:
-                            dx = 0
-                            dy = 1 if sy > ay else -1
-                        action = Action(type="move", dx=dx, dy=dy)
             except Exception:
                 pass
 

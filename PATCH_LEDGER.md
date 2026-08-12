@@ -21,6 +21,7 @@
 | P3.1 | Balance (yield 1.5, slower growth, softer score) | Done |
 | — | **Lock Era 1 into DESIGN.md** | **Done** |
 | P4.0 | Add multi-seed validation tool | Done |
+| P2.2 | Soften hard food/haul overrides in simloop | Done |
 
 ---
 
@@ -35,6 +36,7 @@
 ## Next (post lock)
 
 - Multi-seed validation (tool ready — run when ready to view)
-- P2.2 Reduce hard overrides in simloop
+- Minimal god-view (grid + icons + tick scrub)
 - CLI replay improvements
+- Decide human role (Governor / Scenario)
 - Only then: Era 2 systems
