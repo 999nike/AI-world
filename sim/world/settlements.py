@@ -33,6 +33,10 @@ SETTLEMENT_RULES = {
     "raid_loot_wood": 3,
     "raid_loot_stone": 2,
     "raid_loot_food": 2,
+    # E3.0 Age transition (Era 2 → Era 3)
+    "age_up_min_pop": 15,
+    "age_up_food_bonus": 5.0,
+    "era3_farm_bonus": 0.25,  # extra food per farm when era>=3
 }
 
 
@@ -55,6 +59,7 @@ class SettlementManager:
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0,  # E2.3
             "soldiers": 0.0,     # E2.4
+            "era": 2,            # E3.0 — start in Era 2; age up to 3
             "starve_ticks": 0, "surplus_ticks": 0,
         }
         try:
@@ -205,6 +210,9 @@ class SettlementManager:
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if has_workshop and farm_yield > 0:
                 farm_yield += farms * workshop_farm_bonus
+            # E3.0: Era 3 prosperity bonus
+            if int(s.get("era", 2)) >= 3 and farms > 0:
+                farm_yield += farms * float(SETTLEMENT_RULES.get("era3_farm_bonus", 0.25))
             bonus = granary_food if has_granary else 0.0
             if farm_yield > 0 or bonus > 0:
                 s["food_stock"] = stock_at_start + farm_yield + bonus
@@ -290,6 +298,8 @@ class SettlementManager:
 
         # E2.6 Light raids (multi-settlement only)
         self._try_raids(world, tick)
+        # E3.0 Age transition
+        self._try_age_up(world, tick)
 
     def _try_raids(self, world, tick: int) -> None:
         interval = int(SETTLEMENT_RULES.get("raid_interval", 25))
@@ -340,6 +350,32 @@ class SettlementManager:
             "loot": {"wood": take_w, "stone": take_s, "food": take_f},
             "attacker_soldiers_after": atk["soldiers"],
         })
+
+    def _try_age_up(self, world, tick: int) -> None:
+        """Era 2 → Era 3 when settlement has workshop + barracks + enough pop."""
+        min_pop = int(SETTLEMENT_RULES.get("age_up_min_pop", 15))
+        food_bonus = float(SETTLEMENT_RULES.get("age_up_food_bonus", 5.0))
+        for sid, s in self.settlements.items():
+            if int(s.get("era", 2)) >= 3:
+                continue
+            if int(s.get("population", 0)) < min_pop:
+                continue
+            has_ws = self.settlement_has_workshop(sid, world)
+            has_br = self.settlement_has_barracks(sid, world)
+            if not (has_ws and has_br):
+                continue
+            s["era"] = 3
+            s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
+            self.metrics["age_up_events"] = self.metrics.get("age_up_events", 0) + 1
+            self.logger.event({
+                "type": "age_transition",
+                "tick": tick,
+                "settlement_id": sid,
+                "from_era": 2,
+                "to_era": 3,
+                "population": s.get("population"),
+                "food_bonus": food_bonus,
+            })
 
     def count_structures_of_type(self, sid, structure_type, world) -> int:
         return sum(1 for stx in world.structures
