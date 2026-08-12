@@ -53,8 +53,11 @@ def print_header(rid: str, summary):
         m = summary.get("metrics", {})
         print(f"  Score          : {summary.get('score')}")
         print(f"  Settlements    : {m.get('settlements_created', 0)}")
-        print(f"  Huts / Storage / Farms : {m.get('build_hut', 0)} / {m.get('build_storage', 0)} / {m.get('build_farm', 0)}")
+        print(f"  Huts / Stor / Farms / Granary : "
+              f"{m.get('build_hut', 0)} / {m.get('build_storage', 0)} / "
+              f"{m.get('build_farm', 0)} / {m.get('build_granary', 0)}")
         print(f"  Food deposited : {m.get('food_deposited_total', 0)}")
+        print(f"  Granary food   : {m.get('granary_food_total', 0)}")
         print(f"  Pop grew       : {m.get('population_grew_events', 0)}")
         print(f"  Pop starved    : {m.get('population_starved_events', 0)}")
         print(f"  Net pop change : {m.get('population_net_change', 0)}")
@@ -86,7 +89,8 @@ def show_economy(events):
             before = e.get("population_before")
             after = e.get("population_after")
             arrow = "↑" if after > before else "↓" if after < before else "="
-            print(f"[t{t:4}] POP {arrow}     {before} -> {after}  food {e.get('food_before')} -> {e.get('food_after')}  ({e.get('settlement_id')})")
+            gran = " [G]" if e.get("has_granary") else ""
+            print(f"[t{t:4}] POP {arrow}     {before} -> {after}  food {e.get('food_before')} -> {e.get('food_after')}  ({e.get('settlement_id')}){gran}")
 
     print("\n=== END ===\n")
 
