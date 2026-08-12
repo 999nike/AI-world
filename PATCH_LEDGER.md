@@ -1,7 +1,18 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 stages 0–4 live  
+**Status:** Era 2 stages 0–4 live on main  
 **Last updated:** 2026-08-12
+
+---
+
+## Snapshot (for next session)
+
+- Era 1 LOCKED (32/32 stress pass)
+- Era 2 LIVE: Granary ✓ Mine ✓ Roads ✓ Workshop ✓ Barracks ✓
+- All code + DESIGN on `main`
+- Seed 42 @400 ticks: barracks 1, workshop 1, soldiers ~58, score 1059
+- Hard food-force guard removed (P2.2)
+- Next: combat/raid light, or god-view polish
 
 ---
 
@@ -24,12 +35,9 @@
 | 3 | Workshop | E2.3 | **Live** | Cost 4w2s; gate mine+(granary|road) max1; tools +0.4/tick; farm/mine bonus; gather +1 |
 | 4 | Barracks | E2.4 | **Live** | Cost 3w3s; gate workshop max1; soldiers +0.25/tick |
 
-### Validation (post E2.3)
-
-**Multi-seed + Stress under Workshop:** 14/14 PASS. Seed 42 scores 800–1180 range.
-
-### Seed 42 @ 400 ticks (post E2.4)
-- Barracks 1, Workshop 1, soldiers ~58, score 1059
+### Validation notes
+- Post E2.3 stress: 14/14 PASS
+- Post E2.4 seed 42 @400: barracks built, soldiers ~58, score 1059
 
 ---
 
