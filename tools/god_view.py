@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""God-view for AI-world (Era 4 aware) — logs → visual playback.
+"""God-view for AI-world (Era 4) — logs → visual playback.
 
 Usage:
-  python tools/god_view.py --rid latest
-  python tools/god_view.py --rid latest --step
   python tools/god_view.py --rid latest --play
-  python tools/god_view.py --rid latest --play --delay 0.3
+  python tools/god_view.py --rid latest --play --delay 0.5
+  python tools/god_view.py --rid latest --step
   python tools/god_view.py --rid latest --final
 """
 
@@ -13,27 +12,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 
 
 ICON = {
-    "agent": "A",
-    "hut": "H",
-    "storage": "S",
-    "farm": "F",
-    "granary": "G",
-    "mine": "M",
-    "road": "=",
-    "workshop": "W",
-    "barracks": "B",
-    "market": "K",
-    "temple": "T",
-    "academy": "C",
-    "walls": "#",
-    "irrigation": "~",
-    "settlement": "@",
-    "empty": ".",
+    "agent": "A", "hut": "H", "storage": "S", "farm": "F", "granary": "G",
+    "mine": "M", "road": "=", "workshop": "W", "barracks": "B",
+    "market": "K", "temple": "T", "academy": "C", "walls": "#",
+    "irrigation": "~", "settlement": "@", "empty": ".",
+}
+
+KEY_EVENT_TYPES = {
+    "age_transition", "subject_unlocked", "raid", "soldier_defend",
+    "settlement_created",
 }
 
 
@@ -68,15 +61,62 @@ def load_summary(run_dir: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_key_events(run_dir: Path) -> list[dict]:
+    """Pull notable events from events.jsonl for callouts."""
+    path = run_dir / "events.jsonl"
+    if not path.exists():
+        return []
+    out = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            t = ev.get("type", "")
+            if t in KEY_EVENT_TYPES:
+                out.append(ev)
+            elif t == "action_resolved" and str(ev.get("note", "")).startswith("built_"):
+                # only late-game / landmark builds
+                b = str(ev.get("note", "")).replace("built_", "")
+                if b in ("academy", "walls", "irrigation", "temple", "barracks", "workshop"):
+                    out.append(ev)
+    return out
+
+
+def events_in_range(events: list[dict], t0: int, t1: int) -> list[str]:
+    lines = []
+    for ev in events:
+        tick = ev.get("tick")
+        if tick is None or not (t0 < tick <= t1):
+            continue
+        typ = ev.get("type", "")
+        if typ == "age_transition":
+            lines.append(f"  ★ AGE {ev.get('from_era')} → {ev.get('to_era')}  ({ev.get('settlement_id')})")
+        elif typ == "subject_unlocked":
+            lines.append(f"  ★ SUBJECT  {ev.get('subject')}  ({ev.get('settlement_id')})")
+        elif typ == "action_resolved":
+            lines.append(f"  ★ BUILT  {str(ev.get('note','')).replace('built_','')}  @({ev.get('pos',{}).get('x')},{ev.get('pos',{}).get('y')})")
+        elif typ == "raid":
+            lines.append(f"  ★ RAID  {ev.get('attacker')} → {ev.get('target')}")
+        elif typ == "settlement_created":
+            lines.append(f"  ★ SETTLEMENT  {ev.get('settlement',{}).get('id','?')}")
+        elif typ == "soldier_defend":
+            lines.append(f"  ★ DEFEND  {ev.get('settlement_id')} saved pop")
+    return lines
+
+
 def build_grid(snap: dict) -> list[list[str]]:
     width = snap.get("width", 32)
     height = snap.get("height", 32)
     grid = [[ICON["empty"] for _ in range(width)] for _ in range(height)]
     for st in snap.get("structures", []):
         x, y = int(st.get("x", 0)), int(st.get("y", 0))
-        typ = st.get("type", "")
         if 0 <= x < width and 0 <= y < height:
-            grid[y][x] = ICON.get(typ, "?")
+            grid[y][x] = ICON.get(st.get("type", ""), "?")
     for s in snap.get("settlements", []):
         x, y = int(s.get("x", 0)), int(s.get("y", 0))
         if 0 <= x < width and 0 <= y < height:
@@ -90,19 +130,14 @@ def build_grid(snap: dict) -> list[list[str]]:
 
 
 def settlement_summary(snap: dict) -> str:
-    settlements = snap.get("settlements", [])
-    if not settlements:
-        return "no settlements"
     parts = []
-    for s in settlements:
+    for s in snap.get("settlements", []):
         subjects = ",".join(s.get("subjects") or []) or "-"
         parts.append(
             f"{s.get('id','?')}:e{s.get('era',2)} pop={s.get('population','?')} "
-            f"f={round(float(s.get('food_stock',0)),1)} "
-            f"w={s.get('wood_stock',0)} s={s.get('stone_stock',0)} "
-            f"k={round(float(s.get('knowledge',0)),1)} [{subjects}]"
+            f"f={round(float(s.get('food_stock',0)),1)} k={round(float(s.get('knowledge',0)),1)} [{subjects}]"
         )
-    return " | ".join(parts)
+    return " | ".join(parts) if parts else "no settlements"
 
 
 def structure_counts(snap: dict) -> str:
@@ -114,10 +149,13 @@ def structure_counts(snap: dict) -> str:
     return "  ".join(bits) if bits else "none"
 
 
-def print_grid(grid, tick, summary=None, snap=None):
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def print_grid(grid, tick, summary=None, snap=None, callouts=None):
     height = len(grid)
     width = len(grid[0]) if height else 0
-    print()
     print("=" * max(width + 4, 72))
     print(f"  GOD VIEW  |  tick {tick}")
     if summary:
@@ -128,22 +166,22 @@ def print_grid(grid, tick, summary=None, snap=None):
             f"Subjects:{m.get('subject_unlock_events',0)}"
         )
         print(
-            f"  Builds  F:{m.get('build_farm',0)} S:{m.get('build_storage',0)} "
-            f"W:{m.get('build_workshop',0)} B:{m.get('build_barracks',0)} "
-            f"C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
+            f"  Builds  C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
             f"~:{m.get('build_irrigation',0)}"
         )
     if snap:
         print(f"  Structs  {structure_counts(snap)}")
         print(f"  {settlement_summary(snap)}")
+    if callouts:
+        print("-" * max(width + 4, 72))
+        for line in callouts:
+            print(line)
     print("=" * max(width + 4, 72))
-    header = "  " + "".join(str(x % 10) for x in range(width))
-    print(header)
+    print("  " + "".join(str(x % 10) for x in range(width)))
     for y, row in enumerate(grid):
         print(f"{y % 10} " + "".join(row))
     print()
-    print("  Legend: A=agent F=farm S=storage W=workshop B=barracks C=academy")
-    print("          #=walls ~=irrigation @=settlement .=empty")
+    print("  A=agent F=farm S=storage W=workshop B=barracks C=academy #=walls ~=irrigation")
     print()
 
 
@@ -153,8 +191,8 @@ def main():
     p.add_argument("--tick", type=int, default=None)
     p.add_argument("--list", action="store_true")
     p.add_argument("--step", action="store_true")
-    p.add_argument("--play", action="store_true", help="Auto-play snapshots (animation)")
-    p.add_argument("--delay", type=float, default=0.4, help="Seconds between frames in --play")
+    p.add_argument("--play", action="store_true")
+    p.add_argument("--delay", type=float, default=0.45)
     p.add_argument("--final", action="store_true")
     p.add_argument("--runs", default="runs")
     args = p.parse_args()
@@ -185,10 +223,7 @@ def main():
         print(f"  FINAL  |  {rid}")
         print(f"  Score: {summary.get('score')}  Seed: {summary.get('seed')}  Ticks: {summary.get('ticks')}")
         print(f"  AgeUp:{m.get('age_up_events',0)}  A4:{m.get('age_up4_events',0)}  "
-              f"Subjects:{m.get('subject_unlock_events',0)}  "
-              f"Irrig:{m.get('build_irrigation',0)}")
-        print(f"  Builds  C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
-              f"~:{m.get('build_irrigation',0)}")
+              f"Subjects:{m.get('subject_unlock_events',0)}  Irrig:{m.get('build_irrigation',0)}")
         for s in summary.get("final", {}).get("settlements", []):
             subjects = ",".join(s.get("subjects") or []) or "-"
             print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
@@ -199,9 +234,9 @@ def main():
     snaps = load_snapshots(run_dir)
     if not snaps:
         return
-
     by_tick = {s["tick"]: s for s in snaps if s.get("tick") is not None}
     ticks = sorted(by_tick.keys())
+    key_events = load_key_events(run_dir)
 
     if args.list:
         print(f"Available snapshot ticks ({len(ticks)}):")
@@ -209,11 +244,13 @@ def main():
         return
 
     if args.play:
+        prev = -1
         for i, t in enumerate(ticks):
-            # clear-ish: print separator, then frame
-            print("\n" * 2)
-            print_grid(build_grid(by_tick[t]), t, summary, by_tick[t])
-            print(f"  PLAY  [{i+1}/{len(ticks)}]  tick {t}  (Ctrl+C to stop)")
+            clear_screen()
+            callouts = events_in_range(key_events, prev, t)
+            print_grid(build_grid(by_tick[t]), t, summary, by_tick[t], callouts)
+            print(f"  PLAY  [{i+1}/{len(ticks)}]  tick {t}  (Ctrl+C stop)")
+            prev = t
             if i < len(ticks) - 1:
                 time.sleep(max(0.05, args.delay))
         return
@@ -222,7 +259,10 @@ def main():
         idx = 0
         while True:
             t = ticks[idx]
-            print_grid(build_grid(by_tick[t]), t, summary, by_tick[t])
+            prev = ticks[idx - 1] if idx > 0 else -1
+            callouts = events_in_range(key_events, prev, t)
+            clear_screen()
+            print_grid(build_grid(by_tick[t]), t, summary, by_tick[t], callouts)
             print(f"[{idx+1}/{len(ticks)}]  tick {t}")
             cmd = input("  [n]ext  [p]rev  [q]uit  or tick > ").strip().lower()
             if cmd in ("q", "quit", "exit"):
@@ -243,7 +283,7 @@ def main():
     if args.tick is not None:
         t = args.tick if args.tick in by_tick else min(ticks, key=lambda x: abs(x - args.tick))
         if t != args.tick:
-            print(f"Tick {args.tick} not found. Showing nearest: {t}")
+            print(f"Tick {args.tick} not found. Nearest: {t}")
         print_grid(build_grid(by_tick[t]), t, summary, by_tick[t])
     else:
         t = ticks[-1]
