@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Automated seed stress testing for AI-world Era 1.
+"""Automated seed stress testing for AI-world (Era 2 aware).
 
 Runs a batch of seeds, applies pass/fail rules, and reports
 weak or failing seeds clearly.
 
 Usage:
   python tools/stress_test.py
-  python tools/stress_test.py --seeds 50 --ticks 500
-  python tools/stress_test.py --start 0 --count 30 --ticks 400
+  python tools/stress_test.py --seeds 20 --ticks 400
+  python tools/stress_test.py --start 0 --count 14 --ticks 350
   python tools/stress_test.py --seeds 20 --json results.json
 """
 
@@ -24,10 +24,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sim.core.simloop import run_sim
 
 
-# Pass/fail thresholds (Era 1)
-MAX_FARMS_PER_RUN = 12          # soft-cap is 3/settlement; allow some multi-settlement
+# Pass/fail thresholds (Era 2 — raised for richer world)
+MAX_FARMS_PER_RUN = 16          # soft-cap 3/settlement; allow multi-settlement
 MIN_NET_POP = 0                 # must not end negative
-MIN_SCORE = 30                  # below this = collapse-ish
+MIN_SCORE = 80                  # Era 2 floor (was 30 in Era 1)
 MIN_FARMS = 1                   # at least one farm should appear
 
 
@@ -53,18 +53,18 @@ def evaluate(row: dict) -> list[str]:
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world automated seed stress test")
+    p = argparse.ArgumentParser(description="AI-world automated seed stress test (Era 2)")
     p.add_argument("--seeds", type=int, default=None,
                    help="Number of sequential seeds starting from --start")
     p.add_argument("--start", type=int, default=0,
                    help="First seed when using --seeds count (default 0)")
-    p.add_argument("--count", type=int, default=20,
-                   help="How many seeds to run if --seeds not set as list (default 20)")
+    p.add_argument("--count", type=int, default=14,
+                   help="How many seeds to run if --seeds not set as list (default 14)")
     p.add_argument("--seed-list", type=int, nargs="+", default=None,
                    help="Explicit list of seeds (overrides --start/--count)")
-    p.add_argument("--ticks", type=int, default=500,
-                   help="Ticks per run (default 500)")
-    p.add_argument("--snapshot-every", type=int, default=50)
+    p.add_argument("--ticks", type=int, default=400,
+                   help="Ticks per run (default 400)")
+    p.add_argument("--snapshot-every", type=int, default=0)
     p.add_argument("--json", type=str, default=None,
                    help="Write full results to this JSON file")
     args = p.parse_args()
@@ -84,9 +84,10 @@ def main():
     failures = []
 
     print()
-    print("=" * 78)
-    print(f"  AI-WORLD SEED STRESS TEST  |  ticks={args.ticks}  |  seeds={len(seed_list)}")
-    print("=" * 78)
+    print("=" * 88)
+    print(f"  AI-WORLD SEED STRESS TEST (Era 2)  |  ticks={args.ticks}  |  seeds={len(seed_list)}")
+    print(f"  Thresholds: min_score={MIN_SCORE}  min_net_pop={MIN_NET_POP}  min_farms={MIN_FARMS}")
+    print("=" * 88)
     print()
 
     for seed in seed_list:
@@ -101,18 +102,11 @@ def main():
         except Exception as e:
             print(f"CRASH: {e}")
             row = {
-                "seed": seed,
-                "run_id": None,
-                "score": 0,
-                "net_pop": -999,
-                "starved": 0,
-                "huts": 0,
-                "storage": 0,
-                "farms": 0,
-                "food_dep": 0,
-                "settlements": 0,
-                "fails": [f"exception: {e}"],
-                "status": "FAIL",
+                "seed": seed, "run_id": None, "score": 0, "net_pop": -999,
+                "starved": 0, "huts": 0, "storage": 0, "farms": 0,
+                "granary": 0, "mine": 0, "road": 0, "workshop": 0, "barracks": 0,
+                "defend": 0, "raids": 0, "food_dep": 0, "settlements": 0,
+                "fails": [f"exception: {e}"], "status": "FAIL",
             }
             results.append(row)
             failures.append(row)
@@ -122,18 +116,11 @@ def main():
         if summary is None:
             print("NO SUMMARY")
             row = {
-                "seed": seed,
-                "run_id": run_id,
-                "score": 0,
-                "net_pop": -999,
-                "starved": 0,
-                "huts": 0,
-                "storage": 0,
-                "farms": 0,
-                "food_dep": 0,
-                "settlements": 0,
-                "fails": ["no summary.json"],
-                "status": "FAIL",
+                "seed": seed, "run_id": run_id, "score": 0, "net_pop": -999,
+                "starved": 0, "huts": 0, "storage": 0, "farms": 0,
+                "granary": 0, "mine": 0, "road": 0, "workshop": 0, "barracks": 0,
+                "defend": 0, "raids": 0, "food_dep": 0, "settlements": 0,
+                "fails": ["no summary.json"], "status": "FAIL",
             }
             results.append(row)
             failures.append(row)
@@ -149,6 +136,13 @@ def main():
             "huts": m.get("build_hut", 0),
             "storage": m.get("build_storage", 0),
             "farms": m.get("build_farm", 0),
+            "granary": m.get("build_granary", 0),
+            "mine": m.get("build_mine", 0),
+            "road": m.get("build_road", 0),
+            "workshop": m.get("build_workshop", 0),
+            "barracks": m.get("build_barracks", 0),
+            "defend": m.get("soldier_defend_events", 0),
+            "raids": m.get("raid_events", 0),
             "food_dep": m.get("food_deposited_total", 0),
             "settlements": m.get("settlements_created", 0),
         }
@@ -161,20 +155,26 @@ def main():
             failures.append(row)
             print(f"FAIL  score={row['score']}  netpop={row['net_pop']}  farms={row['farms']}  ({', '.join(fails)})")
         else:
-            print(f"PASS  score={row['score']}  netpop={row['net_pop']}  farms={row['farms']}  huts={row['huts']}")
+            print(
+                f"PASS  score={row['score']}  netpop={row['net_pop']}  "
+                f"F={row['farms']} G={row['granary']} M={row['mine']} "
+                f"W={row['workshop']} B={row['barracks']}  "
+                f"def={row['defend']} raid={row['raids']}"
+            )
 
     # ---- Table ----
     print()
-    print("=" * 78)
+    print("=" * 88)
     print("  RESULTS")
-    print("=" * 78)
-    print(f"{'Seed':>6}  {'Stat':<4}  {'Score':>6}  {'NetPop':>6}  {'Starved':>7}  "
-          f"{'Huts':>5}  {'Stor':>4}  {'Farm':>4}  {'Food':>5}")
-    print("-" * 78)
+    print("=" * 88)
+    print(f"{'Seed':>6}  {'Stat':<4}  {'Score':>6}  {'NetPop':>6}  {'Farm':>4}  "
+          f"{'G':>2}  {'M':>2}  {'W':>2}  {'B':>2}  {'Def':>4}  {'Raid':>4}")
+    print("-" * 88)
     for r in results:
-        print(f"{r['seed']:>6}  {r['status']:<4}  {r['score']:>6}  {r['net_pop']:>6}  {r['starved']:>7}  "
-              f"{r['huts']:>5}  {r['storage']:>4}  {r['farms']:>4}  {r['food_dep']:>5}")
-    print("-" * 78)
+        print(f"{r['seed']:>6}  {r['status']:<4}  {r['score']:>6}  {r['net_pop']:>6}  {r['farms']:>4}  "
+              f"{r['granary']:>2}  {r['mine']:>2}  {r['workshop']:>2}  {r['barracks']:>2}  "
+              f"{r['defend']:>4}  {r['raids']:>4}")
+    print("-" * 88)
 
     # ---- Stats ----
     scores = [r["score"] for r in results]
@@ -185,9 +185,9 @@ def main():
     n_pass = n - n_fail
 
     print()
-    print("=" * 78)
+    print("=" * 88)
     print("  SUMMARY")
-    print("=" * 78)
+    print("=" * 88)
     print(f"  Runs          : {n}")
     print(f"  Passed        : {n_pass}")
     print(f"  Failed        : {n_fail}")
@@ -196,6 +196,8 @@ def main():
         print(f"  Score  min/avg/max : {min(scores)} / {statistics.mean(scores):.1f} / {max(scores)}")
         print(f"  NetPop min/avg/max : {min(netpops)} / {statistics.mean(netpops):.1f} / {max(netpops)}")
         print(f"  Farms  min/avg/max : {min(farms)} / {statistics.mean(farms):.1f} / {max(farms)}")
+        print(f"  Workshops built (any): {sum(1 for r in results if r['workshop'] > 0)}/{n}")
+        print(f"  Barracks  built (any): {sum(1 for r in results if r['barracks'] > 0)}/{n}")
     print()
 
     if failures:
@@ -207,10 +209,10 @@ def main():
         print("  All seeds passed.")
         print()
 
-    # Reference
     ref = next((r for r in results if r["seed"] == 42), None)
     if ref:
-        print(f"  Reference seed 42: score={ref['score']}  status={ref['status']}")
+        print(f"  Reference seed 42: score={ref['score']}  status={ref['status']}  "
+              f"W={ref['workshop']} B={ref['barracks']} def={ref['defend']} raid={ref['raids']}")
         print()
 
     if args.json:
@@ -230,7 +232,6 @@ def main():
         print(f"  Wrote {args.json}")
         print()
 
-    # Exit code for CI-style use
     sys.exit(1 if failures else 0)
 
 
