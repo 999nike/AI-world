@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 stages 0–4 + defense + raids live  
+**Status:** Era 2 stages 0–4 + defense + raids live on main  
 **Last updated:** 2026-08-12
 
 ---
@@ -10,9 +10,9 @@
 - Era 1 LOCKED (32/32 stress pass)
 - Era 2 LIVE: Granary ✓ Mine ✓ Roads ✓ Workshop ✓ Barracks ✓
 - E2.5 Defense: soldiers absorb starve loss (cost 1.0)
-- E2.6 Raids: every 25 ticks, strongest settlement (soldiers≥3) raids weakest; cost 2 soldiers, steals up to 3w/2s/2f
+- E2.6 Raids: every 25 ticks, strongest (≥3 soldiers) raids weakest; cost 2, loot up to 3w/2s/2f
 - Seed 42 @500: raid_events 4, loot 14, defend 54, score 1169
-- Code for E2.6 in artifacts/AI-world-E2.6/ if push lag; settlements+simloop need final push
+- All code on `main`
 - Next: god-view polish, or raise stress thresholds
 
 ---
