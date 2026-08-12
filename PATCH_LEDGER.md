@@ -1,7 +1,16 @@
 # AI-world Patch Ledger
 
-**Status:** Era 1 locked (bootstrap fix pending re-validation)  
+**Status:** Era 1 validated — Era 2 started  
 **Last updated:** 2026-08-12
+
+---
+
+## Era 1 validation
+
+- Multi-seed + stress test: **32/32 PASS (100%)**
+- Farm soft-cap fixed (P12.0)
+- Bootstrap / seed-999 failure fixed (P13.0)
+- Stress tool added (P14.0)
 
 ---
 
@@ -9,41 +18,21 @@
 
 | ID | Patch | Status |
 |----|-------|--------|
-| P0.1 | Create PATCH_LEDGER.md | Done |
-| P0.2 | Remove dead code in simloop | Done |
-| P1.1 | Extract SettlementManager | Done |
-| P1.2 | Deduplicate nearest-settlement | Done |
-| P1.3 | Centralise build governors | Done |
-| P2.1 | Enrich Observation + UtilityAgent | Done |
-| — | Restore tools/view_run.py | Done |
-| P3.0 | Fix starvation (net deficit) | Done |
-| P3.2 | Soften hut gates + farm→hut redirect | Done |
-| P3.1 | Balance (yield 1.5, slower growth, softer score) | Done |
-| — | **Lock Era 1 into DESIGN.md** | **Done** |
-| P4.0 | Add multi-seed validation tool | Done |
-| P2.2 | Soften hard food/haul overrides in simloop | Done |
-| P5.0 | Minimal god-view tool | Done |
-| P6.0 | Minimal Governor support | Done |
-| P7.0 | Minimal Scenario designer | Done |
-| P8.0 | Minimal Drop-in agent | Done |
-| P9.0 | Configurable agent count | Done |
-| P10.0 | CLI help cleanup | Done |
-| P11.0 | README rewrite + god_view header polish | Done |
 | P12.0 | Fix farm soft-cap bypass | Done |
-| P13.0 | Fix seed-999 style bootstrap failure | Done |
-| P14.0 | Automated seed stress testing tool | Done |
+| P13.0 | Fix seed-999 bootstrap failure | Done |
+| P14.0 | Automated seed stress testing | Done |
+| E2.0 | Granary (first Era 2 building) | Done |
 
 ---
 
-## Era 1 reference (seed 42, 300 ticks)
+## Era 1 reference (historical)
 
-- Score ≈ 241
-- Huts / Storage / Farms ≈ 12 / 1 / 3
-- Net pop positive, starvation present but controlled
+- Seed 42 @ 300 ticks ≈ score 241 (pre-bootstrap-fix)
+- Post-fix stress: seed 42 @ 500 ticks ≈ 477, all seeds pass
 
 ---
 
-## Next
+## Next (Era 2)
 
-- Run stress_test.py and review pass rate
-- Only then: Era 2 systems
+- Observe granary uptake in runs
+- Next tech candidates: Mine / Wheel (roads) / Workshop

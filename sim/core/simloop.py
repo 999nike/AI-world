@@ -10,7 +10,7 @@ from sim.log.logger import RunLogger
 
 from sim.world.state import Structure
 from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
-from sim.core.build_governors import resolve_building, can_build_hut
+from sim.core.build_governors import resolve_building, can_build_hut, can_build_granary
 from sim.core.governor import Governor
 from sim.core.scenario import Scenario
 from sim.agents.types import Observation, Action
@@ -22,6 +22,7 @@ BUILD_COSTS = {
     "hut": {"wood": 2, "stone": 1},
     "storage": {"wood": 3, "stone": 2},
     "farm": {"wood": 2, "stone": 0},
+    "granary": {"wood": 3, "stone": 1},  # E2.0
 }
 
 
@@ -38,7 +39,6 @@ def run_sim(
     control_policy: str = "idle",
     num_agents: int = 4,
 ):
-    # Scenario first so it can override seed/ticks/agents
     scenario = Scenario()
     if scenario_commands:
         scenario.apply_commands(scenario_commands)
@@ -58,7 +58,6 @@ def run_sim(
     rng = RNG(seed)
     world = make_world(cfg, rng, num_agents=num_agents)
 
-    # Apply starting inventory from scenario
     if scenario.start_food or scenario.start_wood or scenario.start_stone:
         for a in world.agents:
             a.inv_food = scenario.start_food
@@ -72,7 +71,6 @@ def run_sim(
             "stone": scenario.start_stone,
         })
 
-    # Governor
     gov = Governor()
     if governor_command:
         status = gov.apply_command(governor_command)
@@ -92,7 +90,6 @@ def run_sim(
             "state": scenario.to_dict(),
         })
 
-    # Build brains
     if agent_kind == "utility":
         from sim.agents.utility_agent import UtilityAgent
         w = policy_weights or {}
@@ -104,7 +101,6 @@ def run_sim(
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    # Drop-in control
     if control_agent_id:
         if control_agent_id in brains:
             brains[control_agent_id] = ControlledAgent(control_agent_id, policy=control_policy)
@@ -136,12 +132,13 @@ def run_sim(
         "build_hut": 0,
         "build_storage": 0,
         "build_farm": 0,
+        "build_granary": 0,
         "farm_harvest_events": 0,
         "farm_food_total": 0,
+        "granary_food_total": 0,
     }
 
     sm = SettlementManager(metrics=metrics, logger=logger)
-
     drought_active = False
 
     (run_dir / "config.json").write_text(
@@ -305,11 +302,16 @@ def run_sim(
                     if not allowed:
                         ok = False
                         note = gate_note
+                elif b == "granary":
+                    allowed, gate_note = can_build_granary(a.x, a.y, sm, world)
+                    if not allowed:
+                        ok = False
+                        note = gate_note
 
                 if ok and b not in BUILD_COSTS:
                     ok = False
                     note = "bad_building"
-                elif ok and world.structure_at(a.x, a.y) is not None and b not in ("storage", "farm"):
+                elif ok and world.structure_at(a.x, a.y) is not None and b not in ("storage", "farm", "granary"):
                     ok = False
                     note = "occupied"
 
@@ -322,7 +324,7 @@ def run_sim(
                     use_wood = 0
                     use_stone = 0
 
-                    if b in ("storage", "farm"):
+                    if b in ("storage", "farm", "granary"):
                         avail_wood = a.inv_wood + cur_tile.wood
                         avail_stone = a.inv_stone + cur_tile.stone
                         if avail_wood < need_wood or avail_stone < need_stone:
@@ -383,6 +385,8 @@ def run_sim(
                             metrics["build_storage"] += 1
                         elif b == "farm":
                             metrics["build_farm"] += 1
+                        elif b == "granary":
+                            metrics["build_granary"] += 1
 
                         if funded_sid is not None:
                             logger.event(
