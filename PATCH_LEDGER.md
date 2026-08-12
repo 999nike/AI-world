@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 stages 0–4 + defense + raids live on main  
+**Status:** Era 2 stages 0–4 + defense + raids + god-view live  
 **Last updated:** 2026-08-12
 
 ---
@@ -9,28 +9,28 @@
 
 - Era 1 LOCKED (32/32 stress pass)
 - Era 2 LIVE: Granary ✓ Mine ✓ Roads ✓ Workshop ✓ Barracks ✓
-- E2.5 Defense: soldiers absorb starve loss (cost 1.0)
-- E2.6 Raids: every 25 ticks, strongest (≥3 soldiers) raids weakest; cost 2, loot up to 3w/2s/2f
-- Seed 42 @500: raid_events 4, loot 14, defend 54, score 1169
-- All code on `main`
-- Next: god-view polish, or raise stress thresholds
+- E2.5 Defense: soldiers absorb starve (cost 1.0)
+- E2.6 Raids: every 25 ticks, strongest (≥3 sol) raids weakest; cost 2, loot ≤3w/2s/2f
+- God-view: full Era 2 icons (G/M/=/W/B), soldiers/tools, raids, `--final`
+- Seed 42 @500: raids 4, loot 14, defend 54, score 1169
+- Next: raise stress thresholds, or further combat polish
 
 ---
 
 ## Era 2 stages
 
-| Stage | System | Patch | Status | Notes |
-|-------|--------|-------|--------|-------|
-| 0–4 | Buildings | E2.0–E2.4 | **Live** | Granary→Barracks |
-| — | Defense | E2.5 | **Live** | soldiers absorb starve |
-| — | Raids | E2.6 | **Live** | multi-settlement loot raids |
+| Stage | System | Patch | Status |
+|-------|--------|-------|--------|
+| 0–4 | Buildings | E2.0–E2.4 | **Live** |
+| — | Defense | E2.5 | **Live** |
+| — | Raids | E2.6 | **Live** |
+| — | God-view | polish | **Live** |
 
 ---
 
 ## Next session
 
-1. God-view improvements
-2. Optional: raise stress thresholds
-3. Further combat polish if needed
+1. Optional: raise stress thresholds for Era 2 richness
+2. Further combat polish if needed
 
 Determinism still sacred. No learnable agents until world stays stable.
