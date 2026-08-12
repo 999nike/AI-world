@@ -11,8 +11,11 @@ from typing import Any, Dict, List, Optional, Tuple
 SETTLEMENT_RULES = {
     "starting_population": 1,
     "food_per_pop_per_tick": 0.25,
-    "growth_food_buffer": 2,
+    "growth_food_buffer": 3,          # was 2 – need a bit more spare food
     "max_pop_growth_per_tick": 1,
+    "surplus_ticks_for_growth": 5,    # was hardcoded 3 – slower overshoot
+    "starve_ticks_for_loss": 3,
+    "farm_yield_per_tick": 1.5,       # was 1.0 – 3 farms sustain ~18 pop
 }
 
 
@@ -26,10 +29,6 @@ class SettlementManager:
         self.struct_to_settlement: Dict[str, str] = {}
         self.metrics = metrics
         self.logger = logger
-
-    # ------------------------------------------------------------------
-    # Creation & linkage
-    # ------------------------------------------------------------------
 
     def create(self, x: int, y: int, owner_id: str, world, tick: int) -> str:
         sid = f"s{len(self.settlements) + 1}"
@@ -46,7 +45,6 @@ class SettlementManager:
             "surplus_ticks": 0,
         }
 
-        # Starter food so a brand-new settlement doesn't starve before first deposit
         try:
             tile0 = world.tile_at(x, y)
             starter = min(int(getattr(tile0, "food", 0)), 2)
@@ -82,7 +80,6 @@ class SettlementManager:
         return best_sid  # type: ignore
 
     def link_structure(self, x: int, y: int, owner_id: str, world, tick: int) -> str:
-        """Link a newly built structure to a settlement (create new if far enough)."""
         if not self.settlements:
             sid = self.create(x, y, owner_id=owner_id, world=world, tick=tick)
             self.struct_to_settlement[pos_key(x, y)] = sid
@@ -95,10 +92,6 @@ class SettlementManager:
             sid = self.create(x, y, owner_id=owner_id, world=world, tick=tick)
         self.struct_to_settlement[pos_key(x, y)] = sid
         return sid
-
-    # ------------------------------------------------------------------
-    # Queries
-    # ------------------------------------------------------------------
 
     def nearest(self, x: int, y: int) -> Optional[str]:
         if not self.settlements:
@@ -128,12 +121,7 @@ class SettlementManager:
     def structure_settlement_id(self, x: int, y: int) -> Optional[str]:
         return self.struct_to_settlement.get(pos_key(x, y))
 
-    # ------------------------------------------------------------------
-    # Deposits
-    # ------------------------------------------------------------------
-
     def try_deposit(self, agent, tick: int) -> None:
-        """Auto-deposit inventory into nearest settlement if within radius 2."""
         if not self.settlements:
             return
 
@@ -199,10 +187,6 @@ class SettlementManager:
                 }
             )
 
-    # ------------------------------------------------------------------
-    # Population + farm tick
-    # ------------------------------------------------------------------
-
     def tick(self, world, tick: int) -> None:
         if not self.settlements:
             return
@@ -210,17 +194,19 @@ class SettlementManager:
         cons = float(SETTLEMENT_RULES["food_per_pop_per_tick"])
         buffer_food = float(SETTLEMENT_RULES["growth_food_buffer"])
         max_growth = int(SETTLEMENT_RULES["max_pop_growth_per_tick"])
+        surplus_needed = int(SETTLEMENT_RULES.get("surplus_ticks_for_growth", 5))
+        starve_needed = int(SETTLEMENT_RULES.get("starve_ticks_for_loss", 3))
+        yield_per_farm = float(SETTLEMENT_RULES.get("farm_yield_per_tick", 1.5))
 
         for sid, s in self.settlements.items():
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
 
-            # --- Farm harvest ---
             farms = 0
             for stx in world.structures:
                 if stx.type == "farm" and self.structure_settlement_id(stx.x, stx.y) == sid:
                     farms += 1
-            farm_yield = farms * 1.0 if farms > 0 else 0.0
+            farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if farm_yield > 0:
                 s["food_stock"] = stock_at_start + farm_yield
                 self.metrics["farm_harvest_events"] += 1
@@ -234,38 +220,31 @@ class SettlementManager:
             if "starve_ticks" not in s:
                 s["starve_ticks"] = 0
 
-            # --- True net position after production ---
-            # shortfall = cannot fully feed population this tick
             can_fully_feed = post_harvest >= need
 
             if pop_before <= 0:
-                # No population — just hold stock, no starvation logic
                 s["starve_ticks"] = 0
                 s["surplus_ticks"] = 0
             elif can_fully_feed:
-                # Fully fed
                 s["food_stock"] = post_harvest - need
                 s["starve_ticks"] = 0
 
-                # Growth only if leftover still covers another full need + buffer
                 if float(s["food_stock"]) >= (need + buffer_food):
                     s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
-                    if int(s["surplus_ticks"]) >= 3:
+                    if int(s["surplus_ticks"]) >= surplus_needed:
                         s["population"] = pop_before + min(max_growth, 1)
                         s["surplus_ticks"] = 0
                 else:
                     s["surplus_ticks"] = 0
             else:
-                # True deficit tick — cannot fully feed
                 s["food_stock"] = 0.0
                 s["surplus_ticks"] = 0
                 s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
 
-                if int(s["starve_ticks"]) >= 3:
+                if int(s["starve_ticks"]) >= starve_needed:
                     s["population"] = max(0, pop_before - 1)
                     s["starve_ticks"] = 0
 
-            # Respawn rule: empty settlement recovers if it has enough food banked
             if pop_before <= 0 and float(s.get("food_stock", 0)) >= (buffer_food + (cons * 3)):
                 s["population"] = 1
                 s["starve_ticks"] = 0
@@ -295,10 +274,6 @@ class SettlementManager:
                         "need": need,
                     }
                 )
-
-    # ------------------------------------------------------------------
-    # Helpers used by build governors in simloop
-    # ------------------------------------------------------------------
 
     def count_structures_of_type(self, sid: str, structure_type: str, world) -> int:
         count = 0
