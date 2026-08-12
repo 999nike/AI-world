@@ -39,6 +39,7 @@ SETTLEMENT_RULES = {
     "academy_knowledge_per_tick": 0.3,
     "library_knowledge_per_tick": 0.2,
     "foundry_tools_bonus": 0.15,
+    "hall_food_per_tick": 0.15,
     "subject_agriculture_cost": 8,
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
@@ -170,6 +171,9 @@ class SettlementManager:
     def settlement_has_foundry(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "foundry", world) >= 1
 
+    def settlement_has_hall(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "hall", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -227,7 +231,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -255,6 +259,8 @@ class SettlementManager:
                     has_library = True
                 elif stx.type == "foundry":
                     has_foundry = True
+                elif stx.type == "hall":
+                    has_hall = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -308,6 +314,10 @@ class SettlementManager:
                 tf = float(SETTLEMENT_RULES.get("temple_food_per_tick", 0.25))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
                 self.metrics["temple_food_total"] = self.metrics.get("temple_food_total", 0) + tf
+            if has_hall:
+                hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.15))
+                s["food_stock"] = float(s.get("food_stock", 0) or 0) + hf
+                self.metrics["hall_food_total"] = self.metrics.get("hall_food_total", 0) + hf
 
             k_add = 0.0
             if has_academy:
@@ -326,6 +336,8 @@ class SettlementManager:
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
             if "organisation" in subjects:
                 local_surplus_needed = max(1, local_surplus_needed - int(SETTLEMENT_RULES.get("organisation_surplus_reduction", 1)))
+            if has_hall:
+                local_surplus_needed = max(1, local_surplus_needed - 1)
 
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
@@ -389,7 +401,7 @@ class SettlementManager:
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "has_irrigation": has_irrigation, "has_library": has_library,
-                    "has_foundry": has_foundry, "subjects": subjects, "era": era,
+                    "has_foundry": has_foundry, "has_hall": has_hall, "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
@@ -456,7 +468,7 @@ class SettlementManager:
         atk["wood_stock"] = int(atk.get("wood_stock", 0)) + take_w
         atk["stone_stock"] = int(atk.get("stone_stock", 0)) + take_s
         atk["food_stock"] = float(atk.get("food_stock", 0)) + take_f
-        self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + 1
+        self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + take_w + take_s + take_f
         self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
         self.logger.event({
             "type": "raid", "tick": tick, "attacker": atk_sid, "target": tgt_sid,
