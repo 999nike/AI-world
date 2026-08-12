@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 1 locked  
+**Status:** Era 1 locked (soft-cap fix pending re-validation)  
 **Last updated:** 2026-08-12
 
 ---
@@ -29,6 +29,7 @@
 | P9.0 | Configurable agent count | Done |
 | P10.0 | CLI help cleanup | Done |
 | P11.0 | README rewrite + god_view header polish | Done |
+| P12.0 | Fix farm soft-cap bypass | Done |
 
 ---
 
@@ -40,7 +41,8 @@
 
 ---
 
-## Next (post lock)
+## Next
 
-- Multi-seed validation (tool ready — run when ready to view)
+- Re-run multi-seed validation after P12.0
+- Confirm farm counts stay near soft-cap
 - Only then: Era 2 systems

@@ -18,7 +18,7 @@ BUILD_ALIASES = {
     "home": "hut",
 }
 
-# After this many farms, further farm attempts become huts (if storage exists)
+# After this many farms, further farm attempts are redirected
 FARM_SOFT_CAP = 3
 
 
@@ -42,7 +42,9 @@ def resolve_building(
     1. Normalise aliases
     2. Force first farm if none exists
     3. Cap storage at 1 (extra → hut)
-    4. Soft-cap farms at FARM_SOFT_CAP (extra farm attempts → hut)
+    4. Soft-cap farms at FARM_SOFT_CAP
+       - no storage yet → redirect to storage
+       - storage exists → redirect to hut
     """
     b = normalise_building_name(requested)
     note = ""
@@ -70,10 +72,14 @@ def resolve_building(
         b = "hut"
         note = "storage_capped_to_hut"
 
-    # Priority 3: farm soft-cap → push housing
-    if b == "farm" and farms_here >= FARM_SOFT_CAP and stor_here >= 1:
-        b = "hut"
-        note = "farm_capped_to_hut"
+    # Priority 3: farm soft-cap (FIXED — applies even without storage)
+    if b == "farm" and farms_here >= FARM_SOFT_CAP:
+        if stor_here >= 1:
+            b = "hut"
+            note = "farm_capped_to_hut"
+        else:
+            b = "storage"
+            note = "farm_capped_to_storage"
 
     return b, note
 
