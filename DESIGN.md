@@ -5,6 +5,21 @@
 
 ---
 
+## Vision (look & feel)
+
+**The Settlers** for human play: top-down, resource chains, haul labour, buildings that feel alive, watching a settlement grow.
+
+**Civilization** for structure: ages, subjects/tech, long-horizon choices, guns-vs-butter tension.
+
+**Research lab** underneath: fully deterministic, seed-controlled, every decision logged. Logs become the animation / god-view pipeline. Humans watch or steer; later agents learn.
+
+Feel target when a human plays:  
+“I am watching a living settlement make real choices. Bad priorities hurt. Good ones compound.”
+
+Not pure spreadsheet. Not pure action game. Lab first → watchable game.
+
+---
+
 ## Intent
 
 Deterministic multi-agent civilisation lab → watchable Settlers-style game.  
@@ -39,9 +54,20 @@ Inquiry + academy + pop≥20 → era 4
 
 ---
 
-## Next axis
+## Next axis — E4.5 Command (strategy)
 
-E4.5 strategy subject building (TBD)
+| Field | Value |
+|-------|-------|
+| Cost | 3w 4s |
+| Gate | era≥4 + strategy subject |
+| Max | 1 |
+| Icon | X |
+| Effect | +0.20 soldiers/tick |
+| Trade-off | Soldiers consume 0.05 food each/tick |
+
+Guns-vs-butter. Over-militarise → starvation risk. Under-militarise → weak to raids. Agents must choose.
+
+Later strategy buildings can specialise (pure offence / pure defence).
 
 ---
 
@@ -49,14 +75,15 @@ E4.5 strategy subject building (TBD)
 
 Science labs → physics-style experiments / tech unlocks.  
 Modern-era buildings as late content.  
-Still pure lab-sim (deterministic + logged). Civ flavour, our style.
+Still pure lab-sim (deterministic + logged).
 
 ---
 
 ## God-view
 
 `--play` auto-steps snapshots with key event callouts.  
-Icons: C=academy #=walls ~=irrigation L=library Y=foundry O=hall
+Icons: C=academy #=walls ~=irrigation L=library Y=foundry O=hall  
+Next: X=command
 
 ---
 
@@ -66,3 +93,4 @@ Icons: C=academy #=walls ~=irrigation L=library Y=foundry O=hall
 2. One axis at a time  
 3. Logs first  
 4. Min tokens while usage high  
+5. Choices must be able to hurt  
