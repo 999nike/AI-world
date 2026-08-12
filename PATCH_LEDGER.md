@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E3 complete + E4.0–E4.1 live  
+**Status:** Era 4 skeleton locked (E4.0–E4.1)  
 **Last updated:** 2026-08-12
 
 ---
@@ -9,10 +9,11 @@
 
 ```
 Era 1 LOCKED · Era 2 COMPLETE · Era 3 COMPLETE
-E4.0 age-up (Inquiry + academy + pop≥20)
-E4.1 Irrigation (era≥4 + agriculture | +0.2 farm/farm)
+E4.0 age-up · E4.1 Irrigation (2w2s | era≥4 + agriculture | +0.2 farm/farm)
 
-Next: validate Irrigation rate | god-view path | more E4
+Irrigation appears on strong seeds (e.g. 100). Variance expected.
+
+NEXT MAJOR AXIS: god-view animation path (logs → simple visual playback)
 ```
 
 ---

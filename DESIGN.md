@@ -3,8 +3,8 @@
 **Last updated:** 2026-08-12  
 **Era 1:** LOCKED  
 **Era 2:** COMPLETE  
-**Era 3:** COMPLETE (E3.0–E3.4)  
-**Era 4:** E4.0–E4.1 live
+**Era 3:** COMPLETE  
+**Era 4:** skeleton locked (E4.0–E4.1)
 
 ---
 
@@ -25,36 +25,23 @@ Same seed + same code → same outcome. Logs are source of truth.
 
 ---
 
-## Era 1 — Settlement Survival (LOCKED)
+## Era summary
 
-Farm, storage, hut. Population growth/starvation. Deposit range 2.
-
----
-
-## Era 2 — Classical (COMPLETE)
-
-Granary, Mine, Road, Workshop, Barracks + defense + raids.
-
----
-
-## Era 3 (COMPLETE)
-
-E3.0 age-up · E3.1 Market · E3.2 Temple · E3.3 Academy + Subjects · E3.4 Walls
-
----
-
-## Era 4
-
-### E4.0 Age transition
-- Gate: era==3 + Inquiry subject + academy + pop ≥ 20
-- Effect: era=4, +5 food, +0.1 farm yield/farm
+- **Era 1** LOCKED — farm/storage/hut survival
+- **Era 2** COMPLETE — granary/mine/road/workshop/barracks/raids
+- **Era 3** COMPLETE — age-up, market, temple, academy+subjects, walls
+- **Era 4** skeleton — Inquiry age-up + Irrigation (Agriculture expansion)
 
 ### E4.1 Irrigation
 | Cost | Gate | Max | Effect |
 |------|------|-----|--------|
-| 3w 2s | era≥4 + agriculture subject | 1 | +0.2 farm yield per farm |
+| 2w 2s | era≥4 + agriculture | 1 | +0.2 farm yield per farm |
 
-Expands the Agriculture subject into a physical structure.
+---
+
+## Next major axis
+
+**God-view animation path** — turn events.jsonl + snapshots into simple step/scrub visual playback.
 
 ---
 
