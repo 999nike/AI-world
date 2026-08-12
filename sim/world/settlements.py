@@ -22,6 +22,8 @@ SETTLEMENT_RULES = {
     "workshop_mine_bonus": 0.25,
     "tools_consume_per_boost": 0.5,
     "barracks_soldiers_per_tick": 0.25,
+    "command_soldiers_per_tick": 0.20,
+    "soldier_food_consume": 0.05,
     "soldier_defend_cost": 1.0,
     "raid_interval": 25,
     "raid_min_soldiers": 3.0,
@@ -174,6 +176,9 @@ class SettlementManager:
     def settlement_has_hall(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "hall", world) >= 1
 
+    def settlement_has_command(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "command", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -231,7 +236,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = has_command = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -261,6 +266,8 @@ class SettlementManager:
                     has_foundry = True
                 elif stx.type == "hall":
                     has_hall = True
+                elif stx.type == "command":
+                    has_command = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -303,6 +310,10 @@ class SettlementManager:
                 barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.25))
                 s["soldiers"] = float(s.get("soldiers", 0.0)) + barracks_soldiers
                 self.metrics["barracks_soldiers_total"] = self.metrics.get("barracks_soldiers_total", 0) + barracks_soldiers
+            if has_command:
+                cmd_soldiers = float(SETTLEMENT_RULES.get("command_soldiers_per_tick", 0.20))
+                s["soldiers"] = float(s.get("soldiers", 0.0)) + cmd_soldiers
+                self.metrics["command_soldiers_total"] = self.metrics.get("command_soldiers_total", 0) + cmd_soldiers
             if has_market:
                 mw = float(SETTLEMENT_RULES.get("market_wood_per_tick", 0.5))
                 ms = float(SETTLEMENT_RULES.get("market_stone_per_tick", 0.25))
@@ -331,7 +342,9 @@ class SettlementManager:
                     self._try_unlock_subjects(sid, s, tick)
 
             post_harvest = float(s.get("food_stock", 0))
-            need = pop_before * cons
+            soldiers_now = float(s.get("soldiers", 0.0))
+            soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.05)) if has_command else 0.0
+            need = pop_before * cons + soldier_upkeep
             starve_needed = granary_starve if has_granary else starve_needed_default
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
             if "organisation" in subjects:
@@ -401,7 +414,8 @@ class SettlementManager:
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "has_irrigation": has_irrigation, "has_library": has_library,
-                    "has_foundry": has_foundry, "has_hall": has_hall, "subjects": subjects, "era": era,
+                    "has_foundry": has_foundry, "has_hall": has_hall, "has_command": has_command,
+                    "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
