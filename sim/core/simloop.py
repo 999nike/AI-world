@@ -97,6 +97,8 @@ def run_sim(
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
         "tools_boost_events": 0,
         "soldier_defend_events": 0,
+        "raid_events": 0,
+        "raid_loot_total": 0,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
