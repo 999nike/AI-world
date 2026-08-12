@@ -56,6 +56,9 @@ SETTLEMENT_RULES = {
     "craft_tools_bonus": 0.1,
     "organisation_surplus_reduction": 1,
     "strategy_defend_bonus": 0.1,
+    # E3.4 Walls
+    "walls_defend_bonus": 0.25,       # reduces soldier defend cost
+    "walls_raid_extra_cost": 1.0,     # extra soldier cost for attacker
 }
 
 
@@ -164,6 +167,9 @@ class SettlementManager:
     def settlement_has_academy(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "academy", world) >= 1
 
+    def settlement_has_walls(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "walls", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -222,7 +228,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -242,6 +248,8 @@ class SettlementManager:
                     has_temple = True
                 elif stx.type == "academy":
                     has_academy = True
+                elif stx.type == "walls":
+                    has_walls = True
 
             subjects = list(s.get("subjects") or [])
 
@@ -327,11 +335,13 @@ class SettlementManager:
                 s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
                 if int(s["starve_ticks"]) >= starve_needed:
                     # E2.5: soldiers can absorb the loss (light defense)
-                    # E3.3 Strategy: slightly better defend value
+                    # E3.3 Strategy + E3.4 Walls improve defend value
                     soldiers = float(s.get("soldiers", 0.0))
                     defend_cost = float(SETTLEMENT_RULES.get("soldier_defend_cost", 1.0))
                     if "strategy" in subjects:
                         defend_cost = max(0.5, defend_cost - float(SETTLEMENT_RULES.get("strategy_defend_bonus", 0.1)))
+                    if has_walls:
+                        defend_cost = max(0.4, defend_cost - float(SETTLEMENT_RULES.get("walls_defend_bonus", 0.25)))
                     if soldiers >= defend_cost:
                         s["soldiers"] = soldiers - defend_cost
                         s["starve_ticks"] = 0
@@ -364,7 +374,7 @@ class SettlementManager:
                     "food_before": stock_at_start, "food_after": food_after,
                     "farm_yield": farm_yield, "granary_bonus": bonus, "need": need,
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
-                    "has_barracks": has_barracks, "has_academy": has_academy,
+                    "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "subjects": subjects,
                 })
 
@@ -410,7 +420,7 @@ class SettlementManager:
         if tick % interval != 0 or self.count() < 2:
             return
         min_soldiers = float(SETTLEMENT_RULES.get("raid_min_soldiers", 3.0))
-        cost = float(SETTLEMENT_RULES.get("raid_cost", 2.0))
+        base_cost = float(SETTLEMENT_RULES.get("raid_cost", 2.0))
         loot_w = int(SETTLEMENT_RULES.get("raid_loot_wood", 3))
         loot_s = int(SETTLEMENT_RULES.get("raid_loot_stone", 2))
         loot_f = int(SETTLEMENT_RULES.get("raid_loot_food", 2))
@@ -424,6 +434,11 @@ class SettlementManager:
         if not others:
             return
         tgt_sid, tgt = min(others, key=lambda x: float(x[1].get("soldiers", 0)))
+
+        # E3.4: walls make the target more expensive to raid
+        cost = base_cost
+        if self.settlement_has_walls(tgt_sid, world):
+            cost += float(SETTLEMENT_RULES.get("walls_raid_extra_cost", 1.0))
 
         if float(atk.get("soldiers", 0)) < cost:
             return
@@ -450,6 +465,7 @@ class SettlementManager:
             "cost_soldiers": cost,
             "loot": {"wood": take_w, "stone": take_s, "food": take_f},
             "attacker_soldiers_after": atk["soldiers"],
+            "target_had_walls": self.settlement_has_walls(tgt_sid, world),
         })
 
     def _try_age_up(self, world, tick: int) -> None:
