@@ -17,6 +17,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_workshop": 3.5,  # E2.3
     "w_build_barracks": 3.0,  # E2.4
     "w_build_market": 3.2,  # E3.1
+    "w_build_temple": 3.0,  # E3.2
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -77,7 +78,7 @@ class UtilityAgent:
             if obs.tile.get(r, 0) > 0:
                 c.append(Action(type="gather", resource=r))
         if obs.structure is None:
-            for b in ("farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market"):
+            for b in ("farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market", "temple"):
                 c.append(Action(type="build", building=b))
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -182,6 +183,13 @@ class UtilityAgent:
                 # era gate enforced in can_build; soft prefer when stocked
                 can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 3 else 0.2
                 return w["w_build_market"] * can + 2.0 + inv_term - hunger * 0.2
+            if b == "temple":
+                has_market = "market" in types
+                has_temple = "temple" in types
+                if not has_market or has_temple:
+                    return -3.0 if has_temple else -1.5
+                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 4 else 0.2
+                return w["w_build_temple"] * can + 1.9 + inv_term - hunger * 0.2
             return -5.0
 
         if a.type == "move":
