@@ -36,8 +36,9 @@ def run_sim(
     scenario_commands: Optional[str] = None,
     control_agent_id: Optional[str] = None,
     control_policy: str = "idle",
+    num_agents: int = 4,
 ):
-    # P7.0 Scenario first so it can override seed/ticks
+    # Scenario first so it can override seed/ticks/agents
     scenario = Scenario()
     if scenario_commands:
         scenario.apply_commands(scenario_commands)
@@ -46,6 +47,8 @@ def run_sim(
         seed = scenario.seed
     if scenario.ticks is not None:
         ticks = scenario.ticks
+    if scenario.num_agents is not None:
+        num_agents = scenario.num_agents
 
     run_id = make_run_id()
     run_dir = Path("runs") / run_id
@@ -53,7 +56,7 @@ def run_sim(
 
     cfg = WorldConfig()
     rng = RNG(seed)
-    world = make_world(cfg, rng)
+    world = make_world(cfg, rng, num_agents=num_agents)
 
     # Apply starting inventory from scenario
     if scenario.start_food or scenario.start_wood or scenario.start_stone:
@@ -69,7 +72,7 @@ def run_sim(
             "stone": scenario.start_stone,
         })
 
-    # P6.0 Governor
+    # Governor
     gov = Governor()
     if governor_command:
         status = gov.apply_command(governor_command)
@@ -101,7 +104,7 @@ def run_sim(
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    # P8.0 Drop-in control
+    # Drop-in control
     if control_agent_id:
         if control_agent_id in brains:
             brains[control_agent_id] = ControlledAgent(control_agent_id, policy=control_policy)
@@ -139,7 +142,6 @@ def run_sim(
 
     sm = SettlementManager(metrics=metrics, logger=logger)
 
-    # Simple drought state (P7.0)
     drought_active = False
 
     (run_dir / "config.json").write_text(
@@ -147,6 +149,7 @@ def run_sim(
             {
                 "seed": seed,
                 "ticks": ticks,
+                "num_agents": num_agents,
                 "snapshot_every": snapshot_every,
                 "world": cfg.__dict__,
                 "build_costs": BUILD_COSTS,
@@ -162,13 +165,12 @@ def run_sim(
         encoding="utf-8",
     )
 
-    logger.event({"type": "run_started", "run_id": run_id, "seed": seed})
+    logger.event({"type": "run_started", "run_id": run_id, "seed": seed, "num_agents": num_agents})
 
     for t in range(ticks):
         world.tick = t
         logger.event({"type": "tick_started", "tick": t})
 
-        # P7.0 Apply pending scenario events
         for ev in scenario.pending_events(t):
             if ev.kind == "drought":
                 drought_active = True
@@ -183,7 +185,6 @@ def run_sim(
                 logger.event({"type": "scenario_event", "tick": t, "kind": "boom", "note": "resource spike"})
             ev.applied = True
 
-        # Normal regrowth (reduced during drought)
         regrowth_count = 3 if drought_active else 10
         if t % 5 == 0:
             for _ in range(regrowth_count):
@@ -220,7 +221,6 @@ def run_sim(
 
             action = brains[a.agent_id].act(obs, rng)
 
-            # P2.2: Only a true emergency override remains.
             try:
                 nearest_sid = sm.nearest(a.x, a.y)
                 if nearest_sid is not None:
@@ -459,6 +459,7 @@ def run_sim(
         "run_id": run_id,
         "seed": seed,
         "ticks": ticks,
+        "num_agents": num_agents,
         "final": final,
         "metrics": metrics,
         "score": score,

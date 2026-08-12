@@ -7,7 +7,7 @@ All effects are deterministic and logged.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -24,6 +24,7 @@ class Scenario:
     start_food: int = 0
     start_wood: int = 0
     start_stone: int = 0
+    num_agents: Optional[int] = None
     events: List[ScenarioEvent] = field(default_factory=list)
 
     def apply_commands(self, raw: str) -> List[str]:
@@ -59,6 +60,13 @@ class Scenario:
                 return f"ticks={self.ticks}"
             except ValueError:
                 return f"bad_ticks:{parts[1]}"
+
+        if verb == "agents" and len(parts) >= 2:
+            try:
+                self.num_agents = max(1, int(parts[1]))
+                return f"agents={self.num_agents}"
+            except ValueError:
+                return f"bad_agents:{parts[1]}"
 
         if verb == "start_food" and len(parts) >= 2:
             try:
@@ -102,6 +110,7 @@ class Scenario:
         return {
             "seed": self.seed,
             "ticks": self.ticks,
+            "num_agents": self.num_agents,
             "start_food": self.start_food,
             "start_wood": self.start_wood,
             "start_stone": self.start_stone,

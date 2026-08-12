@@ -26,6 +26,7 @@
 | P6.0 | Minimal Governor support | Done |
 | P7.0 | Minimal Scenario designer | Done |
 | P8.0 | Minimal Drop-in agent | Done |
+| P9.0 | Configurable agent count | Done |
 
 ---
 

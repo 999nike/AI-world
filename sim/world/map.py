@@ -3,7 +3,7 @@ from sim.world.config import WorldConfig
 from sim.world.state import Tile, WorldState, AgentState
 
 
-def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
+def make_world(cfg: WorldConfig, rng: RNG, num_agents: int = 4) -> WorldState:
     tiles = []
     for _ in range(cfg.width * cfg.height):
         tiles.append(
@@ -15,7 +15,8 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
         )
 
     agents = []
-    for i in range(4):
+    n = max(1, int(num_agents))
+    for i in range(n):
         agents.append(
             AgentState(
                 agent_id=f"A{i}",
@@ -34,5 +35,5 @@ def make_world(cfg: WorldConfig, rng: RNG) -> WorldState:
         tiles=tiles,
         agents=agents,
         structures=[],
-        settlements=[],  # <-- required now
+        settlements=[],
     )
