@@ -15,6 +15,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_storage": 4.0, "w_build_hut": 3.5, "w_build_farm": 5.0,
     "w_build_granary": 4.5, "w_build_mine": 4.0, "w_build_road": 2.5,
     "w_build_workshop": 3.5,  # E2.3
+    "w_build_barracks": 3.0,  # E2.4
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -75,7 +76,7 @@ class UtilityAgent:
             if obs.tile.get(r, 0) > 0:
                 c.append(Action(type="gather", resource=r))
         if obs.structure is None:
-            for b in ("farm", "storage", "hut", "granary", "mine", "road", "workshop"):
+            for b in ("farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks"):
                 c.append(Action(type="build", building=b))
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -165,6 +166,13 @@ class UtilityAgent:
                     return -1.5
                 can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 2 else 0.2
                 return w["w_build_workshop"] * can + 2.0 + inv_term - hunger * 0.25
+            if b == "barracks":
+                has_workshop = "workshop" in types
+                has_barracks = "barracks" in types
+                if not has_workshop or has_barracks:
+                    return -3.0 if has_barracks else -1.5
+                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 3 else 0.2
+                return w["w_build_barracks"] * can + 1.8 + inv_term - hunger * 0.2
             return -5.0
 
         if a.type == "move":
