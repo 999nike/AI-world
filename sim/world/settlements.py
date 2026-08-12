@@ -37,6 +37,7 @@ SETTLEMENT_RULES = {
     "temple_food_per_tick": 0.25,
     "temple_surplus_ticks": 3,
     "academy_knowledge_per_tick": 0.3,
+    "library_knowledge_per_tick": 0.2,
     "subject_agriculture_cost": 8,
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
@@ -51,7 +52,6 @@ SETTLEMENT_RULES = {
     "age_up4_min_pop": 20,
     "age_up4_food_bonus": 5.0,
     "era4_farm_bonus": 0.1,
-    # E4.1 Irrigation
     "irrigation_farm_bonus": 0.2,
 }
 
@@ -163,6 +163,9 @@ class SettlementManager:
     def settlement_has_irrigation(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "irrigation", world) >= 1
 
+    def settlement_has_library(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "library", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -220,7 +223,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -244,6 +247,8 @@ class SettlementManager:
                     has_walls = True
                 elif stx.type == "irrigation":
                     has_irrigation = True
+                elif stx.type == "library":
+                    has_library = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -294,11 +299,16 @@ class SettlementManager:
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
                 self.metrics["temple_food_total"] = self.metrics.get("temple_food_total", 0) + tf
 
+            k_add = 0.0
             if has_academy:
-                k_add = float(SETTLEMENT_RULES.get("academy_knowledge_per_tick", 0.3))
+                k_add += float(SETTLEMENT_RULES.get("academy_knowledge_per_tick", 0.3))
+            if has_library:
+                k_add += float(SETTLEMENT_RULES.get("library_knowledge_per_tick", 0.2))
+            if k_add > 0:
                 s["knowledge"] = float(s.get("knowledge", 0.0)) + k_add
                 self.metrics["academy_knowledge_total"] = self.metrics.get("academy_knowledge_total", 0) + k_add
-                self._try_unlock_subjects(sid, s, tick)
+                if has_academy:
+                    self._try_unlock_subjects(sid, s, tick)
 
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
@@ -368,7 +378,8 @@ class SettlementManager:
                     "farm_yield": farm_yield, "granary_bonus": bonus, "need": need,
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
-                    "has_irrigation": has_irrigation, "subjects": subjects, "era": era,
+                    "has_irrigation": has_irrigation, "has_library": has_library,
+                    "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
