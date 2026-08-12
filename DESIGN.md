@@ -4,7 +4,7 @@
 **Era 1:** LOCKED  
 **Era 2:** COMPLETE  
 **Era 3:** COMPLETE (E3.0–E3.4)  
-**Era 4:** E4.0 skeleton live
+**Era 4:** E4.0–E4.1 live
 
 ---
 
@@ -45,11 +45,16 @@ E3.0 age-up · E3.1 Market · E3.2 Temple · E3.3 Academy + Subjects · E3.4 Wal
 
 ## Era 4
 
-### E4.0 Age transition (skeleton)
+### E4.0 Age transition
 - Gate: era==3 + Inquiry subject + academy + pop ≥ 20
 - Effect: era=4, +5 food, +0.1 farm yield/farm
 
-Future E4 buildings/tech TBD after validation.
+### E4.1 Irrigation
+| Cost | Gate | Max | Effect |
+|------|------|-----|--------|
+| 3w 2s | era≥4 + agriculture subject | 1 | +0.2 farm yield per farm |
+
+Expands the Agriculture subject into a physical structure.
 
 ---
 
