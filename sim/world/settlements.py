@@ -1,21 +1,22 @@
 """Settlement management for AI-world.
 
-Extracted from simloop.py in P1.1.
-Owns creation, linkage, deposits, farm harvest, and population dynamics.
+Owns creation, linkage, deposits, farm harvest, granary bonus, and population.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 SETTLEMENT_RULES = {
     "starting_population": 1,
     "food_per_pop_per_tick": 0.25,
-    "growth_food_buffer": 3,          # was 2 – need a bit more spare food
+    "growth_food_buffer": 3,
     "max_pop_growth_per_tick": 1,
-    "surplus_ticks_for_growth": 5,    # was hardcoded 3 – slower overshoot
+    "surplus_ticks_for_growth": 5,
     "starve_ticks_for_loss": 3,
-    "farm_yield_per_tick": 1.5,       # was 1.0 – 3 farms sustain ~18 pop
+    "farm_yield_per_tick": 1.5,
+    "granary_food_per_tick": 0.5,       # E2.0 passive food (less waste)
+    "granary_starve_ticks": 4,          # E2.0 slightly softer starvation
 }
 
 
@@ -195,25 +196,39 @@ class SettlementManager:
         buffer_food = float(SETTLEMENT_RULES["growth_food_buffer"])
         max_growth = int(SETTLEMENT_RULES["max_pop_growth_per_tick"])
         surplus_needed = int(SETTLEMENT_RULES.get("surplus_ticks_for_growth", 5))
-        starve_needed = int(SETTLEMENT_RULES.get("starve_ticks_for_loss", 3))
+        starve_needed_default = int(SETTLEMENT_RULES.get("starve_ticks_for_loss", 3))
         yield_per_farm = float(SETTLEMENT_RULES.get("farm_yield_per_tick", 1.5))
+        granary_food = float(SETTLEMENT_RULES.get("granary_food_per_tick", 0.5))
+        granary_starve = int(SETTLEMENT_RULES.get("granary_starve_ticks", 4))
 
         for sid, s in self.settlements.items():
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
 
             farms = 0
+            has_granary = False
             for stx in world.structures:
-                if stx.type == "farm" and self.structure_settlement_id(stx.x, stx.y) == sid:
+                linked = self.structure_settlement_id(stx.x, stx.y)
+                if linked != sid:
+                    continue
+                if stx.type == "farm":
                     farms += 1
+                elif stx.type == "granary":
+                    has_granary = True
+
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
-            if farm_yield > 0:
-                s["food_stock"] = stock_at_start + farm_yield
-                self.metrics["farm_harvest_events"] += 1
-                self.metrics["farm_food_total"] += farm_yield
+            bonus = granary_food if has_granary else 0.0
+            if farm_yield > 0 or bonus > 0:
+                s["food_stock"] = stock_at_start + farm_yield + bonus
+                if farm_yield > 0:
+                    self.metrics["farm_harvest_events"] += 1
+                    self.metrics["farm_food_total"] += farm_yield
+                if bonus > 0:
+                    self.metrics["granary_food_total"] = self.metrics.get("granary_food_total", 0) + bonus
 
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
+            starve_needed = granary_starve if has_granary else starve_needed_default
 
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
@@ -271,7 +286,9 @@ class SettlementManager:
                         "food_before": stock_at_start,
                         "food_after": food_after,
                         "farm_yield": farm_yield,
+                        "granary_bonus": bonus,
                         "need": need,
+                        "has_granary": has_granary,
                     }
                 )
 
