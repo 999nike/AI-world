@@ -22,7 +22,7 @@ ICON = {
     "agent": "A", "hut": "H", "storage": "S", "farm": "F", "granary": "G",
     "mine": "M", "road": "=", "workshop": "W", "barracks": "B",
     "market": "K", "temple": "T", "academy": "C", "walls": "#",
-    "irrigation": "~", "library": "L", "foundry": "Y",
+    "irrigation": "~", "library": "L", "foundry": "Y", "hall": "O",
     "settlement": "@", "empty": ".",
 }
 
@@ -83,7 +83,7 @@ def load_key_events(run_dir: Path) -> list[dict]:
             elif t == "action_resolved" and str(ev.get("note", "")).startswith("built_"):
                 b = str(ev.get("note", "")).replace("built_", "")
                 if b in ("academy", "walls", "irrigation", "library", "foundry",
-                         "temple", "barracks", "workshop"):
+                         "hall", "temple", "barracks", "workshop"):
                     out.append(ev)
     return out
 
@@ -148,7 +148,7 @@ def structure_counts(snap: dict) -> str:
     c = Counter(st.get("type") for st in snap.get("structures", []))
     order = ["farm", "storage", "hut", "granary", "mine", "road",
              "workshop", "barracks", "market", "temple", "academy", "walls",
-             "irrigation", "library", "foundry"]
+             "irrigation", "library", "foundry", "hall"]
     bits = [f"{t}:{c[t]}" for t in order if c.get(t)]
     return "  ".join(bits) if bits else "none"
 
@@ -172,7 +172,7 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
         print(
             f"  Builds  C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
             f"~:{m.get('build_irrigation',0)} L:{m.get('build_library',0)} "
-            f"Y:{m.get('build_foundry',0)}"
+            f"Y:{m.get('build_foundry',0)} O:{m.get('build_hall',0)}"
         )
     if snap:
         print(f"  Structs  {structure_counts(snap)}")
@@ -187,7 +187,7 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
         print(f"{y % 10} " + "".join(row))
     print()
     print("  A=agent F=farm S=storage W=workshop B=barracks C=academy")
-    print("  #=walls ~=irrigation L=library Y=foundry")
+    print("  #=walls ~=irrigation L=library Y=foundry O=hall")
     print()
 
 
@@ -231,7 +231,7 @@ def main():
         print(f"  AgeUp:{m.get('age_up_events',0)}  A4:{m.get('age_up4_events',0)}  "
               f"Subjects:{m.get('subject_unlock_events',0)}  "
               f"Irrig:{m.get('build_irrigation',0)} Lib:{m.get('build_library',0)} "
-              f"Foundry:{m.get('build_foundry',0)}")
+              f"Foundry:{m.get('build_foundry',0)} Hall:{m.get('build_hall',0)}")
         for s in summary.get("final", {}).get("settlements", []):
             subjects = ",".join(s.get("subjects") or []) or "-"
             print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
