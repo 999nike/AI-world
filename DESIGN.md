@@ -3,7 +3,7 @@
 **Last updated:** 2026-08-12  
 **Era 1:** LOCKED  
 **Era 2:** COMPLETE  
-**Era 3:** E3.0 age transition + E3.1 Market live
+**Era 3:** E3.0–E3.2 live (age-up, Market, Temple)
 
 ---
 
@@ -40,7 +40,12 @@ Granary, Mine, Road, Workshop, Barracks + defense + raids.
 ### E3.1 Market
 | Cost | Gate | Effect |
 |------|------|--------|
-| 4w 3s | era≥3 + barracks, max 1 | +0.5 wood/tick, +0.25 stone/tick (trade) |
+| 4w 3s | era≥3 + barracks, max 1 | +0.5 wood/tick, +0.25 stone/tick |
+
+### E3.2 Temple
+| Cost | Gate | Effect |
+|------|------|--------|
+| 3w 4s | era≥3 + market, max 1 | +0.25 food/tick; growth surplus ticks 3 (was 5) |
 
 ---
 
