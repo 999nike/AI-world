@@ -27,6 +27,7 @@
 | P7.0 | Minimal Scenario designer | Done |
 | P8.0 | Minimal Drop-in agent | Done |
 | P9.0 | Configurable agent count | Done |
+| P10.0 | CLI help cleanup | Done |
 
 ---
 

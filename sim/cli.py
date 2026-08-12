@@ -1,24 +1,72 @@
 import argparse
 from sim.core.simloop import run_sim
 
+
+EXAMPLES = """
+examples:
+  python -m sim run --seed 42 --ticks 300
+  python -m sim run --agents 6 --seed 42
+  python -m sim run --governor "focus food"
+  python -m sim run --scenario "seed 42; start_food 6; event drought 120"
+  python -m sim run --control A0 --control-policy gather_food
+  python -m sim run --agents 6 --governor "focus expand" --scenario "seed 7; event boom 80"
+"""
+
+
 def main():
-    p = argparse.ArgumentParser(prog="sim")
+    p = argparse.ArgumentParser(
+        prog="sim",
+        description="AI-world — deterministic civilisation simulation lab",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EXAMPLES,
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    runp = sub.add_parser("run", help="Run a simulation")
-    runp.add_argument("--seed", type=int, default=123)
-    runp.add_argument("--ticks", type=int, default=200)
-    runp.add_argument("--snapshot-every", type=int, default=10)
-    runp.add_argument("--agents", type=int, default=4,
-                      help="Number of agents (default 4)")
-    runp.add_argument("--governor", type=str, default=None,
-                      help="Governor command, e.g. 'focus food' or 'build hut'")
-    runp.add_argument("--scenario", type=str, default=None,
-                      help="Scenario commands, e.g. 'seed 42; agents 6; event drought 100'")
-    runp.add_argument("--control", type=str, default=None,
-                      help="Agent ID to control, e.g. A0")
-    runp.add_argument("--control-policy", type=str, default="idle",
-                      help="Policy for controlled agent: gather_food, gather_wood, gather_stone, build_farm, build_hut, build_storage, idle")
+    runp = sub.add_parser(
+        "run",
+        help="Run a simulation",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=EXAMPLES,
+    )
+
+    # Core
+    runp.add_argument(
+        "--seed", type=int, default=123,
+        help="Random seed (default: 123). Same seed = same outcome.",
+    )
+    runp.add_argument(
+        "--ticks", type=int, default=200,
+        help="How many ticks to simulate (default: 200)",
+    )
+    runp.add_argument(
+        "--snapshot-every", type=int, default=10,
+        help="Save a world snapshot every N ticks (default: 10)",
+    )
+    runp.add_argument(
+        "--agents", type=int, default=4,
+        help="Number of agents to spawn (default: 4)",
+    )
+
+    # Human roles
+    runp.add_argument(
+        "--governor", type=str, default=None, metavar="CMD",
+        help="Soft preference for all agents. Examples: 'focus food', 'build hut', 'focus expand', 'clear'",
+    )
+    runp.add_argument(
+        "--scenario", type=str, default=None, metavar="CMDS",
+        help="Starting conditions + timed events, separated by ';'. "
+             "Examples: 'seed 42; start_food 6', 'agents 6; event drought 120', 'event boom 80'",
+    )
+    runp.add_argument(
+        "--control", type=str, default=None, metavar="AGENT",
+        help="Take direct control of one agent (e.g. A0, A1, A2)",
+    )
+    runp.add_argument(
+        "--control-policy", type=str, default="idle", metavar="POLICY",
+        help="What the controlled agent does: "
+             "gather_food, gather_wood, gather_stone, "
+             "build_farm, build_hut, build_storage, idle (default: idle)",
+    )
 
     args = p.parse_args()
 
@@ -33,3 +81,7 @@ def main():
             control_agent_id=args.control,
             control_policy=args.control_policy,
         )
+
+
+if __name__ == "__main__":
+    main()
