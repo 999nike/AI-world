@@ -211,7 +211,7 @@ class UtilityAgent:
                 subjects = nearest.get("subjects") or []
                 if era < 4 or "agriculture" not in subjects or has_irrigation:
                     return -3.0 if has_irrigation else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2 else 0.25
+                can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 2 else 0.25
                 return w["w_build_irrigation"] * can + 2.5 + inv_term - hunger * 0.1
             return -5.0
 
