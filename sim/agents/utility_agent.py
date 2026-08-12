@@ -52,12 +52,23 @@ class UtilityAgent:
     def act(self, obs: Observation, rng: RNG) -> Action:
         inv = obs.inventory
         structure = obs.structure
+        structs = obs.structures or []
 
-        # --- Early bootstrap: first storage if none exist ---
+        # --- Bootstrap: first building should be a farm (cheaper + produces food) ---
+        if structure is None and len(structs) == 0:
+            # Prefer farm as the very first structure
+            if inv.get("wood", 0) >= 2:
+                return Action(type="build", building="farm")
+            # Otherwise gather wood toward that goal
+            if obs.tile.get("wood", 0) > 0:
+                return Action(type="gather", resource="wood")
+            return self._random_action(obs, rng)
+
+        # --- Early storage once at least one farm exists ---
         if structure is None:
-            structs = obs.structures or []
+            has_farm = any(s.get("type") == "farm" for s in structs)
             has_storage = any(s.get("type") == "storage" for s in structs)
-            if not has_storage:
+            if has_farm and not has_storage:
                 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                     return Action(type="build", building="storage")
 

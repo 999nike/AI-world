@@ -40,7 +40,7 @@ def resolve_building(
 
     Order of priority:
     1. Normalise aliases
-    2. Force first farm if none exists
+    2. No settlement yet OR zero farms → force farm (bootstrap)
     3. Cap storage at 1 (extra → hut)
     4. Soft-cap farms at FARM_SOFT_CAP
        - no storage yet → redirect to storage
@@ -49,30 +49,34 @@ def resolve_building(
     b = normalise_building_name(requested)
     note = ""
 
-    if sm.count() == 0:
+    # Bootstrap: first structure / first farm must be a farm
+    total_structures = len(getattr(world, "structures", []) or [])
+    if sm.count() == 0 or total_structures == 0:
+        if b in ("storage", "hut", "farm", "") or b not in ("farm",):
+            if b != "farm":
+                note = "bootstrap_force_farm"
+            return "farm", note
         return b, note
 
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
-        return b, note
+        return "farm", "bootstrap_force_farm"
 
     farms_here = sm.count_structures_of_type(best_sid, "farm", world)
     stor_here = sm.count_structures_of_type(best_sid, "storage", world)
 
-    # Priority 1: establish agriculture first
+    # Still no farms in this settlement → force farm
     if farms_here == 0:
-        if b in ("storage", "hut", "farm") or b == "":
-            if b != "farm":
-                note = "redirected_to_farm"
-            b = "farm"
-        return b, note
+        if b != "farm":
+            note = "redirected_to_farm"
+        return "farm", note
 
-    # Priority 2: storage cap (max 1 per settlement)
+    # Storage cap (max 1 per settlement)
     if b == "storage" and stor_here >= 1:
         b = "hut"
         note = "storage_capped_to_hut"
 
-    # Priority 3: farm soft-cap (FIXED — applies even without storage)
+    # Farm soft-cap
     if b == "farm" and farms_here >= FARM_SOFT_CAP:
         if stor_here >= 1:
             b = "hut"

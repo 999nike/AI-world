@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 1 locked (soft-cap fix pending re-validation)  
+**Status:** Era 1 locked (bootstrap fix pending re-validation)  
 **Last updated:** 2026-08-12
 
 ---
@@ -30,6 +30,7 @@
 | P10.0 | CLI help cleanup | Done |
 | P11.0 | README rewrite + god_view header polish | Done |
 | P12.0 | Fix farm soft-cap bypass | Done |
+| P13.0 | Fix seed-999 style bootstrap failure | Done |
 
 ---
 
@@ -43,6 +44,7 @@
 
 ## Next
 
-- Re-run multi-seed validation after P12.0
-- Confirm farm counts stay near soft-cap
+- Re-run multi-seed validation after P13.0
+- Confirm seed 999 no longer collapses
+- Confirm farm counts stay reasonable
 - Only then: Era 2 systems
