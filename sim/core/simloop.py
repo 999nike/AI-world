@@ -13,7 +13,7 @@ from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import (
     resolve_building, can_build_hut, can_build_granary, can_build_mine, can_build_road,
     can_build_workshop, can_build_barracks, can_build_market, can_build_temple,
-    can_build_academy,
+    can_build_academy, can_build_walls,
 )
 from sim.core.governor import Governor
 from sim.core.scenario import Scenario
@@ -34,10 +34,11 @@ BUILD_COSTS = {
     "market": {"wood": 4, "stone": 3},  # E3.1
     "temple": {"wood": 3, "stone": 4},  # E3.2
     "academy": {"wood": 5, "stone": 4},  # E3.3
+    "walls": {"wood": 2, "stone": 3},  # E3.4
 }
 
 # Structures that can share a tile conceptually / not block the same way
-STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks", "market", "temple", "academy"}
+STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks", "market", "temple", "academy", "walls"}
 
 
 def run_sim(
@@ -97,7 +98,7 @@ def run_sim(
         "population_grew_events": 0, "population_starved_events": 0, "population_net_change": 0,
         "build_hut": 0, "build_storage": 0, "build_farm": 0,
         "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0,
-        "build_market": 0, "build_temple": 0, "build_academy": 0,
+        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0,
         "farm_harvest_events": 0, "farm_food_total": 0,
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
         "tools_boost_events": 0,
@@ -245,6 +246,10 @@ def run_sim(
                         ok, note = False, gate_note
                 elif b == "academy":
                     allowed, gate_note = can_build_academy(a.x, a.y, sm, world)
+                    if not allowed:
+                        ok, note = False, gate_note
+                elif b == "walls":
+                    allowed, gate_note = can_build_walls(a.x, a.y, sm, world)
                     if not allowed:
                         ok, note = False, gate_note
 
