@@ -35,7 +35,7 @@ BUILD_COSTS = {
     "temple": {"wood": 3, "stone": 4},
     "academy": {"wood": 5, "stone": 4},
     "walls": {"wood": 2, "stone": 3},
-    "irrigation": {"wood": 3, "stone": 2},  # E4.1
+    "irrigation": {"wood": 2, "stone": 2},  # E4.1
 }
 
 STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks",
@@ -102,17 +102,10 @@ def run_sim(
         "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0, "build_irrigation": 0,
         "farm_harvest_events": 0, "farm_food_total": 0,
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
-        "tools_boost_events": 0,
-        "soldier_defend_events": 0,
-        "raid_events": 0,
-        "raid_loot_total": 0,
-        "age_up_events": 0,
-        "age_up4_events": 0,
-        "market_wood_total": 0,
-        "market_stone_total": 0,
-        "temple_food_total": 0,
-        "academy_knowledge_total": 0,
-        "subject_unlock_events": 0,
+        "tools_boost_events": 0, "soldier_defend_events": 0, "raid_events": 0, "raid_loot_total": 0,
+        "age_up_events": 0, "age_up4_events": 0,
+        "market_wood_total": 0, "market_stone_total": 0, "temple_food_total": 0,
+        "academy_knowledge_total": 0, "subject_unlock_events": 0,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
@@ -212,48 +205,37 @@ def run_sim(
 
                 if b == "hut":
                     allowed, gate_note = can_build_hut(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "granary":
                     allowed, gate_note = can_build_granary(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "mine":
                     allowed, gate_note = can_build_mine(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "road":
                     allowed, gate_note = can_build_road(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "workshop":
                     allowed, gate_note = can_build_workshop(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "barracks":
                     allowed, gate_note = can_build_barracks(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "market":
                     allowed, gate_note = can_build_market(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "temple":
                     allowed, gate_note = can_build_temple(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "academy":
                     allowed, gate_note = can_build_academy(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "walls":
                     allowed, gate_note = can_build_walls(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
                 elif b == "irrigation":
                     allowed, gate_note = can_build_irrigation(a.x, a.y, sm, world)
-                    if not allowed:
-                        ok, note = False, gate_note
+                    if not allowed: ok, note = False, gate_note
 
                 if ok and b not in BUILD_COSTS:
                     ok, note = False, "bad_building"
