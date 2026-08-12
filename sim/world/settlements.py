@@ -22,6 +22,8 @@ SETTLEMENT_RULES = {
     "workshop_farm_bonus": 0.25,
     "workshop_mine_bonus": 0.25,
     "tools_consume_per_boost": 0.5,
+    # E2.4 Barracks
+    "barracks_soldiers_per_tick": 0.25,
 }
 
 
@@ -43,6 +45,7 @@ class SettlementManager:
             "population": int(SETTLEMENT_RULES.get("starting_population", 1)),
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0,  # E2.3
+            "soldiers": 0.0,     # E2.4
             "starve_ticks": 0, "surplus_ticks": 0,
         }
         try:
@@ -114,6 +117,9 @@ class SettlementManager:
     def settlement_has_workshop(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "workshop", world) >= 1
 
+    def settlement_has_barracks(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "barracks", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -172,7 +178,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = False
+            has_granary = has_mine = has_workshop = has_barracks = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -184,6 +190,8 @@ class SettlementManager:
                     has_mine = True
                 elif stx.type == "workshop":
                     has_workshop = True
+                elif stx.type == "barracks":
+                    has_barracks = True
 
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if has_workshop and farm_yield > 0:
@@ -203,6 +211,10 @@ class SettlementManager:
             if has_workshop:
                 s["tools_stock"] = float(s.get("tools_stock", 0.0)) + workshop_tools
                 self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + workshop_tools
+            if has_barracks:
+                barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.25))
+                s["soldiers"] = float(s.get("soldiers", 0.0)) + barracks_soldiers
+                self.metrics["barracks_soldiers_total"] = self.metrics.get("barracks_soldiers_total", 0) + barracks_soldiers
 
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
@@ -251,6 +263,7 @@ class SettlementManager:
                     "food_before": stock_at_start, "food_after": food_after,
                     "farm_yield": farm_yield, "granary_bonus": bonus, "need": need,
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
+                    "has_barracks": has_barracks,
                 })
 
     def count_structures_of_type(self, sid, structure_type, world) -> int:
