@@ -3,7 +3,8 @@
 This document describes current mechanics, limitations, and roadmap.
 It is the internal truth for development sessions.
 
-**Last locked:** 2026-08-12 (Era 1 stabilisation session)
+**Last locked:** 2026-08-12 (Era 1 stabilisation session)  
+**Era 2 status:** Draft only — do not implement until Era 1 multi-seed validation is done.
 
 ---
 
@@ -11,7 +12,12 @@ It is the internal truth for development sessions.
 
 Civilisation simulation lab. Deterministic world where agents develop strategies under scarcity.
 UI/visuals come later. Logging and replay are first-class.
-Long-term vision: Civ-style ages (Stone → later eras with deeper systems, physics, monuments).
+
+Long-term vision shaped by:
+- **Civilization VI** — ages, tech gates, long time horizon, meaningful unlocks
+- **The Settlers** — resource chains, haul labour, specialised buildings, roads
+
+Pipeline: headless sim → rich logs → god-view animations. Humans participate (governor / scenario), not only spectate.
 
 ---
 
@@ -93,16 +99,16 @@ sim/
     build_governors.py  # resolve_building, can_build_hut
     rng.py
   world/
-    settlements.py      # SettlementManager (create, deposit, tick, link)
+    settlements.py      # SettlementManager
     state.py / map.py / config.py
   agents/
-    types.py            # Observation (includes settlements)
+    types.py
     utility_agent.py
   log/
   train/
 tools/
-  view_run.py           # filtered economy / build / pop viewer
-PATCH_LEDGER.md         # patch history for this cleanup
+  view_run.py
+PATCH_LEDGER.md
 ```
 
 ---
@@ -118,19 +124,88 @@ PATCH_LEDGER.md         # patch history for this cleanup
 
 ---
 
-## Roadmap (after Era 1 lock)
+## Roadmap
 
-### Near
-- Multi-seed validation (several seeds × 500–1000 ticks)
-- Soften or remove remaining hard guards (P2.2)
-- Minimal ASCII / CLI replay viewer improvements
+### Near (before any Era 2 code)
+1. Multi-seed validation (several seeds × 500–1000 ticks)
+2. Soften or remove remaining hard guards (P2.2)
+3. Minimal god-view: grid + icons + tick scrub from events.jsonl
+4. Decide human role: Governor vs Scenario designer
 
-### Era 2 direction (not started)
-- Tech / ages progression
-- Additional buildings (workshop, mine, …)
-- Deeper production chains
-- Soft agent roles
-- Later: physics experiments, monuments (pyramids etc.) as long-horizon goals
+### Then
+5. Implement Era 2 draft below
+6. First military unit + light combat (logged)
+7. Later eras (Medieval → Industrial → Modern → Future / nukes)
+
+---
+
+## Era 2 — Classical (DRAFT — not started)
+
+Civ VI flavour + Settlers labour chains. Unlock only after Era 1 validation.
+
+### Design goals
+- Tools and organisation, not just more huts
+- Roads and haul matter (Settlers)
+- First military option (Civ)
+- Still fully deterministic and logged
+- Short tech list (5–6 max)
+
+### Tech spine
+
+| Tech | Gate (suggested) | Unlocks |
+|------|------------------|--------|
+| Pottery | 1 storage + sustained food surplus | Granary |
+| Mining | Stone stock threshold | Mine (tile improvement) |
+| Wheel | Mine or 3+ structures | **Roads** |
+| Craftsmanship | Wood stock + basic production | **Workshop** (tools) |
+| Military Tradition | Workshop or pop ≥ 15 | First military unit |
+| Early Empire | 2 settlements or road link | Second-settlement / border bonus |
+
+### New buildings
+
+| Building | Role | Notes |
+|----------|------|-------|
+| Granary | Food buffer, less waste | Softens starve pressure |
+| Mine | Improves stone (later ore) | Tile improvement |
+| Road | Faster movement, connectivity | Enables specialisation |
+| Workshop | Wood/stone → tools | Tools boost gather/build |
+| Barracks (tiny) | Enables unit training | Optional gate for military |
+
+### Settlers-style rules
+- Workshop needs delivered wood/stone (haul still matters)
+- Roads reduce move cost / link settlements
+- Specialisation can emerge: mine town + farm town + road
+
+### Military (light)
+- One unit type first (warrior / spearman)
+- Cost: population + resources
+- Actions: defend or (later) raid
+- Events: `unit_trained`, `combat_resolved`
+- Human governor can order train / stand down
+
+### Age transition (Era 1 → Era 2)
+Pick **one** primary gate for clarity in logs, e.g.:
+- Tech “Craftsmanship” completed, **or**
+- Total population ≥ 25 with ≥ 1 workshop, **or**
+- Two settlements connected by road
+
+### Frozen constraints
+- Determinism unchanged
+- Event log remains source of truth
+- Era 1 rules do not change
+- God-view only reads logs; never owns simulation state
+
+---
+
+## Human participation (direction)
+
+Pure AI spectator is the lab mode. For a game, humans need a seat:
+
+1. **Governor** — set priorities / build bans / train orders for a settlement
+2. **Scenario designer** — choose seed, starting resources, events (drought at tick 50)
+3. **Drop-in agent** — temporarily control one brain (heavier)
+
+Prefer (1) or (2) first.
 
 ---
 
@@ -141,3 +216,4 @@ PATCH_LEDGER.md         # patch history for this cleanup
 3. Logs > visuals > polish
 4. Prefer extraction + cleanup before new features
 5. Small patches → approve → push → update ledger
+6. No Era 2 code until Era 1 multi-seed validation passes
