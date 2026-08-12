@@ -31,6 +31,7 @@
 | P11.0 | README rewrite + god_view header polish | Done |
 | P12.0 | Fix farm soft-cap bypass | Done |
 | P13.0 | Fix seed-999 style bootstrap failure | Done |
+| P14.0 | Automated seed stress testing tool | Done |
 
 ---
 
@@ -44,7 +45,5 @@
 
 ## Next
 
-- Re-run multi-seed validation after P13.0
-- Confirm seed 999 no longer collapses
-- Confirm farm counts stay reasonable
+- Run stress_test.py and review pass rate
 - Only then: Era 2 systems
