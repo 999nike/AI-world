@@ -7,14 +7,11 @@ from sim.world.settlements import SettlementManager
 
 
 BUILD_ALIASES = {
-    "stor": "storage",
-    "store": "storage",
-    "warehouse": "storage",
-    "house": "hut",
-    "home": "hut",
-    "grain": "granary",
-    "gran": "granary",
+    "stor": "storage", "store": "storage", "warehouse": "storage",
+    "house": "hut", "home": "hut",
+    "grain": "granary", "gran": "granary",
     "quarry": "mine",
+    "path": "road", "track": "road",
 }
 
 FARM_SOFT_CAP = 3
@@ -27,71 +24,63 @@ def normalise_building_name(raw: Optional[str]) -> str:
     return BUILD_ALIASES.get(b, b)
 
 
-def resolve_building(
-    requested: Optional[str],
-    agent_x: int,
-    agent_y: int,
-    sm: SettlementManager,
-    world,
-) -> Tuple[str, str]:
+def _settlement_struct_counts(sid, sm, world):
+    farms = sm.count_structures_of_type(sid, "farm", world)
+    stor = sm.count_structures_of_type(sid, "storage", world)
+    gran = sm.count_structures_of_type(sid, "granary", world)
+    mine = sm.count_structures_of_type(sid, "mine", world)
+    road = sm.count_structures_of_type(sid, "road", world)
+    total = farms + stor + gran + mine + road + sm.count_structures_of_type(sid, "hut", world)
+    return farms, stor, gran, mine, road, total
+
+
+def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     b = normalise_building_name(requested)
     note = ""
 
     total_structures = len(getattr(world, "structures", []) or [])
     if sm.count() == 0 or total_structures == 0:
-        if b != "farm":
-            note = "bootstrap_force_farm"
-        return "farm", note
+        return "farm", "bootstrap_force_farm" if b != "farm" else ""
 
     best_sid = sm.nearest(agent_x, agent_y)
     if best_sid is None:
         return "farm", "bootstrap_force_farm"
 
-    farms_here = sm.count_structures_of_type(best_sid, "farm", world)
-    stor_here = sm.count_structures_of_type(best_sid, "storage", world)
-    gran_here = sm.count_structures_of_type(best_sid, "granary", world)
-    mine_here = sm.count_structures_of_type(best_sid, "mine", world)
+    farms, stor, gran, mine, road, total = _settlement_struct_counts(best_sid, sm, world)
 
-    if farms_here == 0:
-        if b != "farm":
-            note = "redirected_to_farm"
-        return "farm", note
+    if farms == 0:
+        return "farm", "redirected_to_farm" if b != "farm" else ""
 
-    if b == "storage" and stor_here >= 1:
-        b = "hut"
-        note = "storage_capped_to_hut"
+    if b == "storage" and stor >= 1:
+        return "hut", "storage_capped_to_hut"
 
-    if b == "farm" and farms_here >= FARM_SOFT_CAP:
-        if stor_here >= 1:
-            b = "hut"
-            note = "farm_capped_to_hut"
-        else:
-            b = "storage"
-            note = "farm_capped_to_storage"
+    if b == "farm" and farms >= FARM_SOFT_CAP:
+        if stor >= 1:
+            return "hut", "farm_capped_to_hut"
+        return "storage", "farm_capped_to_storage"
 
     if b == "granary":
-        if gran_here >= 1:
-            b = "hut"
-            note = "granary_capped_to_hut"
-        elif stor_here < 1 or farms_here < 1:
-            if stor_here < 1:
-                b = "storage"
-                note = "granary_needs_storage"
-            else:
-                b = "farm"
-                note = "granary_needs_farm"
+        if gran >= 1:
+            return "hut", "granary_capped_to_hut"
+        if stor < 1:
+            return "storage", "granary_needs_storage"
+        if farms < 1:
+            return "farm", "granary_needs_farm"
 
     if b == "mine":
-        if mine_here >= 1:
-            b = "hut"
-            note = "mine_capped_to_hut"
-        elif stor_here < 1 or farms_here < 1:
-            if stor_here < 1:
-                b = "storage"
-                note = "mine_needs_storage"
-            else:
-                b = "farm"
-                note = "mine_needs_farm"
+        if mine >= 1:
+            return "hut", "mine_capped_to_hut"
+        if stor < 1:
+            return "storage", "mine_needs_storage"
+        if farms < 1:
+            return "farm", "mine_needs_farm"
+
+    if b == "road":
+        # Gate: mine exists OR settlement has enough structures
+        if mine < 1 and total < 4:
+            if stor < 1:
+                return "storage", "road_needs_base"
+            return "farm", "road_needs_base"
 
     return b, note
 
@@ -104,8 +93,7 @@ def can_build_hut(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
         return False, "hut_requires_storage"
     if sm.count_structures_of_type(best_sid, "storage", world) == 0:
         return False, "hut_requires_storage"
-    ss = sm.get(best_sid)
-    if int(ss.get("starve_ticks", 0)) > 0:
+    if int(sm.get(best_sid).get("starve_ticks", 0)) > 0:
         return False, "hut_blocked_while_starving"
     return True, ""
 
@@ -137,4 +125,16 @@ def can_build_mine(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
         return False, "mine_needs_farm"
     if sm.count_structures_of_type(best_sid, "mine", world) >= 1:
         return False, "mine_already_exists"
+    return True, ""
+
+
+def can_build_road(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "road_needs_settlement"
+    best_sid = sm.nearest(agent_x, agent_y)
+    if best_sid is None:
+        return False, "road_needs_settlement"
+    farms, stor, gran, mine, road, total = _settlement_struct_counts(best_sid, sm, world)
+    if mine < 1 and total < 4:
+        return False, "road_needs_mine_or_growth"
     return True, ""
