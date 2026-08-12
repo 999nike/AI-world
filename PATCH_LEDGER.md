@@ -51,14 +51,14 @@ Reference seed 42: 1181
 | E2.1 | Mine |
 | E2.2 | Roads |
 | E2.3 | Workshop |
+| P2.2 | Removed hard food-force override in simloop (utility pressure is enough) |
 
 ---
 
 ## Next session
 
 1. Light military / barracks (or age-transition gates)
-2. Soften remaining hard food-haul guards in simloop if still present
-3. Minimal god-view improvements
-4. Optional: raise stress thresholds slightly for Era 2 richness
+2. Minimal god-view improvements
+3. Optional: raise stress thresholds slightly for Era 2 richness
 
 Determinism still sacred. No learnable agents until world stays stable.
