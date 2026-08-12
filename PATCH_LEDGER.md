@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 4 skeleton locked (E4.0–E4.1)  
+**Status:** Era 4 locked + god-view animation skeleton  
 **Last updated:** 2026-08-12
 
 ---
@@ -8,22 +8,23 @@
 ## Snapshot
 
 ```
-Era 1 LOCKED · Era 2 COMPLETE · Era 3 COMPLETE
-E4.0 age-up · E4.1 Irrigation (2w2s | era≥4 + agriculture | +0.2 farm/farm)
+Era 1–3 complete · Era 4 skeleton (E4.0 age-up + E4.1 Irrigation 2w2s)
 
-Irrigation appears on strong seeds (e.g. 100). Variance expected.
+God-view:
+  --play          auto-steps snapshots (logs → visual playback)
+  --delay 0.3     frame delay
+  ~ = irrigation
 
-NEXT MAJOR AXIS: god-view animation path (logs → simple visual playback)
+Next: richer animation / event highlights | more E4 content
 ```
 
 ---
 
-| System | Patch | Status |
-|--------|-------|--------|
-| Era 2 | E2.0–E2.6 | **Live** |
-| Era 3 | E3.0–E3.4 | **Live** |
-| Era 4 age-up | E4.0 | **Live** |
-| Irrigation | E4.1 | **Live** |
+| System | Status |
+|--------|--------|
+| Era 1–3 | **Live** |
+| E4.0–E4.1 | **Live** |
+| God-view --play | **Live** |
 
 ---
 
