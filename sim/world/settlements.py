@@ -40,6 +40,9 @@ SETTLEMENT_RULES = {
     # E3.1 Market
     "market_wood_per_tick": 0.5,
     "market_stone_per_tick": 0.25,
+    # E3.2 Temple
+    "temple_food_per_tick": 0.25,
+    "temple_surplus_ticks": 3,  # faster growth when temple present (default 5)
 }
 
 
@@ -140,6 +143,9 @@ class SettlementManager:
     def settlement_has_market(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "market", world) >= 1
 
+    def settlement_has_temple(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "temple", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -198,7 +204,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -214,6 +220,8 @@ class SettlementManager:
                     has_barracks = True
                 elif stx.type == "market":
                     has_market = True
+                elif stx.type == "temple":
+                    has_temple = True
 
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if has_workshop and farm_yield > 0:
@@ -247,10 +255,16 @@ class SettlementManager:
                 s["stone_stock"] = float(s.get("stone_stock", 0) or 0) + ms
                 self.metrics["market_wood_total"] = self.metrics.get("market_wood_total", 0) + mw
                 self.metrics["market_stone_total"] = self.metrics.get("market_stone_total", 0) + ms
+            if has_temple:
+                tf = float(SETTLEMENT_RULES.get("temple_food_per_tick", 0.25))
+                s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
+                self.metrics["temple_food_total"] = self.metrics.get("temple_food_total", 0) + tf
 
             post_harvest = float(s.get("food_stock", 0))
             need = pop_before * cons
             starve_needed = granary_starve if has_granary else starve_needed_default
+            # E3.2: temple speeds growth
+            local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
             if "starve_ticks" not in s:
@@ -263,7 +277,7 @@ class SettlementManager:
                 s["starve_ticks"] = 0
                 if float(s["food_stock"]) >= (need + buffer_food):
                     s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
-                    if int(s["surplus_ticks"]) >= surplus_needed:
+                    if int(s["surplus_ticks"]) >= local_surplus_needed:
                         s["population"] = pop_before + min(max_growth, 1)
                         s["surplus_ticks"] = 0
                 else:
