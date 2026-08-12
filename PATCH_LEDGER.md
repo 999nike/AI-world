@@ -1,47 +1,39 @@
 # AI-world Patch Ledger
 
-**Status:** Active  
+**Status:** Era 1 locked  
 **Last updated:** 2026-08-12
 
 ---
 
 ## Completed this session
 
-| ID   | Patch                                      | Status |
-|------|--------------------------------------------|--------|
-| P0.1 | Create PATCH_LEDGER.md                     | Done   |
-| P0.2 | Remove dead code in simloop                | Done   |
-| P1.1 | Extract SettlementManager                  | Done   |
-| P1.2 | Deduplicate nearest-settlement             | Done   |
-| P1.3 | Centralise build governors                 | Done   |
-| P2.1 | Enrich Observation + UtilityAgent          | Done   |
-| —    | Restore tools/view_run.py                  | Done   |
-| **P3.0** | **Fix starvation logic (net deficit)** | **Done** |
-
-### P3.0 – Starvation fix
-
-**Bug:** Farm harvest was applied before the starve check, and `food_before` was overwritten with the post-harvest value. As long as farms existed, `food_before <= 0` was almost never true, so `starve_ticks` never accumulated and population never declined even under permanent food deficit.
-
-**Fix:** Starvation now triggers on **true net shortfall** (`post_harvest_food < need`). Three consecutive deficit ticks → lose 1 population. Growth still requires sustained surplus after feeding.
+| ID | Patch | Status |
+|----|-------|--------|
+| P0.1 | Create PATCH_LEDGER.md | Done |
+| P0.2 | Remove dead code in simloop | Done |
+| P1.1 | Extract SettlementManager | Done |
+| P1.2 | Deduplicate nearest-settlement | Done |
+| P1.3 | Centralise build governors | Done |
+| P2.1 | Enrich Observation + UtilityAgent | Done |
+| — | Restore tools/view_run.py | Done |
+| P3.0 | Fix starvation (net deficit) | Done |
+| P3.2 | Soften hut gates + farm→hut redirect | Done |
+| P3.1 | Balance (yield 1.5, slower growth, softer score) | Done |
+| — | **Lock Era 1 into DESIGN.md** | **Done** |
 
 ---
 
-## Remaining queue
+## Era 1 reference (seed 42, 300 ticks)
 
-| ID   | Patch                                      | Status  |
-|------|--------------------------------------------|---------|
-| P1.4 | Align WorldState / Settlement class        | Pending |
-| P1.5 | Further slim simloop                       | Pending |
-| P2.2 | Reduce hard overrides                      | Pending |
-| P3.1 | Re-tune rules after starvation fix         | Pending |
-| P3.2 | Soften hut gating (0 huts in last run)     | Pending |
+- Score ≈ 241
+- Huts / Storage / Farms ≈ 12 / 1 / 3
+- Net pop positive, starvation present but controlled
 
 ---
 
-**Next test:**
-```
-git pull
-python -m sim run --seed 42 --ticks 300
-python tools/view_run.py --rid latest --log economy
-```
-Expect: population should now decline once farms cannot cover consumption.
+## Next (post lock)
+
+- Multi-seed validation
+- P2.2 Reduce hard overrides in simloop
+- CLI replay improvements
+- Only then: Era 2 systems
