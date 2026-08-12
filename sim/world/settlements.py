@@ -26,6 +26,13 @@ SETTLEMENT_RULES = {
     "barracks_soldiers_per_tick": 0.25,
     # E2.5 Light defense: soldiers can absorb one starve loss
     "soldier_defend_cost": 1.0,
+    # E2.6 Light raids
+    "raid_interval": 25,
+    "raid_min_soldiers": 3.0,
+    "raid_cost": 2.0,
+    "raid_loot_wood": 3,
+    "raid_loot_stone": 2,
+    "raid_loot_food": 2,
 }
 
 
@@ -280,6 +287,59 @@ class SettlementManager:
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks,
                 })
+
+        # E2.6 Light raids (multi-settlement only)
+        self._try_raids(world, tick)
+
+    def _try_raids(self, world, tick: int) -> None:
+        interval = int(SETTLEMENT_RULES.get("raid_interval", 25))
+        if tick % interval != 0 or self.count() < 2:
+            return
+        min_soldiers = float(SETTLEMENT_RULES.get("raid_min_soldiers", 3.0))
+        cost = float(SETTLEMENT_RULES.get("raid_cost", 2.0))
+        loot_w = int(SETTLEMENT_RULES.get("raid_loot_wood", 3))
+        loot_s = int(SETTLEMENT_RULES.get("raid_loot_stone", 2))
+        loot_f = int(SETTLEMENT_RULES.get("raid_loot_food", 2))
+
+        # Attacker = highest soldiers; target = any other settlement (prefer lowest soldiers)
+        all_s = list(self.settlements.items())
+        ranked = sorted(all_s, key=lambda x: float(x[1].get("soldiers", 0)), reverse=True)
+        atk_sid, atk = ranked[0]
+        if float(atk.get("soldiers", 0)) < min_soldiers:
+            return
+        # Target = lowest soldiers among the rest (or any other)
+        others = [(sid, s) for sid, s in all_s if sid != atk_sid]
+        if not others:
+            return
+        tgt_sid, tgt = min(others, key=lambda x: float(x[1].get("soldiers", 0)))
+
+        if float(atk.get("soldiers", 0)) < cost:
+            return
+
+        # Steal what target actually has
+        take_w = min(loot_w, int(tgt.get("wood_stock", 0)))
+        take_s = min(loot_s, int(tgt.get("stone_stock", 0)))
+        take_f = min(loot_f, int(float(tgt.get("food_stock", 0))))
+        if take_w + take_s + take_f == 0:
+            return  # nothing to steal
+
+        atk["soldiers"] = float(atk.get("soldiers", 0)) - cost
+        tgt["wood_stock"] = int(tgt.get("wood_stock", 0)) - take_w
+        tgt["stone_stock"] = int(tgt.get("stone_stock", 0)) - take_s
+        tgt["food_stock"] = float(tgt.get("food_stock", 0)) - take_f
+        atk["wood_stock"] = int(atk.get("wood_stock", 0)) + take_w
+        atk["stone_stock"] = int(atk.get("stone_stock", 0)) + take_s
+        atk["food_stock"] = float(atk.get("food_stock", 0)) + take_f
+
+        self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + 1
+        self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
+        self.logger.event({
+            "type": "raid", "tick": tick,
+            "attacker": atk_sid, "target": tgt_sid,
+            "cost_soldiers": cost,
+            "loot": {"wood": take_w, "stone": take_s, "food": take_f},
+            "attacker_soldiers_after": atk["soldiers"],
+        })
 
     def count_structures_of_type(self, sid, structure_type, world) -> int:
         return sum(1 for stx in world.structures
