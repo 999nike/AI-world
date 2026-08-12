@@ -24,6 +24,8 @@ SETTLEMENT_RULES = {
     "tools_consume_per_boost": 0.5,
     # E2.4 Barracks
     "barracks_soldiers_per_tick": 0.25,
+    # E2.5 Light defense: soldiers can absorb one starve loss
+    "soldier_defend_cost": 1.0,
 }
 
 
@@ -241,8 +243,21 @@ class SettlementManager:
                 s["surplus_ticks"] = 0
                 s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
                 if int(s["starve_ticks"]) >= starve_needed:
-                    s["population"] = max(0, pop_before - 1)
-                    s["starve_ticks"] = 0
+                    # E2.5: soldiers can absorb the loss (light defense)
+                    soldiers = float(s.get("soldiers", 0.0))
+                    defend_cost = float(SETTLEMENT_RULES.get("soldier_defend_cost", 1.0))
+                    if soldiers >= defend_cost:
+                        s["soldiers"] = soldiers - defend_cost
+                        s["starve_ticks"] = 0
+                        self.metrics["soldier_defend_events"] = self.metrics.get("soldier_defend_events", 0) + 1
+                        self.logger.event({
+                            "type": "soldier_defend", "tick": tick, "settlement_id": sid,
+                            "soldiers_before": soldiers, "soldiers_after": s["soldiers"],
+                            "pop_saved": pop_before,
+                        })
+                    else:
+                        s["population"] = max(0, pop_before - 1)
+                        s["starve_ticks"] = 0
 
             if pop_before <= 0 and float(s.get("food_stock", 0)) >= (buffer_food + cons * 3):
                 s["population"] = 1
