@@ -48,10 +48,11 @@ SETTLEMENT_RULES = {
     "strategy_defend_bonus": 0.1,
     "walls_defend_bonus": 0.25,
     "walls_raid_extra_cost": 1.0,
-    # E4.0
     "age_up4_min_pop": 20,
     "age_up4_food_bonus": 5.0,
     "era4_farm_bonus": 0.1,
+    # E4.1 Irrigation
+    "irrigation_farm_bonus": 0.2,
 }
 
 
@@ -159,6 +160,9 @@ class SettlementManager:
     def settlement_has_walls(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "walls", world) >= 1
 
+    def settlement_has_irrigation(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "irrigation", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -216,7 +220,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -238,6 +242,8 @@ class SettlementManager:
                     has_academy = True
                 elif stx.type == "walls":
                     has_walls = True
+                elif stx.type == "irrigation":
+                    has_irrigation = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -251,6 +257,8 @@ class SettlementManager:
                 farm_yield += farms * float(SETTLEMENT_RULES.get("era4_farm_bonus", 0.1))
             if "agriculture" in subjects and farms > 0:
                 farm_yield += farms * float(SETTLEMENT_RULES.get("agriculture_farm_bonus", 0.15))
+            if has_irrigation and farms > 0:
+                farm_yield += farms * float(SETTLEMENT_RULES.get("irrigation_farm_bonus", 0.2))
 
             bonus = granary_food if has_granary else 0.0
             if farm_yield > 0 or bonus > 0:
@@ -360,7 +368,7 @@ class SettlementManager:
                     "farm_yield": farm_yield, "granary_bonus": bonus, "need": need,
                     "has_granary": has_granary, "has_mine": has_mine, "has_workshop": has_workshop,
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
-                    "subjects": subjects, "era": era,
+                    "has_irrigation": has_irrigation, "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
@@ -456,7 +464,6 @@ class SettlementManager:
             })
 
     def _try_age_up4(self, world, tick: int) -> None:
-        """Era 3 → Era 4: Inquiry subject + academy + pop."""
         min_pop = int(SETTLEMENT_RULES.get("age_up4_min_pop", 20))
         food_bonus = float(SETTLEMENT_RULES.get("age_up4_food_bonus", 5.0))
         for sid, s in self.settlements.items():
