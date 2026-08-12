@@ -12,6 +12,7 @@ from sim.world.state import Structure
 from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import resolve_building, can_build_hut
 from sim.core.governor import Governor
+from sim.core.scenario import Scenario
 from sim.agents.types import Observation, Action
 from sim.agents.baseline_random import RandomAgent
 
@@ -31,7 +32,18 @@ def run_sim(
     policy_weights: dict = None,
     return_score: bool = False,
     governor_command: Optional[str] = None,
+    scenario_commands: Optional[str] = None,
 ):
+    # P7.0 Scenario first so it can override seed/ticks
+    scenario = Scenario()
+    if scenario_commands:
+        scenario.apply_commands(scenario_commands)
+
+    if scenario.seed is not None:
+        seed = scenario.seed
+    if scenario.ticks is not None:
+        ticks = scenario.ticks
+
     run_id = make_run_id()
     run_dir = Path("runs") / run_id
     logger = RunLogger(run_dir)
@@ -39,6 +51,20 @@ def run_sim(
     cfg = WorldConfig()
     rng = RNG(seed)
     world = make_world(cfg, rng)
+
+    # Apply starting inventory from scenario
+    if scenario.start_food or scenario.start_wood or scenario.start_stone:
+        for a in world.agents:
+            a.inv_food = scenario.start_food
+            a.inv_wood = scenario.start_wood
+            a.inv_stone = scenario.start_stone
+        logger.event({
+            "type": "scenario_start_inventory",
+            "tick": 0,
+            "food": scenario.start_food,
+            "wood": scenario.start_wood,
+            "stone": scenario.start_stone,
+        })
 
     # P6.0 Governor
     gov = Governor()
@@ -50,6 +76,14 @@ def run_sim(
             "command": governor_command,
             "status": status,
             "state": gov.to_dict(),
+        })
+
+    if scenario_commands:
+        logger.event({
+            "type": "scenario_loaded",
+            "tick": 0,
+            "commands": scenario_commands,
+            "state": scenario.to_dict(),
         })
 
     if agent_kind == "utility":
@@ -83,6 +117,9 @@ def run_sim(
 
     sm = SettlementManager(metrics=metrics, logger=logger)
 
+    # Simple drought state (P7.0)
+    drought_active = False
+
     (run_dir / "config.json").write_text(
         json.dumps(
             {
@@ -94,6 +131,7 @@ def run_sim(
                 "settlement_rules": SETTLEMENT_RULES,
                 "governor": gov.to_dict(),
                 "governor_command": governor_command,
+                "scenario": scenario.to_dict(),
             },
             indent=2,
         ),
@@ -106,8 +144,26 @@ def run_sim(
         world.tick = t
         logger.event({"type": "tick_started", "tick": t})
 
+        # P7.0 Apply pending scenario events
+        for ev in scenario.pending_events(t):
+            if ev.kind == "drought":
+                drought_active = True
+                logger.event({"type": "scenario_event", "tick": t, "kind": "drought", "note": "food regrowth reduced"})
+            elif ev.kind == "boom":
+                # Spike resources on the map
+                for _ in range(40):
+                    x = rng.randint(0, world.width - 1)
+                    y = rng.randint(0, world.height - 1)
+                    tile = world.tile_at(x, y)
+                    tile.food = min(tile.food + 3, cfg.max_food)
+                    tile.wood = min(tile.wood + 2, cfg.max_wood)
+                logger.event({"type": "scenario_event", "tick": t, "kind": "boom", "note": "resource spike"})
+            ev.applied = True
+
+        # Normal regrowth (reduced during drought)
+        regrowth_count = 3 if drought_active else 10
         if t % 5 == 0:
-            for _ in range(10):
+            for _ in range(regrowth_count):
                 x = rng.randint(0, world.width - 1)
                 y = rng.randint(0, world.height - 1)
                 tile = world.tile_at(x, y)
@@ -384,6 +440,7 @@ def run_sim(
         "metrics": metrics,
         "score": score,
         "governor": gov.to_dict(),
+        "scenario": scenario.to_dict(),
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

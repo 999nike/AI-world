@@ -11,6 +11,8 @@ def main():
     runp.add_argument("--snapshot-every", type=int, default=10)
     runp.add_argument("--governor", type=str, default=None,
                       help="Governor command, e.g. 'focus food' or 'build hut'")
+    runp.add_argument("--scenario", type=str, default=None,
+                      help="Scenario commands, e.g. 'seed 42; start_food 6; event drought 100'")
 
     args = p.parse_args()
 
@@ -20,4 +22,5 @@ def main():
             ticks=args.ticks,
             snapshot_every=args.snapshot_every,
             governor_command=args.governor,
+            scenario_commands=args.scenario,
         )
