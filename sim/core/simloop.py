@@ -13,6 +13,7 @@ from sim.world.settlements import SettlementManager, SETTLEMENT_RULES
 from sim.core.build_governors import (
     resolve_building, can_build_hut, can_build_granary, can_build_mine, can_build_road,
     can_build_workshop, can_build_barracks, can_build_market, can_build_temple,
+    can_build_academy,
 )
 from sim.core.governor import Governor
 from sim.core.scenario import Scenario
@@ -32,10 +33,11 @@ BUILD_COSTS = {
     "barracks": {"wood": 3, "stone": 3},  # E2.4
     "market": {"wood": 4, "stone": 3},  # E3.1
     "temple": {"wood": 3, "stone": 4},  # E3.2
+    "academy": {"wood": 5, "stone": 4},  # E3.3
 }
 
 # Structures that can share a tile conceptually / not block the same way
-STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks", "market", "temple"}
+STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks", "market", "temple", "academy"}
 
 
 def run_sim(
@@ -94,7 +96,8 @@ def run_sim(
         "stone_deposited_total": 0, "stone_deposit_events": 0,
         "population_grew_events": 0, "population_starved_events": 0, "population_net_change": 0,
         "build_hut": 0, "build_storage": 0, "build_farm": 0,
-        "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0, "build_market": 0, "build_temple": 0,
+        "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0,
+        "build_market": 0, "build_temple": 0, "build_academy": 0,
         "farm_harvest_events": 0, "farm_food_total": 0,
         "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
         "tools_boost_events": 0,
@@ -105,6 +108,8 @@ def run_sim(
         "market_wood_total": 0,
         "market_stone_total": 0,
         "temple_food_total": 0,
+        "academy_knowledge_total": 0,
+        "subject_unlock_events": 0,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
@@ -236,6 +241,10 @@ def run_sim(
                         ok, note = False, gate_note
                 elif b == "temple":
                     allowed, gate_note = can_build_temple(a.x, a.y, sm, world)
+                    if not allowed:
+                        ok, note = False, gate_note
+                elif b == "academy":
+                    allowed, gate_note = can_build_academy(a.x, a.y, sm, world)
                     if not allowed:
                         ok, note = False, gate_note
 
