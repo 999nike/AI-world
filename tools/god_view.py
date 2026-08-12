@@ -30,6 +30,7 @@ ICON = {
     "workshop": "W",
     "barracks": "B",
     "market": "K",
+    "temple": "T",
     "settlement": "@",
     "empty": ".",
 }
@@ -115,7 +116,7 @@ def settlement_summary(snap: dict) -> str:
 def structure_counts(snap: dict) -> str:
     from collections import Counter
     c = Counter(st.get("type") for st in snap.get("structures", []))
-    order = ["farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market"]
+    order = ["farm", "storage", "hut", "granary", "mine", "road", "workshop", "barracks", "market", "temple"]
     bits = [f"{t}:{c[t]}" for t in order if c.get(t)]
     return "  ".join(bits) if bits else "none"
 
@@ -158,7 +159,7 @@ def print_grid(grid: list[list[str]], tick: int, summary: dict | None = None, sn
 
     print()
     print("  Legend: A=agent  H=hut  S=storage  F=farm  G=granary  M=mine")
-    print("          =road  W=workshop  B=barracks  K=market  @=settlement  .=empty")
+    print("          =road  W=workshop  B=barracks  K=market  T=temple  @=settlement  .=empty")
     print()
 
 
