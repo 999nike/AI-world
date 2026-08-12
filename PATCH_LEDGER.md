@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** Era 2 in progress (stages 0–3 live)  
+**Status:** Era 2 stages 0–3 live + validated  
 **Last updated:** 2026-08-12
 
 ---
@@ -23,10 +23,19 @@
 | 2 | Roads | E2.2 | **Live** | Deposit range 2→3; gate: mine OR 4+ structures |
 | 3 | Workshop | E2.3 | **Live** | Cost 4w2s; gate mine+(granary|road) max1; tools +0.4/tick; farm/mine bonus; gather +1 (tools consume) |
 
-### Seed 42 @ 500 ticks (post E2.2)
-- Score ~1012
-- Roads 8, Mine 1, Granary 1, Farms 12, Storage 4, Huts 30
-- Food deposited 82
+### Validation (post E2.3)
+
+**Multi-seed (5 seeds × 400 ticks)**  
+42: 1138 · 7: 424 · 99: 683 · 1: 64 · 100: 594  
+Workshop appeared + produced tools/boosts on 4/5 seeds.
+
+**Stress (14 seeds × 350 ticks)**  
+**14/14 PASS (100%)** under existing Era 1 thresholds.  
+Score min/avg/max: 64 / 445 / 1181  
+Reference seed 42: 1181
+
+### Seed 42 reference (longer runs)
+- ~300–500 ticks: Workshop builds, tools fire, score 800–1180 range
 
 ---
 
@@ -47,8 +56,9 @@
 
 ## Next session
 
-1. Optional: re-run stress test under full Era 2 (incl. Workshop)
-2. Later: military light / age transition gates
-3. Validate multi-seed with Workshop present
+1. Light military / barracks (or age-transition gates)
+2. Soften remaining hard food-haul guards in simloop if still present
+3. Minimal god-view improvements
+4. Optional: raise stress thresholds slightly for Era 2 richness
 
 Determinism still sacred. No learnable agents until world stays stable.
