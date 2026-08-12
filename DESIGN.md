@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-12  
 **Era 1:** VALIDATED (32/32 stress pass)  
-**Era 2:** Stages 0–3 live (Granary, Mine, Roads, Workshop).
+**Era 2:** Stages 0–3 live + validated (Granary, Mine, Roads, Workshop). Stress 14/14 pass under Workshop.
 
 ---
 
