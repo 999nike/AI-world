@@ -32,6 +32,7 @@ FARM_SOFT_CAP = 3
 # Late-game buildings that should yield to Library when inquiry is unlocked
 LIBRARY_PRIORITY_TARGETS = {
     "irrigation", "foundry", "hall", "command", "lab", "observatory", "walls",
+    "road", "hut",
 }
 
 
@@ -88,10 +89,18 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     era = int(s.get("era", 2))
     subjects = s.get("subjects") or []
 
-    # E5.5: force Library before other Era-4 specialisation once inquiry is live
-    if (era >= 4 and "inquiry" in subjects and library < 1
-            and b in LIBRARY_PRIORITY_TARGETS):
+    any_inquiry = any(
+        int(ss.get("era", 2)) >= 4 and "inquiry" in (ss.get("subjects") or [])
+        for ss in sm.settlements.values()
+    )
+    any_library = any(
+        sm.count_structures_of_type(sid, "library", world) >= 1
+        for sid in sm.settlements
+    )
+    if any_inquiry and not any_library and b in LIBRARY_PRIORITY_TARGETS:
         return "library", "redirected_to_library_priority"
+    if any_inquiry and not any_library and b == "library":
+        return "library", ""
 
     if farms == 0:
         return "farm", "redirected_to_farm" if b != "farm" else ""
@@ -173,11 +182,9 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
             return "hut", "irrigation_needs_agriculture"
 
     if b == "library":
-        if library >= 1:
+        if any_library:
             return "hut", "library_capped_to_hut"
-        if era < 4:
-            return "hut", "library_needs_era4"
-        if "inquiry" not in subjects:
+        if not any_inquiry:
             return "hut", "library_needs_inquiry"
 
     if b == "foundry":
@@ -399,17 +406,11 @@ def can_build_irrigation(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_library(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "library_needs_settlement"
-    best_sid = sm.nearest(agent_x, agent_y)
-    if best_sid is None:
-        return False, "library_needs_settlement"
-    s = sm.get(best_sid)
-    if int(s.get("era", 2)) < 4:
-        return False, "library_needs_era4"
-    if "inquiry" not in (s.get("subjects") or []):
-        return False, "library_needs_inquiry"
-    if sm.count_structures_of_type(best_sid, "library", world) >= 1:
-        return False, "library_already_exists"
-    return True, ""
+    for sid, s in sm.settlements.items():
+        if int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or []):
+            if sm.count_structures_of_type(sid, "library", world) < 1:
+                return True, ""
+    return False, "library_needs_inquiry"
 
 
 def can_build_foundry(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
