@@ -1,7 +1,7 @@
 # AI-world Patch Ledger
 
 **Hand-off snapshot:** 2026-08-17  
-**Status:** Long-run durability + E5 science + discoveries LIVE
+**Status:** Long-run durability + E5 science + discoveries LIVE + E5.3 science path consistency
 
 ---
 
@@ -16,6 +16,7 @@ E4.0–E4.5: LOCKED (buildings live)
 E5.0 Lab: LOCKED
 E5.1 Observatory: LIVE
 E5.2 Discoveries: LIVE (knowledge sink after Observatory)
+E5.3: inquiry cost 20	o16 + library utility weight 3.6	o4.0 / bonus 3.5	o4.0
 
 Long-run tooling:
   quiet logging (auto when ticks >= 2000)
@@ -43,18 +44,22 @@ God-view icons: C # ~ L Y O X R V
 
 **Discoveries (E5.2):** needs Observatory; spend 40 knowledge → +1 discovery; +0.08 farm/farm each; max 8.
 
+**Subjects:** inquiry cost now 16 (was 20).
+
 **Military long-run:** barracks 0.15 / command 0.10 soldiers per tick; soft-cap ~3× pop; upkeep 0.03 food/soldier always.
 
 ---
 
 ## Validation (5 seeds × 5000 ticks, quiet)
 
-Typical recent batch:
+Typical recent batch (pre-E5.3):
 
 - 4/5 seeds reach full Lib+Lab+Obs + Foundry/Hall/Command
 - Seed 7 often strongest (score ~3000, low starve)
 - Seed 100 sometimes Era 4 + subjects but skips building line (utility variance)
 - Soldiers no longer unbounded (was 400–1100; now controlled)
+
+Post-E5.3: retest recommended to confirm seed-100 class science path reliability.
 
 ```bash
 git pull
@@ -73,6 +78,7 @@ python tools/god_view.py --rid latest --play
 | E5.0 Lab | Locked |
 | E5.1 Observatory | Live |
 | E5.2 Discoveries | Live |
+| E5.3 inquiry + library push | Live |
 | Quiet long-run mode | Live |
 | God-view --play | Live |
 | Learning agents | Not started (utility baseline only) |
@@ -82,7 +88,7 @@ python tools/god_view.py --rid latest --play
 ## Suggested next axes (not committed)
 
 1. Raid / military depth for long horizons  
-2. Stronger Library push when inquiry unlocks (seed 100 class misses)  
+2. ~~Stronger Library push when inquiry unlocks (seed 100 class misses)~~ → done E5.3  
 3. Human-paced god-view / presentation  
 4. Learning-agent interface later  
 
