@@ -17,9 +17,9 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_workshop": 3.5, "w_build_barracks": 3.0,
     "w_build_market": 3.2, "w_build_temple": 3.0,
     "w_build_academy": 2.8, "w_build_walls": 3.0,
-    "w_build_irrigation": 3.4, "w_build_library": 3.2, "w_build_foundry": 3.2,
+    "w_build_irrigation": 3.4, "w_build_library": 3.6, "w_build_foundry": 3.2,
     "w_build_hall": 3.1, "w_build_command": 2.9,
-    "w_build_lab": 3.0, "w_build_observatory": 3.1,
+    "w_build_lab": 3.8, "w_build_observatory": 3.9,
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -27,6 +27,24 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 
 def _diminishing(x: float, cap: float) -> float:
     return 1.0 - math.exp(-max(0.0, x) / max(1e-9, cap))
+
+
+def _settlement_stocks(obs) -> tuple:
+    """Wood/stone available from nearest settlement warehouse."""
+    nearest = obs.nearest_settlement or {}
+    return float(nearest.get("wood_stock", 0) or 0), float(nearest.get("stone_stock", 0) or 0)
+
+
+def _can_afford(inv, need_w: int, need_s: int, obs) -> float:
+    """1.0 if agent inv enough, 0.7 if settlement can fund, else 0.25."""
+    aw = float(inv.get("wood", 0))
+    ast = float(inv.get("stone", 0))
+    if aw >= need_w and ast >= need_s:
+        return 1.0
+    sw, ss = _settlement_stocks(obs)
+    if aw + sw >= need_w and ast + ss >= need_s:
+        return 0.7
+    return 0.25
 
 
 @dataclass
@@ -96,7 +114,7 @@ class UtilityAgent:
         pop, food = float(nearest.get("population", 0)), float(nearest.get("food_stock", 0))
         if pop <= 0:
             return 0.0
-        need = pop * 0.25
+        need = pop * 0.22  # match tuned food_per_pop
         if food >= need * 2:
             return 0.0
         if food <= 0:
@@ -132,10 +150,20 @@ class UtilityAgent:
             types = {st.get("type") for st in structures}
             has_storage, has_farm = "storage" in types, "farm" in types
             has_granary, has_mine = "granary" in types, "mine" in types
+            farm_count = sum(1 for st in structures if st.get("type") == "farm")
             hunger = pressure * float(w["w_avoid_build_when_hungry"])
+            nearest = obs.nearest_settlement or {}
+            era = int(nearest.get("era", 2))
+            subjects = nearest.get("subjects") or []
 
             if b == "farm":
-                bonus = 4.0 if not has_farm else 0.5
+                # Late-game / many farms: reduce spam so science can compete
+                if farm_count >= 6:
+                    bonus = 0.2
+                elif farm_count >= 3:
+                    bonus = 0.8
+                else:
+                    bonus = 4.0 if not has_farm else 1.2
                 can = 1.0 if inv.get("wood", 0) >= 2 else 0.3
                 return w["w_build_farm"] * can + bonus + inv_term - hunger
             if b == "storage":
@@ -149,12 +177,12 @@ class UtilityAgent:
             if b == "granary":
                 if not has_storage or not has_farm or has_granary:
                     return -3.0 if has_granary else -2.0
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 1 else 0.25
+                can = _can_afford(inv, 3, 1, obs)
                 return w["w_build_granary"] * can + 3.0 + inv_term - hunger * 0.3
             if b == "mine":
                 if not has_storage or not has_farm or has_mine:
                     return -3.0 if has_mine else -2.0
-                can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 3 else 0.2
+                can = _can_afford(inv, 2, 3, obs)
                 return w["w_build_mine"] * can + 2.5 + inv_term - hunger * 0.3
             if b == "road":
                 if not has_storage or not has_farm:
@@ -170,110 +198,92 @@ class UtilityAgent:
                     return -3.0 if has_workshop else -2.0
                 if not has_granary and not has_road:
                     return -1.5
-                can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 2 else 0.2
+                can = _can_afford(inv, 4, 2, obs)
                 return w["w_build_workshop"] * can + 2.0 + inv_term - hunger * 0.25
             if b == "barracks":
                 has_workshop = "workshop" in types
                 has_barracks = "barracks" in types
                 if not has_workshop or has_barracks:
                     return -3.0 if has_barracks else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 3 else 0.2
+                can = _can_afford(inv, 3, 3, obs)
                 return w["w_build_barracks"] * can + 1.8 + inv_term - hunger * 0.2
             if b == "market":
                 has_barracks = "barracks" in types
                 has_market = "market" in types
                 if not has_barracks or has_market:
                     return -3.0 if has_market else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 3 else 0.2
+                can = _can_afford(inv, 4, 3, obs)
                 return w["w_build_market"] * can + 2.0 + inv_term - hunger * 0.2
             if b == "temple":
                 has_market = "market" in types
                 has_temple = "temple" in types
                 if not has_market or has_temple:
                     return -3.0 if has_temple else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 4 else 0.2
+                can = _can_afford(inv, 3, 4, obs)
                 return w["w_build_temple"] * can + 1.9 + inv_term - hunger * 0.2
             if b == "academy":
                 has_temple = "temple" in types
                 has_academy = "academy" in types
                 if not has_temple or has_academy:
                     return -3.0 if has_academy else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 5 and inv.get("stone", 0) >= 4 else 0.2
+                can = _can_afford(inv, 5, 4, obs)
                 return w["w_build_academy"] * can + 1.7 + inv_term - hunger * 0.15
             if b == "walls":
                 has_barracks = "barracks" in types
                 has_walls = "walls" in types
                 if not has_barracks or has_walls:
                     return -3.0 if has_walls else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 3 else 0.2
+                can = _can_afford(inv, 2, 3, obs)
                 return w["w_build_walls"] * can + 1.8 + inv_term - hunger * 0.15
             if b == "irrigation":
                 has_irrigation = "irrigation" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "agriculture" not in subjects or has_irrigation:
                     return -3.0 if has_irrigation else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 2 and inv.get("stone", 0) >= 2 else 0.25
+                can = _can_afford(inv, 2, 2, obs)
                 return w["w_build_irrigation"] * can + 2.5 + inv_term - hunger * 0.1
             if b == "library":
                 has_library = "library" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "inquiry" not in subjects or has_library:
                     return -3.0 if has_library else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 3 else 0.25
-                return w["w_build_library"] * can + 2.2 + inv_term - hunger * 0.1
+                can = _can_afford(inv, 3, 3, obs)
+                # Strong push once inquiry unlocked; lighter hunger penalty
+                return w["w_build_library"] * can + 3.5 + inv_term - hunger * 0.05
             if b == "foundry":
                 has_foundry = "foundry" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "craft" not in subjects or has_foundry:
                     return -3.0 if has_foundry else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 3 else 0.25
+                can = _can_afford(inv, 3, 3, obs)
                 return w["w_build_foundry"] * can + 2.2 + inv_term - hunger * 0.1
             if b == "hall":
                 has_hall = "hall" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "organisation" not in subjects or has_hall:
                     return -3.0 if has_hall else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 3 else 0.25
+                can = _can_afford(inv, 3, 3, obs)
                 return w["w_build_hall"] * can + 2.1 + inv_term - hunger * 0.1
             if b == "command":
                 has_command = "command" in types
                 has_barracks = "barracks" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "strategy" not in subjects or not has_barracks or has_command:
                     return -3.0 if has_command else -1.5
                 if pressure > 0.5:
                     return -1.0
-                can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 4 else 0.25
+                can = _can_afford(inv, 3, 4, obs)
                 return w["w_build_command"] * can + 2.0 + inv_term - hunger * 0.3
             if b == "lab":
                 has_lab = "lab" in types
                 has_library = "library" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
-                subjects = nearest.get("subjects") or []
                 if era < 4 or "inquiry" not in subjects or not has_library or has_lab:
                     return -3.0 if has_lab else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 4 else 0.25
-                return w["w_build_lab"] * can + 2.3 + inv_term - hunger * 0.1
+                can = _can_afford(inv, 4, 4, obs)
+                # Priority once Library exists; hunger barely blocks science
+                return w["w_build_lab"] * can + 4.0 + inv_term - hunger * 0.05
             if b == "observatory":
                 has_observatory = "observatory" in types
                 has_lab = "lab" in types
-                nearest = obs.nearest_settlement or {}
-                era = int(nearest.get("era", 2))
                 if era < 4 or not has_lab or has_observatory:
                     return -3.0 if has_observatory else -1.5
-                can = 1.0 if inv.get("wood", 0) >= 5 and inv.get("stone", 0) >= 4 else 0.25
-                return w["w_build_observatory"] * can + 2.4 + inv_term - hunger * 0.1
+                can = _can_afford(inv, 5, 4, obs)
+                return w["w_build_observatory"] * can + 4.2 + inv_term - hunger * 0.05
             return -5.0
 
         if a.type == "move":
