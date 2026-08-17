@@ -271,9 +271,9 @@ def run_sim(
                     ok, note = False, "bad_building"
                 elif ok and world.structure_at(a.x, a.y) is not None:
                     existing = world.structure_at(a.x, a.y)
-                    # E5.9c: library may overwrite a road; else block occupied
-                    if existing and not (b == "library" and existing.type == "road"):
-                        if b not in STACKABLE or existing.type == b or b == "library":
+                    # E5.10: library/temple/academy may overwrite a road
+                    if existing and not (b in ("library", "temple", "academy") and existing.type == "road"):
+                        if b not in STACKABLE or existing.type == b or b in ("library", "temple", "academy"):
                             ok, note = False, "occupied"
 
                 if ok:
@@ -328,14 +328,14 @@ def run_sim(
                                 logger.event({"type": "build_funded", "tick": t, "agent_id": a.agent_id,
                                               "settlement_id": funded_sid, "building": b})
                             sm.link_structure(a.x, a.y, owner_id=a.agent_id, world=world, tick=t)
-                        elif b == "library" and existing.type == "road":
-                            existing.type = "library"
+                        elif b in ("library", "temple", "academy") and existing.type == "road":
+                            existing.type = b
                             existing.owner_id = a.agent_id
-                            note = "built_library"
-                            metrics["build_library"] = metrics.get("build_library", 0) + 1
+                            note = f"built_{b}"
+                            metrics[f"build_{b}"] = metrics.get(f"build_{b}", 0) + 1
                             if funded_sid is not None:
                                 logger.event({"type": "build_funded", "tick": t, "agent_id": a.agent_id,
-                                              "settlement_id": funded_sid, "building": "library"})
+                                              "settlement_id": funded_sid, "building": b})
                             sm.link_structure(a.x, a.y, owner_id=a.agent_id, world=world, tick=t)
                         else:
                             ok, note = False, "occupied"
