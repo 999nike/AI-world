@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E5.0 Lab LIVE  
+**Status:** E5.0 Lab LOCKED  
 **Last updated:** 2026-08-17
 
 ---
@@ -10,7 +10,7 @@
 ```
 Era 1–3 complete
 E4.0–E4.5 LOCKED
-E5.0 Lab — inquiry + library | +0.40 knowledge/tick (LIVE)
+E5.0 Lab — inquiry + library | +0.40 knowledge/tick (LOCKED)
 
 God-view icons: C # ~ L Y O X R
 
@@ -39,7 +39,7 @@ E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 |--------|--------|
 | Era 1–3 | **Live** |
 | E4.0–E4.5 | **LOCKED** |
-| E5.0 Lab | **LIVE** |
+| E5.0 Lab | **LOCKED** |
 | God-view --play | **Live** |
 
 ---
