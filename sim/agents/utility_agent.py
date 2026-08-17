@@ -69,27 +69,40 @@ class UtilityAgent:
             if has_farm and not has_storage and inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                 return Action(type="build", building="storage")
 
-        # E5.9c hard gate: Library if ANY settlement has inquiry+era4
+        # E5.9c hard gate: Library if ANY settlement has inquiry
         types = {st.get("type") for st in structs}
         settlements = obs.settlements or ([obs.nearest_settlement] if obs.nearest_settlement else [])
         need_library = False
         for s in settlements:
             if not s:
                 continue
-            if int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or []):
+            if "inquiry" in (s.get("subjects") or []) and int(s.get("era", 2)) >= 3:
                 need_library = True
                 break
         if need_library and "library" not in types:
             return Action(type="build", building="library")
 
-        # E5.10 hard gate: civic path market → temple → academy (global, any settlement)
+        # E5.11b hard gates for civic/science
         has_market = "market" in types
         has_temple = "temple" in types
         has_academy = "academy" in types
-        if has_market and not has_temple:
-            return Action(type="build", building="temple")
-        if has_temple and not has_academy:
-            return Action(type="build", building="academy")
+        has_library = "library" in types
+        has_lab = "lab" in types
+        has_obs = "observatory" in types
+        has_barracks = "barracks" in types
+        pressure = self._settlement_pressure(obs)
+        if pressure < 0.8:
+            era_ok = any(int((ss or {}).get("era", 2)) >= 3 for ss in settlements)
+            if has_barracks and not has_market and era_ok:
+                return Action(type="build", building="market")
+            if has_market and not has_temple:
+                return Action(type="build", building="temple")
+            if has_temple and not has_academy:
+                return Action(type="build", building="academy")
+            if has_library and not has_lab:
+                return Action(type="build", building="lab")
+            if has_lab and not has_obs:
+                return Action(type="build", building="observatory")
 
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
@@ -227,7 +240,7 @@ class UtilityAgent:
                 if not has_workshop or has_barracks:
                     return -3.0 if has_barracks else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                return w["w_build_barracks"] * can + 1.8 + inv_term - hunger * 0.2
+                return w["w_build_barracks"] * can + 8.0 + inv_term - hunger * 0.15  # E5.11
             if b == "market":
                 has_barracks = "barracks" in types
                 has_market = "market" in types
