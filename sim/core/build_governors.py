@@ -29,6 +29,11 @@ BUILD_ALIASES = {
 
 FARM_SOFT_CAP = 3
 
+# Late-game buildings that should yield to Library when inquiry is unlocked
+LIBRARY_PRIORITY_TARGETS = {
+    "irrigation", "foundry", "hall", "command", "lab", "observatory", "walls",
+}
+
 
 def normalise_building_name(raw: Optional[str]) -> str:
     if raw is None:
@@ -78,6 +83,15 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
 
     (farms, stor, gran, mine, road, workshop, barracks, market, temple,
      academy, walls, irrigation, library, foundry, hall, command, lab, observatory, total) = _settlement_struct_counts(best_sid, sm, world)
+
+    s = sm.get(best_sid)
+    era = int(s.get("era", 2))
+    subjects = s.get("subjects") or []
+
+    # E5.5: force Library before other Era-4 specialisation once inquiry is live
+    if (era >= 4 and "inquiry" in subjects and library < 1
+            and b in LIBRARY_PRIORITY_TARGETS):
+        return "library", "redirected_to_library_priority"
 
     if farms == 0:
         return "farm", "redirected_to_farm" if b != "farm" else ""
@@ -153,46 +167,41 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     if b == "irrigation":
         if irrigation >= 1:
             return "hut", "irrigation_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "irrigation_needs_era4"
-        if "agriculture" not in (s.get("subjects") or []):
+        if "agriculture" not in subjects:
             return "hut", "irrigation_needs_agriculture"
 
     if b == "library":
         if library >= 1:
             return "hut", "library_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "library_needs_era4"
-        if "inquiry" not in (s.get("subjects") or []):
+        if "inquiry" not in subjects:
             return "hut", "library_needs_inquiry"
 
     if b == "foundry":
         if foundry >= 1:
             return "hut", "foundry_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "foundry_needs_era4"
-        if "craft" not in (s.get("subjects") or []):
+        if "craft" not in subjects:
             return "hut", "foundry_needs_craft"
 
     if b == "hall":
         if hall >= 1:
             return "hut", "hall_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "hall_needs_era4"
-        if "organisation" not in (s.get("subjects") or []):
+        if "organisation" not in subjects:
             return "hut", "hall_needs_organisation"
 
     if b == "command":
         if command >= 1:
             return "hut", "command_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "command_needs_era4"
-        if "strategy" not in (s.get("subjects") or []):
+        if "strategy" not in subjects:
             return "hut", "command_needs_strategy"
         if barracks < 1:
             return "barracks", "command_needs_barracks"
@@ -200,10 +209,9 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     if b == "lab":
         if lab >= 1:
             return "hut", "lab_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "lab_needs_era4"
-        if "inquiry" not in (s.get("subjects") or []):
+        if "inquiry" not in subjects:
             return "hut", "lab_needs_inquiry"
         if library < 1:
             return "library", "lab_needs_library"
@@ -211,8 +219,7 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
     if b == "observatory":
         if observatory >= 1:
             return "hut", "observatory_capped_to_hut"
-        s = sm.get(best_sid)
-        if int(s.get("era", 2)) < 4:
+        if era < 4:
             return "hut", "observatory_needs_era4"
         if lab < 1:
             return "lab", "observatory_needs_lab"
