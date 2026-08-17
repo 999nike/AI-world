@@ -5,14 +5,15 @@
 ## Snapshot
 
 ```
-E5.9 LIVE:
-  - utility_agent: Library hard-gate (empty tile = build; occupied = pure move)
-  - road utility = -8 once inquiry unlocked
-  - simloop: occupied tiles fail BEFORE resource spend (no silent drain)
-  - full simloop restored from c98573c + E5.9 occupied patch
+E5.9c LIVE (seed-7 Library fix):
+  - Hard-gate scans ALL settlements for inquiry+era4 (not just nearest)
+  - can_build_library / resolve_building same global inquiry check
+  - Library may overwrite road tiles
+  - road+hut redirected to Library once inquiry live
+  - road utility -8 after inquiry
 
-E5.5–E5.8: prior Library gates + STACKABLE cascade
-E6: raid + military live
+Seed 7 now builds Library. Seed 42 still full path.
+Seed 100 still stuck pre-academy (separate issue).
 
 Test:
   git pull
