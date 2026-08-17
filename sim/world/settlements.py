@@ -6,22 +6,21 @@ from typing import Any, Dict, List, Optional
 
 SETTLEMENT_RULES = {
     "starting_population": 1,
-    "food_per_pop_per_tick": 0.22,          # was 0.25 — slightly less harsh long-run
+    "food_per_pop_per_tick": 0.22,
     "growth_food_buffer": 3,
     "max_pop_growth_per_tick": 1,
     "surplus_ticks_for_growth": 5,
-    "starve_ticks_for_loss": 4,             # was 3 — one extra tick of resilience
-    "farm_yield_per_tick": 1.65,            # was 1.5
-    "granary_food_per_tick": 0.65,          # was 0.5
-    "granary_starve_ticks": 5,              # was 4
+    "starve_ticks_for_loss": 4,
+    "farm_yield_per_tick": 1.65,
+    "granary_food_per_tick": 0.65,
+    "granary_starve_ticks": 5,
     "mine_stone_per_tick": 0.75,
     "deposit_range_default": 2,
     "deposit_range_with_road": 3,
     "workshop_tools_per_tick": 0.4,
-    "workshop_farm_bonus": 0.30,            # was 0.25
+    "workshop_farm_bonus": 0.30,
     "workshop_mine_bonus": 0.25,
     "tools_consume_per_boost": 0.5,
-    # Long-run tuned military
     "barracks_soldiers_per_tick": 0.15,
     "command_soldiers_per_tick": 0.10,
     "soldier_food_consume": 0.03,
@@ -35,23 +34,23 @@ SETTLEMENT_RULES = {
     "raid_loot_food": 2,
     "age_up_min_pop": 15,
     "age_up_food_bonus": 5.0,
-    "era3_farm_bonus": 0.30,               # was 0.25
+    "era3_farm_bonus": 0.30,
     "market_wood_per_tick": 0.5,
     "market_stone_per_tick": 0.25,
-    "temple_food_per_tick": 0.35,           # was 0.25
+    "temple_food_per_tick": 0.35,
     "temple_surplus_ticks": 3,
     "academy_knowledge_per_tick": 0.3,
     "library_knowledge_per_tick": 0.2,
     "lab_knowledge_per_tick": 0.40,
     "observatory_knowledge_per_tick": 0.50,
     "foundry_tools_bonus": 0.15,
-    "hall_food_per_tick": 0.20,             # was 0.15
+    "hall_food_per_tick": 0.20,
     "subject_agriculture_cost": 8,
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
     "subject_strategy_cost": 15,
     "subject_inquiry_cost": 20,
-    "agriculture_farm_bonus": 0.20,         # was 0.15
+    "agriculture_farm_bonus": 0.20,
     "craft_tools_bonus": 0.1,
     "organisation_surplus_reduction": 1,
     "strategy_defend_bonus": 0.1,
@@ -59,8 +58,12 @@ SETTLEMENT_RULES = {
     "walls_raid_extra_cost": 1.0,
     "age_up4_min_pop": 20,
     "age_up4_food_bonus": 5.0,
-    "era4_farm_bonus": 0.15,               # was 0.1
-    "irrigation_farm_bonus": 0.25,          # was 0.2
+    "era4_farm_bonus": 0.15,
+    "irrigation_farm_bonus": 0.25,
+    # E5.2 post-Observatory knowledge sink
+    "discovery_cost": 40,
+    "discovery_farm_bonus": 0.08,
+    "discovery_max": 8,
 }
 
 
@@ -82,6 +85,7 @@ class SettlementManager:
             "population": int(SETTLEMENT_RULES.get("starting_population", 1)),
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0, "soldiers": 0.0, "knowledge": 0.0,
+            "discoveries": 0,
             "subjects": [], "era": 2, "starve_ticks": 0, "surplus_ticks": 0,
         }
         try:
@@ -285,6 +289,7 @@ class SettlementManager:
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
+            discoveries = int(s.get("discoveries", 0))
 
             farm_yield = farms * yield_per_farm if farms > 0 else 0.0
             if has_workshop and farm_yield > 0:
@@ -297,6 +302,8 @@ class SettlementManager:
                 farm_yield += farms * float(SETTLEMENT_RULES.get("agriculture_farm_bonus", 0.20))
             if has_irrigation and farms > 0:
                 farm_yield += farms * float(SETTLEMENT_RULES.get("irrigation_farm_bonus", 0.25))
+            if discoveries > 0 and farms > 0:
+                farm_yield += farms * discoveries * float(SETTLEMENT_RULES.get("discovery_farm_bonus", 0.08))
 
             bonus = granary_food if has_granary else 0.0
             if farm_yield > 0 or bonus > 0:
@@ -371,6 +378,8 @@ class SettlementManager:
                 self.metrics["academy_knowledge_total"] = self.metrics.get("academy_knowledge_total", 0) + k_add
                 if has_academy:
                     self._try_unlock_subjects(sid, s, tick)
+                if has_observatory:
+                    self._try_discovery(sid, s, tick)
 
             post_harvest = float(s.get("food_stock", 0))
             soldiers_now = float(s.get("soldiers", 0.0))
@@ -453,6 +462,24 @@ class SettlementManager:
         self._try_raids(world, tick)
         self._try_age_up(world, tick)
         self._try_age_up4(world, tick)
+
+    def _try_discovery(self, sid: str, s: Dict[str, Any], tick: int) -> None:
+        """Spend knowledge for permanent farm bonus (Observatory sink)."""
+        cost = float(SETTLEMENT_RULES.get("discovery_cost", 40))
+        max_d = int(SETTLEMENT_RULES.get("discovery_max", 8))
+        discoveries = int(s.get("discoveries", 0))
+        knowledge = float(s.get("knowledge", 0.0))
+        while discoveries < max_d and knowledge >= cost:
+            discoveries += 1
+            knowledge -= cost
+            s["discoveries"] = discoveries
+            s["knowledge"] = knowledge
+            self.metrics["discovery_events"] = self.metrics.get("discovery_events", 0) + 1
+            self.logger.event({
+                "type": "discovery", "tick": tick, "settlement_id": sid,
+                "discoveries": discoveries, "cost": cost,
+                "knowledge_remaining": knowledge,
+            })
 
     def _try_unlock_subjects(self, sid: str, s: Dict[str, Any], tick: int) -> None:
         subjects = list(s.get("subjects") or [])
