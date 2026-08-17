@@ -6,26 +6,26 @@ from typing import Any, Dict, List, Optional
 
 SETTLEMENT_RULES = {
     "starting_population": 1,
-    "food_per_pop_per_tick": 0.25,
+    "food_per_pop_per_tick": 0.22,          # was 0.25 — slightly less harsh long-run
     "growth_food_buffer": 3,
     "max_pop_growth_per_tick": 1,
     "surplus_ticks_for_growth": 5,
-    "starve_ticks_for_loss": 3,
-    "farm_yield_per_tick": 1.5,
-    "granary_food_per_tick": 0.5,
-    "granary_starve_ticks": 4,
+    "starve_ticks_for_loss": 4,             # was 3 — one extra tick of resilience
+    "farm_yield_per_tick": 1.65,            # was 1.5
+    "granary_food_per_tick": 0.65,          # was 0.5
+    "granary_starve_ticks": 5,              # was 4
     "mine_stone_per_tick": 0.75,
     "deposit_range_default": 2,
     "deposit_range_with_road": 3,
     "workshop_tools_per_tick": 0.4,
-    "workshop_farm_bonus": 0.25,
+    "workshop_farm_bonus": 0.30,            # was 0.25
     "workshop_mine_bonus": 0.25,
     "tools_consume_per_boost": 0.5,
     # Long-run tuned military
     "barracks_soldiers_per_tick": 0.15,
     "command_soldiers_per_tick": 0.10,
-    "soldier_food_consume": 0.03,          # always-on upkeep per soldier
-    "soldier_soft_cap_per_pop": 3.0,       # growth slows hard past this ratio
+    "soldier_food_consume": 0.03,
+    "soldier_soft_cap_per_pop": 3.0,
     "soldier_defend_cost": 1.0,
     "raid_interval": 25,
     "raid_min_soldiers": 3.0,
@@ -35,23 +35,23 @@ SETTLEMENT_RULES = {
     "raid_loot_food": 2,
     "age_up_min_pop": 15,
     "age_up_food_bonus": 5.0,
-    "era3_farm_bonus": 0.25,
+    "era3_farm_bonus": 0.30,               # was 0.25
     "market_wood_per_tick": 0.5,
     "market_stone_per_tick": 0.25,
-    "temple_food_per_tick": 0.25,
+    "temple_food_per_tick": 0.35,           # was 0.25
     "temple_surplus_ticks": 3,
     "academy_knowledge_per_tick": 0.3,
     "library_knowledge_per_tick": 0.2,
     "lab_knowledge_per_tick": 0.40,
     "observatory_knowledge_per_tick": 0.50,
     "foundry_tools_bonus": 0.15,
-    "hall_food_per_tick": 0.15,
+    "hall_food_per_tick": 0.20,             # was 0.15
     "subject_agriculture_cost": 8,
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
     "subject_strategy_cost": 15,
     "subject_inquiry_cost": 20,
-    "agriculture_farm_bonus": 0.15,
+    "agriculture_farm_bonus": 0.20,         # was 0.15
     "craft_tools_bonus": 0.1,
     "organisation_surplus_reduction": 1,
     "strategy_defend_bonus": 0.1,
@@ -59,8 +59,8 @@ SETTLEMENT_RULES = {
     "walls_raid_extra_cost": 1.0,
     "age_up4_min_pop": 20,
     "age_up4_food_bonus": 5.0,
-    "era4_farm_bonus": 0.1,
-    "irrigation_farm_bonus": 0.2,
+    "era4_farm_bonus": 0.15,               # was 0.1
+    "irrigation_farm_bonus": 0.25,          # was 0.2
 }
 
 
@@ -233,13 +233,13 @@ class SettlementManager:
         buffer_food = float(SETTLEMENT_RULES["growth_food_buffer"])
         max_growth = int(SETTLEMENT_RULES["max_pop_growth_per_tick"])
         surplus_needed = int(SETTLEMENT_RULES.get("surplus_ticks_for_growth", 5))
-        starve_needed_default = int(SETTLEMENT_RULES.get("starve_ticks_for_loss", 3))
-        yield_per_farm = float(SETTLEMENT_RULES.get("farm_yield_per_tick", 1.5))
-        granary_food = float(SETTLEMENT_RULES.get("granary_food_per_tick", 0.5))
-        granary_starve = int(SETTLEMENT_RULES.get("granary_starve_ticks", 4))
+        starve_needed_default = int(SETTLEMENT_RULES.get("starve_ticks_for_loss", 4))
+        yield_per_farm = float(SETTLEMENT_RULES.get("farm_yield_per_tick", 1.65))
+        granary_food = float(SETTLEMENT_RULES.get("granary_food_per_tick", 0.65))
+        granary_starve = int(SETTLEMENT_RULES.get("granary_starve_ticks", 5))
         mine_stone = float(SETTLEMENT_RULES.get("mine_stone_per_tick", 0.75))
         workshop_tools = float(SETTLEMENT_RULES.get("workshop_tools_per_tick", 0.4))
-        workshop_farm_bonus = float(SETTLEMENT_RULES.get("workshop_farm_bonus", 0.25))
+        workshop_farm_bonus = float(SETTLEMENT_RULES.get("workshop_farm_bonus", 0.30))
         workshop_mine_bonus = float(SETTLEMENT_RULES.get("workshop_mine_bonus", 0.25))
 
         for sid, s in self.settlements.items():
@@ -290,13 +290,13 @@ class SettlementManager:
             if has_workshop and farm_yield > 0:
                 farm_yield += farms * workshop_farm_bonus
             if era >= 3 and farms > 0:
-                farm_yield += farms * float(SETTLEMENT_RULES.get("era3_farm_bonus", 0.25))
+                farm_yield += farms * float(SETTLEMENT_RULES.get("era3_farm_bonus", 0.30))
             if era >= 4 and farms > 0:
-                farm_yield += farms * float(SETTLEMENT_RULES.get("era4_farm_bonus", 0.1))
+                farm_yield += farms * float(SETTLEMENT_RULES.get("era4_farm_bonus", 0.15))
             if "agriculture" in subjects and farms > 0:
-                farm_yield += farms * float(SETTLEMENT_RULES.get("agriculture_farm_bonus", 0.15))
+                farm_yield += farms * float(SETTLEMENT_RULES.get("agriculture_farm_bonus", 0.20))
             if has_irrigation and farms > 0:
-                farm_yield += farms * float(SETTLEMENT_RULES.get("irrigation_farm_bonus", 0.2))
+                farm_yield += farms * float(SETTLEMENT_RULES.get("irrigation_farm_bonus", 0.25))
 
             bonus = granary_food if has_granary else 0.0
             if farm_yield > 0 or bonus > 0:
@@ -321,13 +321,12 @@ class SettlementManager:
                 s["tools_stock"] = float(s.get("tools_stock", 0.0)) + tools_add
                 self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + tools_add
 
-            # Soldier recruitment with soft cap vs population
             soldiers_now = float(s.get("soldiers", 0.0))
             pop_for_cap = max(1, pop_before)
             soft_cap = pop_for_cap * float(SETTLEMENT_RULES.get("soldier_soft_cap_per_pop", 3.0))
             recruit_scale = 1.0
             if soldiers_now >= soft_cap:
-                recruit_scale = 0.15  # hard slowdown past soft cap
+                recruit_scale = 0.15
             elif soldiers_now >= soft_cap * 0.7:
                 recruit_scale = 0.4
 
@@ -350,11 +349,11 @@ class SettlementManager:
                 self.metrics["market_wood_total"] = self.metrics.get("market_wood_total", 0) + mw
                 self.metrics["market_stone_total"] = self.metrics.get("market_stone_total", 0) + ms
             if has_temple:
-                tf = float(SETTLEMENT_RULES.get("temple_food_per_tick", 0.25))
+                tf = float(SETTLEMENT_RULES.get("temple_food_per_tick", 0.35))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
                 self.metrics["temple_food_total"] = self.metrics.get("temple_food_total", 0) + tf
             if has_hall:
-                hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.15))
+                hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.20))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + hf
                 self.metrics["hall_food_total"] = self.metrics.get("hall_food_total", 0) + hf
 
@@ -375,7 +374,6 @@ class SettlementManager:
 
             post_harvest = float(s.get("food_stock", 0))
             soldiers_now = float(s.get("soldiers", 0.0))
-            # Always-on soldier upkeep (trade-off: army costs food)
             soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
             need = pop_before * cons + soldier_upkeep
             starve_needed = granary_starve if has_granary else starve_needed_default
