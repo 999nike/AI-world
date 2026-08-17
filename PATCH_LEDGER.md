@@ -1,7 +1,7 @@
 # AI-world Patch Ledger
 
 **Hand-off snapshot:** 2026-08-17  
-**Status:** E5 science + E5.3/E5.3b science-path consistency
+**Status:** E5 science path + E6.0 raid depth
 
 ---
 
@@ -11,39 +11,33 @@
 Repo: https://github.com/999nike/AI-world
 Branch: main
 
-Era 1–3 complete | E4 LOCKED | E5.0–E5.2 LIVE
-E5.3: inquiry cost 20→16
-E5.3b: library weight 4.0→4.8, bonus 4.0→5.5 (stronger seed-100 push)
+Era 1–4 LOCKED | E5 science + discoveries LIVE
+E5.3 / E5.3b: inquiry cost 16 + Library weight 4.8 / bonus 5.5
+E6.0: scaled raid loot (attacker strength) + strategy reduces loot taken
 
 God-view icons: C # ~ L Y O X R V
 ```
 
 ---
 
-## Building table (Era 4 + E5)
+## Key rules (current)
 
-| Building | Gate | Cost | Effect | Icon |
-|----------|------|------|--------|------|
-| Irrigation | agriculture | 2w 2s | +farm yield | ~ |
-| Library | inquiry | 3w 3s | +0.2 knowledge/tick | L |
-| Foundry | craft | 3w 3s | +0.15 tools/tick | Y |
-| Hall | organisation | 3w 3s | +food + surplus help | O |
-| Command | strategy + barracks | 3w 4s | +soldiers (food upkeep) | X |
-| Lab | inquiry + library | 4w 4s | +0.40 knowledge/tick | R |
-| Observatory | lab | 5w 4s | +0.50 knowledge/tick | V |
+**Subjects:** inquiry cost = 16  
+**Library utility:** weight 4.8, bonus 5.5  
+**Raids (E6.0):**
+- base loot raised (4w/3s/3f)
+- extra loot = floor(attacker_soldiers / 8), capped
+- defender with strategy subject: loot ×0.75
+- walls still add +1 cost
 
-**Discoveries:** Observatory → 40 knowledge → +1 discovery (+0.08 farm/farm), max 8.  
-**Subjects:** inquiry cost = 16.
-
-**Military:** barracks 0.15 / command 0.10 soldiers/tick; soft-cap ~3×pop; upkeep 0.03 food/soldier.
+**Military:** barracks 0.15 / command 0.10 /tick; soft-cap ~3×pop; upkeep 0.03 food/soldier
 
 ---
 
-## Validation notes
+## Validation
 
-Pre-E5.3b (after cost drop only): 4/5 seeds full science line; seed 100 still lib=0 lab=0 obs=0 despite full subjects + Era 4.
-
-E5.3b applied — retest seed 100 class recommended before next axis.
+Science path (E5.3b) still needs seed-100 confirmation.  
+Raid depth is new — observe loot totals + strategy effect on long runs.
 
 ```bash
 git pull
@@ -59,6 +53,7 @@ python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --sna
 | Era 1–4 | Live / Locked |
 | E5 science + discoveries | Live |
 | E5.3 / E5.3b Library push | Live |
+| E6.0 Raid depth | Live |
 | Quiet long-run | Live |
 | God-view --play | Live |
 | Learning agents | Not started |
@@ -67,8 +62,8 @@ python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --sna
 
 ## Suggested next axes
 
-1. Raid / military depth for long horizons  
-2. ~~Stronger Library push~~ → E5.3 + E5.3b  
+1. ~~Raid / military depth~~ → E6.0  
+2. Confirm science path (seed 100)  
 3. Human-paced god-view / presentation  
 4. Learning-agent interface later  
 
