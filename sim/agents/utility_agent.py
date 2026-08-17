@@ -69,7 +69,7 @@ class UtilityAgent:
             if has_farm and not has_storage and inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                 return Action(type="build", building="storage")
 
-        # E5.9c hard gate: force Library if ANY settlement has inquiry+era4 and no library yet
+        # E5.9c hard gate: Library if ANY settlement has inquiry+era4
         types = {st.get("type") for st in structs}
         settlements = obs.settlements or ([obs.nearest_settlement] if obs.nearest_settlement else [])
         need_library = False
@@ -81,6 +81,15 @@ class UtilityAgent:
                 break
         if need_library and "library" not in types:
             return Action(type="build", building="library")
+
+        # E5.10 hard gate: civic path market → temple → academy (global, any settlement)
+        has_market = "market" in types
+        has_temple = "temple" in types
+        has_academy = "academy" in types
+        if has_market and not has_temple:
+            return Action(type="build", building="temple")
+        if has_temple and not has_academy:
+            return Action(type="build", building="academy")
 
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
