@@ -88,81 +88,133 @@ def run_sim(
     if scenario_commands:
         logger.event({"type": "scenario_loaded", "tick": 0, "commands": scenario_commands, "state": scenario.to_dict()})
 
-    from sim.agents.utility_agent import UtilityAgent, DEFAULT_WEIGHTS
-    agents = []
-    for i, a in enumerate(world.agents):
-        if control_agent_id and a.agent_id == control_agent_id:
-            agents.append(ControlledAgent(a.agent_id, control_policy))
-        elif agent_kind == "random":
-            agents.append(RandomAgent(a.agent_id))
-        else:
-            w = dict(DEFAULT_WEIGHTS)
-            if policy_weights:
-                w.update(policy_weights)
-            agents.append(UtilityAgent(a.agent_id, w, gov.bias() if gov else None))
+    if agent_kind == "utility":
+        from sim.agents.utility_agent import UtilityAgent
+        w = policy_weights or {}
+        bias = gov.bias_weights()
+        brains = {a.agent_id: UtilityAgent(a.agent_id, w, governor_bias=bias) for a in world.agents}
+    else:
+        brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
-    sm = SettlementManager(logger=logger, metrics={})
+    if control_agent_id and control_agent_id in brains:
+        brains[control_agent_id] = ControlledAgent(control_agent_id, policy=control_policy)
+        logger.event({"type": "agent_controlled", "tick": 0, "agent_id": control_agent_id, "policy": control_policy})
+
     metrics = {
-        "food_deposited_total": 0, "population_starved_events": 0,
-        "build_farm": 0, "build_storage": 0, "build_hut": 0,
-        "build_granary": 0, "build_mine": 0, "build_road": 0,
-        "build_workshop": 0, "build_barracks": 0, "build_market": 0,
-        "build_temple": 0, "build_academy": 0, "build_walls": 0,
+        "settlements_created": 0,
+        "food_deposited_total": 0, "food_deposit_events": 0,
+        "wood_deposited_total": 0, "wood_deposit_events": 0,
+        "stone_deposited_total": 0, "stone_deposit_events": 0,
+        "population_grew_events": 0, "population_starved_events": 0, "population_net_change": 0,
+        "build_hut": 0, "build_storage": 0, "build_farm": 0,
+        "build_granary": 0, "build_mine": 0, "build_road": 0, "build_workshop": 0, "build_barracks": 0,
+        "build_market": 0, "build_temple": 0, "build_academy": 0, "build_walls": 0,
         "build_irrigation": 0, "build_library": 0, "build_foundry": 0, "build_hall": 0, "build_command": 0,
         "build_lab": 0, "build_observatory": 0,
+        "farm_harvest_events": 0, "farm_food_total": 0,
+        "granary_food_total": 0, "mine_stone_total": 0, "workshop_tools_total": 0, "barracks_soldiers_total": 0,
+        "tools_boost_events": 0, "soldier_defend_events": 0, "raid_events": 0, "raid_loot_total": 0,
+        "age_up_events": 0, "age_up4_events": 0,
+        "market_wood_total": 0, "market_stone_total": 0, "temple_food_total": 0,
+        "academy_knowledge_total": 0, "subject_unlock_events": 0,
     }
-    sm.metrics = metrics
+    sm = SettlementManager(metrics=metrics, logger=logger)
+    drought_active = False
+
+    (run_dir / "config.json").write_text(json.dumps({
+        "seed": seed, "ticks": ticks, "num_agents": num_agents, "snapshot_every": snapshot_every,
+        "quiet": quiet,
+        "world": cfg.__dict__, "build_costs": BUILD_COSTS, "settlement_rules": SETTLEMENT_RULES,
+        "governor": gov.to_dict(), "scenario": scenario.to_dict(),
+    }, indent=2), encoding="utf-8")
+
+    logger.event({"type": "run_started", "run_id": run_id, "seed": seed, "num_agents": num_agents})
 
     for t in range(ticks):
         world.tick = t
-        scenario.apply_events(t, world, sm, logger)
+        logger.event({"type": "tick_started", "tick": t})
 
-        for a, agent in zip(world.agents, agents):
+        for ev in scenario.pending_events(t):
+            if ev.kind == "drought":
+                drought_active = True
+            elif ev.kind == "boom":
+                for _ in range(40):
+                    x, y = rng.randint(0, world.width - 1), rng.randint(0, world.height - 1)
+                    tile = world.tile_at(x, y)
+                    tile.food = min(tile.food + 3, cfg.max_food)
+                    tile.wood = min(tile.wood + 2, cfg.max_wood)
+            ev.applied = True
+            logger.event({"type": "scenario_event", "tick": t, "kind": ev.kind})
+
+        if t % 5 == 0:
+            for _ in range(3 if drought_active else 10):
+                x, y = rng.randint(0, world.width - 1), rng.randint(0, world.height - 1)
+                tile = world.tile_at(x, y)
+                tile.food = min(tile.food + 1, cfg.max_food)
+                tile.wood = min(tile.wood + 1, cfg.max_wood)
+                tile.stone = min(tile.stone + 1, cfg.max_stone)
+
+        for a in world.agents:
             tile = world.tile_at(a.x, a.y)
             st = world.structure_at(a.x, a.y)
+            sm.try_deposit(a, tick=t, world=world)
             nearest_sid = sm.nearest(a.x, a.y)
-            nearest = sm.get(nearest_sid) if nearest_sid else None
-            structs = []
-            if nearest_sid:
-                for stx in world.structures:
-                    if sm.structure_settlement_id(stx.x, stx.y) == nearest_sid:
-                        structs.append(stx.to_dict())
+            nearest_data = sm.get(nearest_sid) if nearest_sid else None
+
             obs = Observation(
-                agent_id=a.agent_id, tick=t,
-                inventory=a.inv_dict(), tile=tile.to_dict(),
-                structure=st.to_dict() if st else None,
-                structures=structs,
-                nearest_settlement=nearest,
+                tick=t, self_id=a.agent_id, x=a.x, y=a.y,
+                width=world.width, height=world.height,
+                tile=tile.to_dict(), inventory=a.inv_dict(),
+                structure=(st.to_dict() if st else None),
+                structures=[s.to_dict() for s in world.structures],
+                settlements=sm.all(), nearest_settlement=nearest_data,
             )
-            action = agent.act(obs, rng)
+            action = brains[a.agent_id].act(obs, rng)
+
+            logger.event({"type": "action_attempted", "tick": t, "agent_id": a.agent_id,
+                          "action": action.to_dict(), "pos": {"x": a.x, "y": a.y},
+                          "tile": tile.to_dict(), "inv": a.inv_dict(),
+                          "structure": (st.to_dict() if st else None)})
+
             ok, note = True, ""
-            b = None
 
             if action.type == "move":
-                nx, ny = a.x + action.dx, a.y + action.dy
-                if 0 <= nx < world.width and 0 <= ny < world.height:
-                    a.x, a.y = nx, ny
-                    note = "moved"
-                else:
-                    ok, note = False, "oob"
+                nx, ny = a.x + int(action.dx), a.y + int(action.dy)
+                if nx < 0 or nx >= world.width or ny < 0 or ny >= world.height:
+                    ok, note, nx, ny = False, "out_of_bounds", a.x, a.y
+                a.x, a.y = nx, ny
+
             elif action.type == "gather":
-                r = action.resource
-                amount = getattr(tile, r, 0)
-                if amount > 0:
-                    setattr(tile, r, amount - 1)
-                    if r == "food": a.inv_food += 1
-                    elif r == "wood": a.inv_wood += 1
-                    elif r == "stone": a.inv_stone += 1
-                    note = f"gathered_{r}"
+                res = action.resource
+                if res not in ("food", "wood", "stone"):
+                    ok, note = False, "bad_resource"
                 else:
-                    ok, note = False, "empty"
+                    cur = world.tile_at(a.x, a.y)
+                    attr = {"food": "inv_food", "wood": "inv_wood", "stone": "inv_stone"}[res]
+                    if getattr(cur, res) >= 1:
+                        setattr(cur, res, getattr(cur, res) - 1)
+                        setattr(a, attr, getattr(a, attr) + 1)
+                        try:
+                            nearest_sid = sm.nearest(a.x, a.y)
+                            if nearest_sid is not None and sm.settlement_has_workshop(nearest_sid, world):
+                                s = sm.get(nearest_sid)
+                                tools = float(s.get("tools_stock", 0.0))
+                                consume = float(SETTLEMENT_RULES.get("tools_consume_per_boost", 0.5))
+                                if tools >= 1.0:
+                                    setattr(a, attr, getattr(a, attr) + 1)
+                                    s["tools_stock"] = tools - consume
+                                    metrics["tools_boost_events"] = metrics.get("tools_boost_events", 0) + 1
+                                    note = "tools_boost"
+                        except Exception:
+                            pass
+                    else:
+                        ok, note = False, f"no_{res}"
+
             elif action.type == "build":
-                b = action.building
-                resolved, gnote = resolve_building(b, a.x, a.y, sm, world)
-                if gnote:
-                    b = resolved
-                    note = gnote
-                ok = True
+                b, gov_note = resolve_building(action.building, a.x, a.y, sm, world)
+                if gov_note:
+                    note = gov_note
+
                 if b == "hut":
                     allowed, gate_note = can_build_hut(a.x, a.y, sm, world)
                     if not allowed: ok, note = False, gate_note
@@ -229,7 +281,7 @@ def run_sim(
                     cur = world.tile_at(a.x, a.y)
                     use_wood = use_stone = 0
 
-                    # E5.8: inv → tile → settlement cascade
+                    # E5.8: inv ? tile ? settlement cascade (no early STACKABLE fail)
                     use_wood = min(a.inv_wood, need_wood)
                     use_stone = min(a.inv_stone, need_stone)
                     a.inv_wood -= use_wood
@@ -254,7 +306,7 @@ def run_sim(
                     if (need_wood > 0 or need_stone > 0) and sm.count() > 0:
                         best_sid = sm.nearest(a.x, a.y)
                         funded_sid = best_sid
-                        s = sm.get(best_sid)
+                        s = sm.get(best_sid)  # type: ignore
                         if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
                             s["wood_stock"] -= need_wood
                             s["stone_stock"] -= need_stone
