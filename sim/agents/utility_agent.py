@@ -17,8 +17,8 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_workshop": 3.5, "w_build_barracks": 3.0,
     "w_build_market": 3.2, "w_build_temple": 3.0,
     "w_build_academy": 2.8, "w_build_walls": 3.0,
-    "w_build_irrigation": 3.4, "w_build_library": 3.6, "w_build_foundry": 3.2,
-    "w_build_hall": 3.1, "w_build_command": 2.9,
+    "w_build_irrigation": 3.5, "w_build_library": 3.6, "w_build_foundry": 3.5,
+    "w_build_hall": 3.4, "w_build_command": 3.3,
     "w_build_lab": 3.8, "w_build_observatory": 3.9,
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
@@ -30,13 +30,11 @@ def _diminishing(x: float, cap: float) -> float:
 
 
 def _settlement_stocks(obs) -> tuple:
-    """Wood/stone available from nearest settlement warehouse."""
     nearest = obs.nearest_settlement or {}
     return float(nearest.get("wood_stock", 0) or 0), float(nearest.get("stone_stock", 0) or 0)
 
 
 def _can_afford(inv, need_w: int, need_s: int, obs) -> float:
-    """1.0 if agent inv enough, 0.7 if settlement can fund, else 0.25."""
     aw = float(inv.get("wood", 0))
     ast = float(inv.get("stone", 0))
     if aw >= need_w and ast >= need_s:
@@ -114,7 +112,7 @@ class UtilityAgent:
         pop, food = float(nearest.get("population", 0)), float(nearest.get("food_stock", 0))
         if pop <= 0:
             return 0.0
-        need = pop * 0.22  # match tuned food_per_pop
+        need = pop * 0.22
         if food >= need * 2:
             return 0.0
         if food <= 0:
@@ -157,7 +155,6 @@ class UtilityAgent:
             subjects = nearest.get("subjects") or []
 
             if b == "farm":
-                # Late-game / many farms: reduce spam so science can compete
                 if farm_count >= 6:
                     bonus = 0.2
                 elif farm_count >= 3:
@@ -240,42 +237,41 @@ class UtilityAgent:
                 if era < 4 or "agriculture" not in subjects or has_irrigation:
                     return -3.0 if has_irrigation else -1.5
                 can = _can_afford(inv, 2, 2, obs)
-                return w["w_build_irrigation"] * can + 2.5 + inv_term - hunger * 0.1
+                return w["w_build_irrigation"] * can + 3.0 + inv_term - hunger * 0.08
             if b == "library":
                 has_library = "library" in types
                 if era < 4 or "inquiry" not in subjects or has_library:
                     return -3.0 if has_library else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                # Strong push once inquiry unlocked; lighter hunger penalty
                 return w["w_build_library"] * can + 3.5 + inv_term - hunger * 0.05
             if b == "foundry":
                 has_foundry = "foundry" in types
                 if era < 4 or "craft" not in subjects or has_foundry:
                     return -3.0 if has_foundry else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                return w["w_build_foundry"] * can + 2.2 + inv_term - hunger * 0.1
+                return w["w_build_foundry"] * can + 3.2 + inv_term - hunger * 0.06
             if b == "hall":
                 has_hall = "hall" in types
                 if era < 4 or "organisation" not in subjects or has_hall:
                     return -3.0 if has_hall else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                return w["w_build_hall"] * can + 2.1 + inv_term - hunger * 0.1
+                return w["w_build_hall"] * can + 3.1 + inv_term - hunger * 0.06
             if b == "command":
                 has_command = "command" in types
                 has_barracks = "barracks" in types
                 if era < 4 or "strategy" not in subjects or not has_barracks or has_command:
                     return -3.0 if has_command else -1.5
-                if pressure > 0.5:
-                    return -1.0
+                # Soft discourage under high pressure, don't hard-block
+                if pressure > 0.7:
+                    return -0.5
                 can = _can_afford(inv, 3, 4, obs)
-                return w["w_build_command"] * can + 2.0 + inv_term - hunger * 0.3
+                return w["w_build_command"] * can + 2.8 + inv_term - hunger * 0.15
             if b == "lab":
                 has_lab = "lab" in types
                 has_library = "library" in types
                 if era < 4 or "inquiry" not in subjects or not has_library or has_lab:
                     return -3.0 if has_lab else -1.5
                 can = _can_afford(inv, 4, 4, obs)
-                # Priority once Library exists; hunger barely blocks science
                 return w["w_build_lab"] * can + 4.0 + inv_term - hunger * 0.05
             if b == "observatory":
                 has_observatory = "observatory" in types
