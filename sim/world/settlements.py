@@ -21,9 +21,11 @@ SETTLEMENT_RULES = {
     "workshop_farm_bonus": 0.25,
     "workshop_mine_bonus": 0.25,
     "tools_consume_per_boost": 0.5,
-    "barracks_soldiers_per_tick": 0.25,
-    "command_soldiers_per_tick": 0.20,
-    "soldier_food_consume": 0.05,
+    # Long-run tuned military
+    "barracks_soldiers_per_tick": 0.15,
+    "command_soldiers_per_tick": 0.10,
+    "soldier_food_consume": 0.03,          # always-on upkeep per soldier
+    "soldier_soft_cap_per_pop": 3.0,       # growth slows hard past this ratio
     "soldier_defend_cost": 1.0,
     "raid_interval": 25,
     "raid_min_soldiers": 3.0,
@@ -318,14 +320,28 @@ class SettlementManager:
                     tools_add += float(SETTLEMENT_RULES.get("foundry_tools_bonus", 0.15))
                 s["tools_stock"] = float(s.get("tools_stock", 0.0)) + tools_add
                 self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + tools_add
+
+            # Soldier recruitment with soft cap vs population
+            soldiers_now = float(s.get("soldiers", 0.0))
+            pop_for_cap = max(1, pop_before)
+            soft_cap = pop_for_cap * float(SETTLEMENT_RULES.get("soldier_soft_cap_per_pop", 3.0))
+            recruit_scale = 1.0
+            if soldiers_now >= soft_cap:
+                recruit_scale = 0.15  # hard slowdown past soft cap
+            elif soldiers_now >= soft_cap * 0.7:
+                recruit_scale = 0.4
+
             if has_barracks:
-                barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.25))
-                s["soldiers"] = float(s.get("soldiers", 0.0)) + barracks_soldiers
+                barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.15)) * recruit_scale
+                s["soldiers"] = soldiers_now + barracks_soldiers
+                soldiers_now = float(s["soldiers"])
                 self.metrics["barracks_soldiers_total"] = self.metrics.get("barracks_soldiers_total", 0) + barracks_soldiers
             if has_command:
-                cmd_soldiers = float(SETTLEMENT_RULES.get("command_soldiers_per_tick", 0.20))
-                s["soldiers"] = float(s.get("soldiers", 0.0)) + cmd_soldiers
+                cmd_soldiers = float(SETTLEMENT_RULES.get("command_soldiers_per_tick", 0.10)) * recruit_scale
+                s["soldiers"] = soldiers_now + cmd_soldiers
+                soldiers_now = float(s["soldiers"])
                 self.metrics["command_soldiers_total"] = self.metrics.get("command_soldiers_total", 0) + cmd_soldiers
+
             if has_market:
                 mw = float(SETTLEMENT_RULES.get("market_wood_per_tick", 0.5))
                 ms = float(SETTLEMENT_RULES.get("market_stone_per_tick", 0.25))
@@ -359,7 +375,8 @@ class SettlementManager:
 
             post_harvest = float(s.get("food_stock", 0))
             soldiers_now = float(s.get("soldiers", 0.0))
-            soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.05)) if has_command else 0.0
+            # Always-on soldier upkeep (trade-off: army costs food)
+            soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
             need = pop_before * cons + soldier_upkeep
             starve_needed = granary_starve if has_granary else starve_needed_default
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
