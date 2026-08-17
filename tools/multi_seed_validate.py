@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multi-seed validation helper for AI-world (Era 4 full stack)."""
+"""Multi-seed validation helper for AI-world."""
 
 from __future__ import annotations
 
@@ -23,23 +23,30 @@ def load_summary(run_id: str) -> dict | None:
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world multi-seed validation (Era 4 full)")
+    p = argparse.ArgumentParser(description="AI-world multi-seed validation")
     p.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS)
     p.add_argument("--ticks", type=int, default=500)
     p.add_argument("--snapshot-every", type=int, default=50)
+    p.add_argument("--quiet", action="store_true", help="Reduce logging (recommended for long runs)")
     args = p.parse_args()
+
+    # Auto-quiet for long runs
+    quiet = args.quiet or args.ticks >= 2000
 
     results = []
     print()
     print("=" * 120)
-    print(f"  AI-WORLD MULTI-SEED VALIDATION (Era 4 full)  |  ticks={args.ticks}")
+    print(f"  AI-WORLD MULTI-SEED VALIDATION  |  ticks={args.ticks}  quiet={quiet}")
     print("=" * 120)
     print()
 
     for seed in args.seeds:
         print(f"→ Running seed {seed} ...", flush=True)
-        score, run_id = run_sim(seed=seed, ticks=args.ticks,
-                                snapshot_every=args.snapshot_every, return_score=True)
+        score, run_id = run_sim(
+            seed=seed, ticks=args.ticks,
+            snapshot_every=args.snapshot_every,
+            return_score=True, quiet=quiet,
+        )
         summary = load_summary(run_id)
         if summary is None:
             print(f"  ERROR: no summary for {run_id}")
@@ -69,16 +76,16 @@ def main():
             "foundry": m.get("build_foundry", 0),
             "hall": m.get("build_hall", 0),
             "command": m.get("build_command", 0),
+            "lab": m.get("build_lab", 0),
+            "observatory": m.get("build_observatory", 0),
             "soldiers": round(total_soldiers, 1),
             "subjects": m.get("subject_unlock_events", 0),
             "knowledge": round(total_knowledge, 1),
             "subject_list": sorted(all_subjects),
         })
         print(f"  done → score={summary.get('score')} era={max_era} "
-              f"acad={m.get('build_academy',0)} wall={m.get('build_walls',0)} "
-              f"irrig={m.get('build_irrigation',0)} lib={m.get('build_library',0)} "
-              f"found={m.get('build_foundry',0)} hall={m.get('build_hall',0)} "
-              f"cmd={m.get('build_command',0)} rid={run_id}")
+              f"lib={m.get('build_library',0)} lab={m.get('build_lab',0)} "
+              f"obs={m.get('build_observatory',0)} rid={run_id}")
         print()
 
     print()
@@ -86,14 +93,14 @@ def main():
     print("  RESULTS")
     print("=" * 120)
     print(f"{'Seed':>6}  {'Score':>6}  {'NetPop':>6}  {'Starve':>6}  "
-          f"{'Era':>3}  {'A4':>3}  {'Acad':>4}  {'Wall':>4}  {'Irrig':>5}  {'Lib':>3}  "
+          f"{'Era':>3}  {'A4':>3}  {'Lib':>3}  {'Lab':>3}  {'Obs':>3}  "
           f"{'Found':>5}  {'Hall':>4}  {'Cmd':>3}  {'Sold':>5}  "
           f"{'Subj':>4}  {'Know':>5}  Run ID")
     print("-" * 120)
     for r in results:
         print(f"{r['seed']:>6}  {r['score']:>6}  {r['net_pop']:>6}  {r['starved']:>6}  "
-              f"{r['max_era']:>3}  {r['age_up4']:>3}  {r['academy']:>4}  {r['walls']:>4}  "
-              f"{r['irrigation']:>5}  {r['library']:>3}  "
+              f"{r['max_era']:>3}  {r['age_up4']:>3}  {r['library']:>3}  {r['lab']:>3}  "
+              f"{r['observatory']:>3}  "
               f"{r['foundry']:>5}  {r['hall']:>4}  {r['command']:>3}  {r['soldiers']:>5}  "
               f"{r['subjects']:>4}  {r['knowledge']:>5}  {r['run_id']}")
     print("-" * 120)

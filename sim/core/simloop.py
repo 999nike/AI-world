@@ -42,7 +42,7 @@ BUILD_COSTS = {
     "hall": {"wood": 3, "stone": 3},
     "command": {"wood": 3, "stone": 4},
     "lab": {"wood": 4, "stone": 4},
-    "observatory": {"wood": 5, "stone": 4},  # E5.1
+    "observatory": {"wood": 5, "stone": 4},
 }
 
 STACKABLE = {"storage", "farm", "granary", "mine", "road", "workshop", "barracks",
@@ -55,6 +55,7 @@ def run_sim(
     agent_kind: str = "utility", policy_weights: dict = None, return_score: bool = False,
     governor_command: Optional[str] = None, scenario_commands: Optional[str] = None,
     control_agent_id: Optional[str] = None, control_policy: str = "idle", num_agents: int = 4,
+    quiet: bool = False,
 ):
     scenario = Scenario()
     if scenario_commands:
@@ -68,7 +69,7 @@ def run_sim(
 
     run_id = make_run_id()
     run_dir = Path("runs") / run_id
-    logger = RunLogger(run_dir)
+    logger = RunLogger(run_dir, quiet=quiet)
     cfg = WorldConfig()
     rng = RNG(seed)
     world = make_world(cfg, rng, num_agents=num_agents)
@@ -122,6 +123,7 @@ def run_sim(
 
     (run_dir / "config.json").write_text(json.dumps({
         "seed": seed, "ticks": ticks, "num_agents": num_agents, "snapshot_every": snapshot_every,
+        "quiet": quiet,
         "world": cfg.__dict__, "build_costs": BUILD_COSTS, "settlement_rules": SETTLEMENT_RULES,
         "governor": gov.to_dict(), "scenario": scenario.to_dict(),
     }, indent=2), encoding="utf-8")
