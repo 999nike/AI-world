@@ -1,7 +1,7 @@
 # AI-world Patch Ledger
 
 **Status:** E4.0–E4.5 LOCKED  
-**Last updated:** 2026-08-12
+**Last updated:** 2026-08-17
 
 ---
 
@@ -18,8 +18,6 @@ E4.5 Command — strategy | +0.20 soldiers/tick, soldiers eat 0.05 food each (LO
 
 God-view icons: C # ~ L Y O X
 
-Token rule: minimum tokens (SuperGrok limit before Aug 16)
-Windows paths: full git.exe + Python312 python.exe
 Repo: https://github.com/999nike/AI-world
 Workspace: E:\WIZZ-Server\workspaces\AI-world
 ```
@@ -45,6 +43,7 @@ E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 | Era 1–3 | **Live** |
 | E4.0–E4.5 | **LOCKED** |
 | God-view --play | **Live** |
+| multi_seed_validate | **Updated 2026-08-17** (now reports Foundry / Hall / Command + soldiers) |
 
 ---
 
