@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""God-view for AI-world (Era 4 + E5) — logs → visual playback.
+"""God-view for AI-world (Era 4 + E5 + E6) — logs → visual playback.
 
 Usage:
   python tools/god_view.py --rid latest --play
@@ -29,7 +29,7 @@ ICON = {
 
 KEY_EVENT_TYPES = {
     "age_transition", "subject_unlocked", "raid", "soldier_defend",
-    "settlement_created",
+    "settlement_created", "discovery",
 }
 
 
@@ -104,7 +104,13 @@ def events_in_range(events: list[dict], t0: int, t1: int) -> list[str]:
         elif typ == "action_resolved":
             lines.append(f"  ★ BUILT  {str(ev.get('note','')).replace('built_','')}  @({ev.get('pos',{}).get('x')},{ev.get('pos',{}).get('y')})")
         elif typ == "raid":
-            lines.append(f"  ★ RAID  {ev.get('attacker')} → {ev.get('target')}")
+            loot = ev.get("loot") or {}
+            lines.append(
+                f"  ★ RAID  {ev.get('attacker')} → {ev.get('target')}  "
+                f"loot {loot.get('wood',0)}w/{loot.get('stone',0)}s/{loot.get('food',0)}f"
+            )
+        elif typ == "discovery":
+            lines.append(f"  ★ DISCOVERY  #{ev.get('discoveries')}  ({ev.get('settlement_id')})")
         elif typ == "settlement_created":
             lines.append(f"  ★ SETTLEMENT  {ev.get('settlement',{}).get('id','?')}")
         elif typ == "soldier_defend":
@@ -138,9 +144,12 @@ def settlement_summary(snap: dict) -> str:
     parts = []
     for s in snap.get("settlements", []):
         subjects = ",".join(s.get("subjects") or []) or "-"
+        sold = round(float(s.get("soldiers", 0) or 0), 1)
+        disc = int(s.get("discoveries", 0) or 0)
         parts.append(
             f"{s.get('id','?')}:e{s.get('era',2)} pop={s.get('population','?')} "
-            f"f={round(float(s.get('food_stock',0)),1)} k={round(float(s.get('knowledge',0)),1)} [{subjects}]"
+            f"f={round(float(s.get('food_stock',0)),1)} k={round(float(s.get('knowledge',0)),1)} "
+            f"sold={sold} disc={disc} [{subjects}]"
         )
     return " | ".join(parts) if parts else "no settlements"
 
@@ -168,7 +177,8 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
         print(
             f"  Score:{summary.get('score')}  NetPop:{m.get('population_net_change',0)}  "
             f"AgeUp:{m.get('age_up_events',0)}  A4:{m.get('age_up4_events',0)}  "
-            f"Subjects:{m.get('subject_unlock_events',0)}"
+            f"Subjects:{m.get('subject_unlock_events',0)}  Raids:{m.get('raid_events',0)}  "
+            f"Disc:{m.get('discovery_events',0)}"
         )
         print(
             f"  Builds  C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
@@ -194,7 +204,7 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world god-view (Era 4 + E5)")
+    p = argparse.ArgumentParser(description="AI-world god-view (Era 4 + E5 + E6)")
     p.add_argument("--rid", default="latest")
     p.add_argument("--tick", type=int, default=None)
     p.add_argument("--list", action="store_true")
@@ -231,15 +241,18 @@ def main():
         print(f"  FINAL  |  {rid}")
         print(f"  Score: {summary.get('score')}  Seed: {summary.get('seed')}  Ticks: {summary.get('ticks')}")
         print(f"  AgeUp:{m.get('age_up_events',0)}  A4:{m.get('age_up4_events',0)}  "
-              f"Subjects:{m.get('subject_unlock_events',0)}  "
-              f"Irrig:{m.get('build_irrigation',0)} Lib:{m.get('build_library',0)} "
+              f"Subjects:{m.get('subject_unlock_events',0)}  Raids:{m.get('raid_events',0)}  "
+              f"Disc:{m.get('discovery_events',0)}")
+        print(f"  Irrig:{m.get('build_irrigation',0)} Lib:{m.get('build_library',0)} "
               f"Foundry:{m.get('build_foundry',0)} Hall:{m.get('build_hall',0)} "
               f"Command:{m.get('build_command',0)} Lab:{m.get('build_lab',0)} "
               f"Obs:{m.get('build_observatory',0)}")
         for s in summary.get("final", {}).get("settlements", []):
             subjects = ",".join(s.get("subjects") or []) or "-"
+            sold = round(float(s.get("soldiers", 0) or 0), 1)
+            disc = int(s.get("discoveries", 0) or 0)
             print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
-                  f"k={round(float(s.get('knowledge',0)),1)} [{subjects}]")
+                  f"k={round(float(s.get('knowledge',0)),1)} sold={sold} disc={disc} [{subjects}]")
         print("=" * 72)
         return
 
