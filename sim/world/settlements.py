@@ -40,6 +40,7 @@ SETTLEMENT_RULES = {
     "temple_surplus_ticks": 3,
     "academy_knowledge_per_tick": 0.3,
     "library_knowledge_per_tick": 0.2,
+    "lab_knowledge_per_tick": 0.40,
     "foundry_tools_bonus": 0.15,
     "hall_food_per_tick": 0.15,
     "subject_agriculture_cost": 8,
@@ -179,6 +180,9 @@ class SettlementManager:
     def settlement_has_command(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "command", world) >= 1
 
+    def settlement_has_lab(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "lab", world) >= 1
+
     def try_deposit(self, agent, tick, world=None) -> None:
         if not self.settlements:
             return
@@ -236,7 +240,7 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = has_command = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = has_command = has_lab = False
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -268,6 +272,8 @@ class SettlementManager:
                     has_hall = True
                 elif stx.type == "command":
                     has_command = True
+                elif stx.type == "lab":
+                    has_lab = True
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -335,6 +341,8 @@ class SettlementManager:
                 k_add += float(SETTLEMENT_RULES.get("academy_knowledge_per_tick", 0.3))
             if has_library:
                 k_add += float(SETTLEMENT_RULES.get("library_knowledge_per_tick", 0.2))
+            if has_lab:
+                k_add += float(SETTLEMENT_RULES.get("lab_knowledge_per_tick", 0.40))
             if k_add > 0:
                 s["knowledge"] = float(s.get("knowledge", 0.0)) + k_add
                 self.metrics["academy_knowledge_total"] = self.metrics.get("academy_knowledge_total", 0) + k_add
@@ -415,6 +423,7 @@ class SettlementManager:
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "has_irrigation": has_irrigation, "has_library": has_library,
                     "has_foundry": has_foundry, "has_hall": has_hall, "has_command": has_command,
+                    "has_lab": has_lab,
                     "subjects": subjects, "era": era,
                 })
 

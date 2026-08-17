@@ -19,6 +19,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_academy": 2.8, "w_build_walls": 3.0,
     "w_build_irrigation": 3.4, "w_build_library": 3.2, "w_build_foundry": 3.2,
     "w_build_hall": 3.1, "w_build_command": 2.9,
+    "w_build_lab": 3.0,
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -81,7 +82,7 @@ class UtilityAgent:
         if obs.structure is None:
             for b in ("farm", "storage", "hut", "granary", "mine", "road",
                       "workshop", "barracks", "market", "temple", "academy",
-                      "walls", "irrigation", "library", "foundry", "hall", "command"):
+                      "walls", "irrigation", "library", "foundry", "hall", "command", "lab"):
                 c.append(Action(type="build", building=b))
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -254,6 +255,16 @@ class UtilityAgent:
                     return -1.0
                 can = 1.0 if inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 4 else 0.25
                 return w["w_build_command"] * can + 2.0 + inv_term - hunger * 0.3
+            if b == "lab":
+                has_lab = "lab" in types
+                has_library = "library" in types
+                nearest = obs.nearest_settlement or {}
+                era = int(nearest.get("era", 2))
+                subjects = nearest.get("subjects") or []
+                if era < 4 or "inquiry" not in subjects or not has_library or has_lab:
+                    return -3.0 if has_lab else -1.5
+                can = 1.0 if inv.get("wood", 0) >= 4 and inv.get("stone", 0) >= 4 else 0.25
+                return w["w_build_lab"] * can + 2.3 + inv_term - hunger * 0.1
             return -5.0
 
         if a.type == "move":
