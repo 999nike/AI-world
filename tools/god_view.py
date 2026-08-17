@@ -3,7 +3,7 @@
 
 Usage:
   python tools/god_view.py --rid latest --play
-  python tools/god_view.py --rid latest --play --delay 0.5
+  python tools/god_view.py --rid latest --play --delay 0.7
   python tools/god_view.py --rid latest --step
   python tools/god_view.py --rid latest --final
 """
@@ -105,9 +105,11 @@ def events_in_range(events: list[dict], t0: int, t1: int) -> list[str]:
             lines.append(f"  ★ BUILT  {str(ev.get('note','')).replace('built_','')}  @({ev.get('pos',{}).get('x')},{ev.get('pos',{}).get('y')})")
         elif typ == "raid":
             loot = ev.get("loot") or {}
+            loss = float(ev.get("defender_soldier_loss", 0) or 0)
+            loss_s = f"  -{loss:.1f}sold" if loss else ""
             lines.append(
                 f"  ★ RAID  {ev.get('attacker')} → {ev.get('target')}  "
-                f"loot {loot.get('wood',0)}w/{loot.get('stone',0)}s/{loot.get('food',0)}f"
+                f"loot {loot.get('wood',0)}w/{loot.get('stone',0)}s/{loot.get('food',0)}f{loss_s}"
             )
         elif typ == "discovery":
             lines.append(f"  ★ DISCOVERY  #{ev.get('discoveries')}  ({ev.get('settlement_id')})")
@@ -210,7 +212,7 @@ def main():
     p.add_argument("--list", action="store_true")
     p.add_argument("--step", action="store_true")
     p.add_argument("--play", action="store_true")
-    p.add_argument("--delay", type=float, default=0.45)
+    p.add_argument("--delay", type=float, default=0.70)  # E6.8 human-paced default
     p.add_argument("--final", action="store_true")
     p.add_argument("--runs", default="runs")
     args = p.parse_args()
@@ -243,16 +245,19 @@ def main():
         print(f"  AgeUp:{m.get('age_up_events',0)}  A4:{m.get('age_up4_events',0)}  "
               f"Subjects:{m.get('subject_unlock_events',0)}  Raids:{m.get('raid_events',0)}  "
               f"Disc:{m.get('discovery_events',0)}")
-        print(f"  Irrig:{m.get('build_irrigation',0)} Lib:{m.get('build_library',0)} "
-              f"Foundry:{m.get('build_foundry',0)} Hall:{m.get('build_hall',0)} "
-              f"Command:{m.get('build_command',0)} Lab:{m.get('build_lab',0)} "
-              f"Obs:{m.get('build_observatory',0)}")
+        print(f"  Science  L:{m.get('build_library',0)} R:{m.get('build_lab',0)} V:{m.get('build_observatory',0)}")
+        print(f"  Military B:{m.get('build_barracks',0)} #:{m.get('build_walls',0)} X:{m.get('build_command',0)}  "
+              f"Defend:{m.get('soldier_defend_events',0)}")
+        print(f"  Other   ~:{m.get('build_irrigation',0)} Y:{m.get('build_foundry',0)} O:{m.get('build_hall',0)}")
+        total_sold = 0.0
         for s in summary.get("final", {}).get("settlements", []):
             subjects = ",".join(s.get("subjects") or []) or "-"
             sold = round(float(s.get("soldiers", 0) or 0), 1)
+            total_sold += sold
             disc = int(s.get("discoveries", 0) or 0)
             print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
                   f"k={round(float(s.get('knowledge',0)),1)} sold={sold} disc={disc} [{subjects}]")
+        print(f"  Soldiers total: {round(total_sold, 1)}")
         print("=" * 72)
         return
 
