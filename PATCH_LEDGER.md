@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E4.0–E4.5 LOCKED  
+**Status:** E5.0 Lab LIVE (core)  
 **Last updated:** 2026-08-17
 
 ---
@@ -9,14 +9,10 @@
 
 ```
 Era 1–3 complete
-E4.0 Inquiry age-up (LOCKED)
-E4.1 Irrigation — agriculture | +0.2 farm yield (LOCKED)
-E4.2 Library — inquiry | +0.2 knowledge/tick (LOCKED)
-E4.3 Foundry — craft | +0.15 tools/tick (LOCKED)
-E4.4 Hall — organisation | +0.15 food/tick + surplus-1 (LOCKED)
-E4.5 Command — strategy | +0.20 soldiers/tick, soldiers eat 0.05 food each (LOCKED)
+E4.0–E4.5 LOCKED
+E5.0 Lab — inquiry + library | +0.40 knowledge/tick (LIVE)
 
-God-view icons: C # ~ L Y O X
+God-view icons: C # ~ L Y O X  (S pending)
 
 Repo: https://github.com/999nike/AI-world
 Workspace: E:\WIZZ-Server\workspaces\AI-world
@@ -24,7 +20,7 @@ Workspace: E:\WIZZ-Server\workspaces\AI-world
 
 ---
 
-## Building pattern (Era 4)
+## Building pattern (Era 4 + E5.0)
 
 | Building | Subject gate | Cost | Effect | Icon |
 |----------|--------------|------|--------|------|
@@ -33,6 +29,7 @@ Workspace: E:\WIZZ-Server\workspaces\AI-world
 | Foundry | craft | 3w 3s | +0.15 tools/tick | Y |
 | Hall | organisation | 3w 3s | +0.15 food + surplus-1 | O |
 | Command | strategy | 3w 4s | +0.20 soldiers; soldiers eat 0.05 food | X |
+| Lab | inquiry + library | 4w 4s | +0.40 knowledge/tick | S |
 
 E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 
@@ -42,8 +39,9 @@ E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 |--------|--------|
 | Era 1–3 | **Live** |
 | E4.0–E4.5 | **LOCKED** |
-| God-view --play | **Live** |
-| multi_seed_validate | **Updated 2026-08-17** (now reports Foundry / Hall / Command + soldiers) |
+| E5.0 Lab | **LIVE (core)** |
+| God-view --play | **Live** (icon S still pending) |
+| multi_seed_validate | Updated for full E4 |
 
 ---
 
