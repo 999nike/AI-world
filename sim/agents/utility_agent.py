@@ -16,9 +16,9 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_granary": 4.5, "w_build_mine": 4.0, "w_build_road": 2.5,
     "w_build_workshop": 3.5, "w_build_barracks": 3.0,
     "w_build_market": 3.2, "w_build_temple": 3.0,
-    "w_build_academy": 2.8, "w_build_walls": 3.0,
+    "w_build_academy": 2.8, "w_build_walls": 3.6,
     "w_build_irrigation": 3.5, "w_build_library": 4.8, "w_build_foundry": 3.5,
-    "w_build_hall": 3.4, "w_build_command": 3.3,
+    "w_build_hall": 3.4, "w_build_command": 4.0,
     "w_build_lab": 3.8, "w_build_observatory": 3.9,
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
@@ -231,7 +231,7 @@ class UtilityAgent:
                 if not has_barracks or has_walls:
                     return -3.0 if has_walls else -1.5
                 can = _can_afford(inv, 2, 3, obs)
-                return w["w_build_walls"] * can + 1.8 + inv_term - hunger * 0.15
+                return w["w_build_walls"] * can + 2.4 + inv_term - hunger * 0.12
             if b == "irrigation":
                 has_irrigation = "irrigation" in types
                 if era < 4 or "agriculture" not in subjects or has_irrigation:
@@ -261,11 +261,11 @@ class UtilityAgent:
                 has_barracks = "barracks" in types
                 if era < 4 or "strategy" not in subjects or not has_barracks or has_command:
                     return -3.0 if has_command else -1.5
-                # Soft discourage under high pressure, don't hard-block
-                if pressure > 0.7:
-                    return -0.5
+                # Only soft-discourage under extreme pressure
+                if pressure > 0.85:
+                    return 0.5
                 can = _can_afford(inv, 3, 4, obs)
-                return w["w_build_command"] * can + 2.8 + inv_term - hunger * 0.15
+                return w["w_build_command"] * can + 3.5 + inv_term - hunger * 0.10
             if b == "lab":
                 has_lab = "lab" in types
                 has_library = "library" in types
