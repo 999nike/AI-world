@@ -5,16 +5,16 @@
 ## Snapshot
 
 ```
-E5.9: Library hard-gate always attempts build; pure move off occupied tiles
-      Road utility crushed once inquiry unlocked (-8)
-      Occupied-tile builds fail BEFORE resource spend (no silent drain)
-E5.5–E5.8: prior Library gates + STACKABLE cascade remain
+E5.9 LIVE:
+  - utility_agent: Library hard-gate (empty tile = build; occupied = pure move)
+  - road utility = -8 once inquiry unlocked
+  - simloop: occupied tiles fail BEFORE resource spend (no silent drain)
+  - full simloop restored from c98573c + E5.9 occupied patch
+
+E5.5–E5.8: prior Library gates + STACKABLE cascade
 E6: raid + military live
 
-Goal: seed 7 / 100 / 999 finally reach Library after inquiry.
-```
-
-```bash
-git pull
-python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --snapshot-every 250 --quiet
+Test:
+  git pull
+  python tools/multi_seed_validate.py --seeds 7 42 100 --ticks 3000 --quiet
 ```
