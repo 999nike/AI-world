@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""God-view for AI-world (Era 4) — logs → visual playback.
+"""God-view for AI-world (Era 4 + E5.0) — logs → visual playback.
 
 Usage:
   python tools/god_view.py --rid latest --play
@@ -23,7 +23,7 @@ ICON = {
     "mine": "M", "road": "=", "workshop": "W", "barracks": "B",
     "market": "K", "temple": "T", "academy": "C", "walls": "#",
     "irrigation": "~", "library": "L", "foundry": "Y", "hall": "O",
-    "command": "X",
+    "command": "X", "lab": "R",
     "settlement": "@", "empty": ".",
 }
 
@@ -84,7 +84,7 @@ def load_key_events(run_dir: Path) -> list[dict]:
             elif t == "action_resolved" and str(ev.get("note", "")).startswith("built_"):
                 b = str(ev.get("note", "")).replace("built_", "")
                 if b in ("academy", "walls", "irrigation", "library", "foundry",
-                         "hall", "command", "temple", "barracks", "workshop"):
+                         "hall", "command", "lab", "temple", "barracks", "workshop"):
                     out.append(ev)
     return out
 
@@ -149,7 +149,7 @@ def structure_counts(snap: dict) -> str:
     c = Counter(st.get("type") for st in snap.get("structures", []))
     order = ["farm", "storage", "hut", "granary", "mine", "road",
              "workshop", "barracks", "market", "temple", "academy", "walls",
-             "irrigation", "library", "foundry", "hall", "command"]
+             "irrigation", "library", "foundry", "hall", "command", "lab"]
     bits = [f"{t}:{c[t]}" for t in order if c.get(t)]
     return "  ".join(bits) if bits else "none"
 
@@ -173,7 +173,8 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
         print(
             f"  Builds  C:{m.get('build_academy',0)} #:{m.get('build_walls',0)} "
             f"~:{m.get('build_irrigation',0)} L:{m.get('build_library',0)} "
-            f"Y:{m.get('build_foundry',0)} O:{m.get('build_hall',0)} X:{m.get('build_command',0)}"
+            f"Y:{m.get('build_foundry',0)} O:{m.get('build_hall',0)} X:{m.get('build_command',0)} "
+            f"R:{m.get('build_lab',0)}"
         )
     if snap:
         print(f"  Structs  {structure_counts(snap)}")
@@ -188,12 +189,12 @@ def print_grid(grid, tick, summary=None, snap=None, callouts=None):
         print(f"{y % 10} " + "".join(row))
     print()
     print("  A=agent F=farm S=storage W=workshop B=barracks C=academy")
-    print("  #=walls ~=irrigation L=library Y=foundry O=hall X=command")
+    print("  #=walls ~=irrigation L=library Y=foundry O=hall X=command R=lab")
     print()
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world god-view (Era 4)")
+    p = argparse.ArgumentParser(description="AI-world god-view (Era 4 + E5.0)")
     p.add_argument("--rid", default="latest")
     p.add_argument("--tick", type=int, default=None)
     p.add_argument("--list", action="store_true")
@@ -233,7 +234,7 @@ def main():
               f"Subjects:{m.get('subject_unlock_events',0)}  "
               f"Irrig:{m.get('build_irrigation',0)} Lib:{m.get('build_library',0)} "
               f"Foundry:{m.get('build_foundry',0)} Hall:{m.get('build_hall',0)} "
-              f"Command:{m.get('build_command',0)}")
+              f"Command:{m.get('build_command',0)} Lab:{m.get('build_lab',0)}")
         for s in summary.get("final", {}).get("settlements", []):
             subjects = ",".join(s.get("subjects") or []) or "-"
             print(f"  {s.get('id')}: era={s.get('era',2)} pop={s.get('population')} "
