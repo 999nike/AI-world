@@ -1,7 +1,7 @@
 # AI-world Patch Ledger
 
 **Hand-off snapshot:** 2026-08-17  
-**Status:** Long-run durability + E5 science + discoveries LIVE + E5.3 science path consistency
+**Status:** E5 science + E5.3/E5.3b science-path consistency
 
 ---
 
@@ -11,19 +11,9 @@
 Repo: https://github.com/999nike/AI-world
 Branch: main
 
-Era 1–3: complete
-E4.0–E4.5: LOCKED (buildings live)
-E5.0 Lab: LOCKED
-E5.1 Observatory: LIVE
-E5.2 Discoveries: LIVE (knowledge sink after Observatory)
-E5.3: inquiry cost 20	o16 + library utility weight 3.6	o4.0 / bonus 3.5	o4.0
-
-Long-run tooling:
-  quiet logging (auto when ticks >= 2000)
-  soldier soft-cap + always-on food upkeep
-  food durability retune
-  science-path utility (Lib → Lab → Obs)
-  specialisation utility (Foundry / Hall / Command)
+Era 1–3 complete | E4 LOCKED | E5.0–E5.2 LIVE
+E5.3: inquiry cost 20→16
+E5.3b: library weight 4.0→4.8, bonus 4.0→5.5 (stronger seed-100 push)
 
 God-view icons: C # ~ L Y O X R V
 ```
@@ -42,29 +32,22 @@ God-view icons: C # ~ L Y O X R V
 | Lab | inquiry + library | 4w 4s | +0.40 knowledge/tick | R |
 | Observatory | lab | 5w 4s | +0.50 knowledge/tick | V |
 
-**Discoveries (E5.2):** needs Observatory; spend 40 knowledge → +1 discovery; +0.08 farm/farm each; max 8.
+**Discoveries:** Observatory → 40 knowledge → +1 discovery (+0.08 farm/farm), max 8.  
+**Subjects:** inquiry cost = 16.
 
-**Subjects:** inquiry cost now 16 (was 20).
-
-**Military long-run:** barracks 0.15 / command 0.10 soldiers per tick; soft-cap ~3× pop; upkeep 0.03 food/soldier always.
+**Military:** barracks 0.15 / command 0.10 soldiers/tick; soft-cap ~3×pop; upkeep 0.03 food/soldier.
 
 ---
 
-## Validation (5 seeds × 5000 ticks, quiet)
+## Validation notes
 
-Typical recent batch (pre-E5.3):
+Pre-E5.3b (after cost drop only): 4/5 seeds full science line; seed 100 still lib=0 lab=0 obs=0 despite full subjects + Era 4.
 
-- 4/5 seeds reach full Lib+Lab+Obs + Foundry/Hall/Command
-- Seed 7 often strongest (score ~3000, low starve)
-- Seed 100 sometimes Era 4 + subjects but skips building line (utility variance)
-- Soldiers no longer unbounded (was 400–1100; now controlled)
-
-Post-E5.3: retest recommended to confirm seed-100 class science path reliability.
+E5.3b applied — retest seed 100 class recommended before next axis.
 
 ```bash
 git pull
 python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --snapshot-every 250 --quiet
-python tools/god_view.py --rid latest --play
 ```
 
 ---
@@ -73,26 +56,22 @@ python tools/god_view.py --rid latest --play
 
 | System | Status |
 |--------|--------|
-| Era 1–3 | Live |
-| E4 stack | Locked / live |
-| E5.0 Lab | Locked |
-| E5.1 Observatory | Live |
-| E5.2 Discoveries | Live |
-| E5.3 inquiry + library push | Live |
-| Quiet long-run mode | Live |
+| Era 1–4 | Live / Locked |
+| E5 science + discoveries | Live |
+| E5.3 / E5.3b Library push | Live |
+| Quiet long-run | Live |
 | God-view --play | Live |
-| Learning agents | Not started (utility baseline only) |
+| Learning agents | Not started |
 
 ---
 
-## Suggested next axes (not committed)
+## Suggested next axes
 
 1. Raid / military depth for long horizons  
-2. ~~Stronger Library push when inquiry unlocks (seed 100 class misses)~~ → done E5.3  
+2. ~~Stronger Library push~~ → E5.3 + E5.3b  
 3. Human-paced god-view / presentation  
 4. Learning-agent interface later  
 
 ---
 
-Determinism sacred. One axis at a time. Choices must be able to hurt.  
-Ledger = status. DESIGN = vision.
+Determinism sacred. One axis at a time. Ledger = status. DESIGN = vision.
