@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Any, Dict, Set
 
 
-# Events always kept even in quiet mode
 KEY_TYPES: Set[str] = {
     "run_started", "run_finished",
     "settlement_created", "age_transition", "subject_unlocked",
+    "discovery",
     "raid", "soldier_defend",
     "scenario_event", "scenario_loaded", "scenario_start_inventory",
     "governor_command", "agent_controlled",
@@ -28,17 +28,13 @@ class RunLogger:
     def event(self, obj: Dict[str, Any]) -> None:
         if self.quiet:
             t = obj.get("type", "")
-            # Always keep key events
             if t in KEY_TYPES:
                 pass
-            # Keep successful builds
             elif t == "action_resolved" and str(obj.get("note", "")).startswith("built_"):
                 pass
-            # Drop routine noise
             else:
                 return
         self._events_f.write(json.dumps(obj) + "\n")
-        # Flush less aggressively in quiet mode (big speed win on long runs)
         if not self.quiet:
             self._events_f.flush()
 
