@@ -1,7 +1,7 @@
 # AI-world Design Notes (Internal)
 
-**Last updated:** 2026-08-12  
-**Era 4:** E4.0–E4.4 LOCKED
+**Last updated:** 2026-08-17  
+**Content ceiling:** Era 4 + E5 science line + discoveries
 
 ---
 
@@ -16,74 +16,62 @@
 Feel target when a human plays:  
 “I am watching a living settlement make real choices. Bad priorities hurt. Good ones compound.”
 
-Not pure spreadsheet. Not pure action game. Lab first → watchable game.
+Not pure spreadsheet. Not pure action game.  
+**Lab engine first → watchable game → optional learning agents on the same rules.**
+
+---
+
+## Goals (hand-off)
+
+### Near-term (engine)
+- Long runs (5k–10k ticks) stable without log bottleneck
+- Era 4 + science path reachable consistently under baseline utility agent
+- Trade-offs that still matter late (army costs food, science delays economy, etc.)
+- Quiet mode for batch experiments; full logs when debugging
+
+### Mid-term (depth)
+- Richer mid/late decisions after Observatory (discoveries are the first sink)
+- Military / raid depth worth caring about over long horizons
+- Clearer specialisation identities (craft / organisation / strategy / inquiry)
+
+### Longer vision
+- Science labs → physics-style experiments / tech unlocks
+- Modern-era buildings as late content
+- Human presentation layer (paced god-view, governor control)
+- Learning agents that improve inside the same deterministic rules
+
+### Non-goals (for now)
+- Perfect balance for human multiplayer
+- Replacing the utility agent with RL immediately
+- DESIGN.md as a patch checklist (ledger owns status)
 
 ---
 
 ## Intent
 
-Deterministic multi-agent civilisation lab → watchable Settlers-style game.  
-Logs = animation pipeline. Ages progression. Learning agents later.
+Deterministic multi-agent civilisation lab → watchable Settlers × Civ hybrid.  
+Logs = animation pipeline. Ages progression. Learning agents later.  
+One simulation kernel; lab and human UI are layers on top.
 
 ---
 
-## Era 4 (LOCKED)
+## Current content shape (vision, not checklist)
 
-### E4.0 Age-up
-Inquiry + academy + pop≥20 → era 4
+**Survival → specialisation → science**
 
-### E4.1 Irrigation
-| Cost | Gate | Effect |
-|------|------|--------|
-| 2w 2s | era≥4 + agriculture | +0.2 farm/farm |
+- Early: farms, storage, food pressure
+- Mid: workshop → barracks → civic chain → academy / subjects
+- Era 4: subject buildings (irrigation, library, foundry, hall, command)
+- E5: Lab → Observatory → discoveries (knowledge sink → permanent farm bonus)
 
-### E4.2 Library
-| Cost | Gate | Effect |
-|------|------|--------|
-| 3w 3s | era≥4 + inquiry | +0.2 knowledge/tick |
-
-### E4.3 Foundry
-| Cost | Gate | Effect |
-|------|------|--------|
-| 3w 3s | era≥4 + craft | +0.15 tools/tick |
-
-### E4.4 Hall
-| Cost | Gate | Effect |
-|------|------|--------|
-| 3w 3s | era≥4 + organisation | +0.15 food/tick + surplus-1 |
-
----
-
-## Next axis — E4.5 Command (strategy)
-
-| Field | Value |
-|-------|-------|
-| Cost | 3w 4s |
-| Gate | era≥4 + strategy subject |
-| Max | 1 |
-| Icon | X |
-| Effect | +0.20 soldiers/tick |
-| Trade-off | Soldiers consume 0.05 food each/tick |
-
-Guns-vs-butter. Over-militarise → starvation risk. Under-militarise → weak to raids. Agents must choose.
-
-Later strategy buildings can specialise (pure offence / pure defence).
-
----
-
-## Longer vision (Era 6+)
-
-Science labs → physics-style experiments / tech unlocks.  
-Modern-era buildings as late content.  
-Still pure lab-sim (deterministic + logged).
+Guns-vs-butter remains core: soldiers help raids/defend but always cost food; soft-cap vs population.
 
 ---
 
 ## God-view
 
 `--play` auto-steps snapshots with key event callouts.  
-Icons: C=academy #=walls ~=irrigation L=library Y=foundry O=hall  
-Next: X=command
+Icons: C academy | # walls | ~ irrigation | L library | Y foundry | O hall | X command | R lab | V observatory
 
 ---
 
@@ -94,3 +82,4 @@ Next: X=command
 3. Logs first  
 4. Min tokens while usage high  
 5. Choices must be able to hurt  
+6. Ledger = status; DESIGN = vision  
