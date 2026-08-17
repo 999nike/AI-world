@@ -1,20 +1,21 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-17 late
+**Hand-off:** 2026-08-17 E5.11
 
 ## Snapshot
 
 ```
-E5.9c LIVE on main:
-  utility_agent: hard-gate scans ALL settlements for inquiry+era4
-  build_governors: any_inquiry global; road+hut redirect to Library
-  simloop: library can overwrite road tiles; occupied fails before spend
+E5.11 LIVE:
+  - age_up: workshop+barracks may be split across settlements
+  - hard-gates: market→temple→academy, library→lab→observatory (food-pressure aware)
+  - can_build/resolve: global for barracks/market/temple/academy/library/lab/obs
+  - simloop: lib/temple/academy/lab/obs may overwrite road or hut
+  - barracks utility boosted after workshop
 
-Confirmed: seed 7 builds Library (lib=1) at 1000–1500 ticks.
-Seed 42 full path still OK.
-Seed 100 still pre-academy (separate).
+Validated 4000 ticks:
+  seeds 7,42,100,999,2026 → all era4 + lib + lab + obs + 5 subjects
 
 Test:
   git pull
-  python tools/multi_seed_validate.py --seeds 7 42 100 --ticks 3000 --quiet
+  python tools/multi_seed_validate.py --seeds 7 42 100 999 2026 --ticks 5000 --quiet
 ```
