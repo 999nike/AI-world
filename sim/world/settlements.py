@@ -49,7 +49,7 @@ SETTLEMENT_RULES = {
     "subject_craft_cost": 10,
     "subject_organisation_cost": 12,
     "subject_strategy_cost": 15,
-    "subject_inquiry_cost": 20,
+    "subject_inquiry_cost": 16,
     "agriculture_farm_bonus": 0.20,
     "craft_tools_bonus": 0.1,
     "organisation_surplus_reduction": 1,
@@ -489,7 +489,7 @@ class SettlementManager:
             ("craft", float(SETTLEMENT_RULES.get("subject_craft_cost", 10))),
             ("organisation", float(SETTLEMENT_RULES.get("subject_organisation_cost", 12))),
             ("strategy", float(SETTLEMENT_RULES.get("subject_strategy_cost", 15))),
-            ("inquiry", float(SETTLEMENT_RULES.get("subject_inquiry_cost", 20))),
+            ("inquiry", float(SETTLEMENT_RULES.get("subject_inquiry_cost", 16))),
         ]
         for name, cost in candidates:
             if name in subjects:
