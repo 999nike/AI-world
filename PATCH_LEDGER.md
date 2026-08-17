@@ -1,7 +1,7 @@
 # AI-world Patch Ledger
 
 **Hand-off snapshot:** 2026-08-17  
-**Status:** E5 science path + E6.0 raid depth
+**Status:** E5 science path + E6.0 raid depth + E6.1 god-view polish
 
 ---
 
@@ -12,36 +12,33 @@ Repo: https://github.com/999nike/AI-world
 Branch: main
 
 Era 1–4 LOCKED | E5 science + discoveries LIVE
-E5.3 / E5.3b: inquiry cost 16 + Library weight 4.8 / bonus 5.5
-E6.0: scaled raid loot (attacker strength) + strategy reduces loot taken
+E5.3 / E5.3b: inquiry 16 + Library weight 4.8 / bonus 5.5
+E6.0: scaled raid loot + strategy reduces loot
+E6.1: god-view shows soldiers, discoveries, raid loot, discovery events
 
 God-view icons: C # ~ L Y O X R V
 ```
 
 ---
 
-## Key rules (current)
+## Key rules
 
 **Subjects:** inquiry cost = 16  
 **Library utility:** weight 4.8, bonus 5.5  
-**Raids (E6.0):**
-- base loot raised (4w/3s/3f)
-- extra loot = floor(attacker_soldiers / 8), capped
-- defender with strategy subject: loot ×0.75
-- walls still add +1 cost
-
-**Military:** barracks 0.15 / command 0.10 /tick; soft-cap ~3×pop; upkeep 0.03 food/soldier
+**Raids:** base loot ↑, scale with attacker soldiers, strategy cuts loot 25%, walls +cost  
+**Military:** barracks 0.15 / command 0.10; soft-cap ~3×pop; upkeep 0.03
 
 ---
 
-## Validation
+## Validation still needed
 
-Science path (E5.3b) still needs seed-100 confirmation.  
-Raid depth is new — observe loot totals + strategy effect on long runs.
+- Seed-100 Library line (E5.3b)
+- Observe scaled raid loot + strategy effect on long runs
 
 ```bash
 git pull
 python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --snapshot-every 250 --quiet
+python tools/god_view.py --rid latest --play
 ```
 
 ---
@@ -54,18 +51,17 @@ python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --sna
 | E5 science + discoveries | Live |
 | E5.3 / E5.3b Library push | Live |
 | E6.0 Raid depth | Live |
+| E6.1 God-view polish | Live |
 | Quiet long-run | Live |
-| God-view --play | Live |
 | Learning agents | Not started |
 
 ---
 
 ## Suggested next axes
 
-1. ~~Raid / military depth~~ → E6.0  
-2. Confirm science path (seed 100)  
-3. Human-paced god-view / presentation  
-4. Learning-agent interface later  
+1. Confirm science path (seed 100)  
+2. Further military / presentation polish  
+3. Learning-agent interface later  
 
 ---
 
