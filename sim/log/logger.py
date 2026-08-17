@@ -1,10 +1,23 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Set
+
+
+# Events always kept even in quiet mode
+KEY_TYPES: Set[str] = {
+    "run_started", "run_finished",
+    "settlement_created", "age_transition", "subject_unlocked",
+    "raid", "soldier_defend",
+    "scenario_event", "scenario_loaded", "scenario_start_inventory",
+    "governor_command", "agent_controlled",
+    "build_funded",
+}
+
 
 class RunLogger:
-    def __init__(self, run_dir: Path):
+    def __init__(self, run_dir: Path, quiet: bool = False):
         self.run_dir = run_dir
+        self.quiet = quiet
         self.events_path = run_dir / "events.jsonl"
         self.snapshots_path = run_dir / "snapshots.jsonl"
 
@@ -13,13 +26,29 @@ class RunLogger:
         self._snaps_f = self.snapshots_path.open("a", encoding="utf-8")
 
     def event(self, obj: Dict[str, Any]) -> None:
+        if self.quiet:
+            t = obj.get("type", "")
+            # Always keep key events
+            if t in KEY_TYPES:
+                pass
+            # Keep successful builds
+            elif t == "action_resolved" and str(obj.get("note", "")).startswith("built_"):
+                pass
+            # Drop routine noise
+            else:
+                return
         self._events_f.write(json.dumps(obj) + "\n")
-        self._events_f.flush()
+        # Flush less aggressively in quiet mode (big speed win on long runs)
+        if not self.quiet:
+            self._events_f.flush()
 
     def snapshot(self, obj: Dict[str, Any]) -> None:
         self._snaps_f.write(json.dumps(obj) + "\n")
-        self._snaps_f.flush()
+        if not self.quiet:
+            self._snaps_f.flush()
 
     def close(self) -> None:
+        self._events_f.flush()
+        self._snaps_f.flush()
         self._events_f.close()
         self._snaps_f.close()
