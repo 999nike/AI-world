@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multi-seed validation helper for AI-world (Era 4 aware)."""
+"""Multi-seed validation helper for AI-world (Era 4 full stack)."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def load_summary(run_id: str) -> dict | None:
 
 
 def main():
-    p = argparse.ArgumentParser(description="AI-world multi-seed validation (Era 4)")
+    p = argparse.ArgumentParser(description="AI-world multi-seed validation (Era 4 full)")
     p.add_argument("--seeds", type=int, nargs="+", default=DEFAULT_SEEDS)
     p.add_argument("--ticks", type=int, default=500)
     p.add_argument("--snapshot-every", type=int, default=50)
@@ -31,9 +31,9 @@ def main():
 
     results = []
     print()
-    print("=" * 104)
-    print(f"  AI-WORLD MULTI-SEED VALIDATION (Era 4)  |  ticks={args.ticks}")
-    print("=" * 104)
+    print("=" * 120)
+    print(f"  AI-WORLD MULTI-SEED VALIDATION (Era 4 full)  |  ticks={args.ticks}")
+    print("=" * 120)
     print()
 
     for seed in args.seeds:
@@ -50,6 +50,7 @@ def main():
         eras = [int(s.get("era", 2)) for s in settlements]
         max_era = max(eras) if eras else 2
         total_knowledge = sum(float(s.get("knowledge", 0)) for s in settlements)
+        total_soldiers = sum(float(s.get("soldiers", 0)) for s in settlements)
         all_subjects = set()
         for s in settlements:
             for sub in (s.get("subjects") or []):
@@ -65,28 +66,37 @@ def main():
             "walls": m.get("build_walls", 0),
             "irrigation": m.get("build_irrigation", 0),
             "library": m.get("build_library", 0),
+            "foundry": m.get("build_foundry", 0),
+            "hall": m.get("build_hall", 0),
+            "command": m.get("build_command", 0),
+            "soldiers": round(total_soldiers, 1),
             "subjects": m.get("subject_unlock_events", 0),
             "knowledge": round(total_knowledge, 1),
             "subject_list": sorted(all_subjects),
         })
         print(f"  done → score={summary.get('score')} era={max_era} "
               f"acad={m.get('build_academy',0)} wall={m.get('build_walls',0)} "
-              f"irrig={m.get('build_irrigation',0)} lib={m.get('build_library',0)} rid={run_id}")
+              f"irrig={m.get('build_irrigation',0)} lib={m.get('build_library',0)} "
+              f"found={m.get('build_foundry',0)} hall={m.get('build_hall',0)} "
+              f"cmd={m.get('build_command',0)} rid={run_id}")
         print()
 
     print()
-    print("=" * 104)
+    print("=" * 120)
     print("  RESULTS")
-    print("=" * 104)
+    print("=" * 120)
     print(f"{'Seed':>6}  {'Score':>6}  {'NetPop':>6}  {'Starve':>6}  "
           f"{'Era':>3}  {'A4':>3}  {'Acad':>4}  {'Wall':>4}  {'Irrig':>5}  {'Lib':>3}  "
+          f"{'Found':>5}  {'Hall':>4}  {'Cmd':>3}  {'Sold':>5}  "
           f"{'Subj':>4}  {'Know':>5}  Run ID")
-    print("-" * 104)
+    print("-" * 120)
     for r in results:
         print(f"{r['seed']:>6}  {r['score']:>6}  {r['net_pop']:>6}  {r['starved']:>6}  "
               f"{r['max_era']:>3}  {r['age_up4']:>3}  {r['academy']:>4}  {r['walls']:>4}  "
-              f"{r['irrigation']:>5}  {r['library']:>3}  {r['subjects']:>4}  {r['knowledge']:>5}  {r['run_id']}")
-    print("-" * 104)
+              f"{r['irrigation']:>5}  {r['library']:>3}  "
+              f"{r['foundry']:>5}  {r['hall']:>4}  {r['command']:>3}  {r['soldiers']:>5}  "
+              f"{r['subjects']:>4}  {r['knowledge']:>5}  {r['run_id']}")
+    print("-" * 120)
     print()
 
     for r in results:
