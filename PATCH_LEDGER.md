@@ -5,17 +5,16 @@
 ## Snapshot
 
 ```
-E5.3–E5.4: inquiry 16 + hard Library utility priority
-E5.5: governor force-redirects irrigation/foundry/hall/command/lab/obs/walls
-      → Library when inquiry unlocked and no Library exists
-E6.0–E6.2: raid depth + military utility + god-view
+E5.6: hard-gate in UtilityAgent.act()
+  if era>=4 and inquiry unlocked and no Library:
+    → force build library (if affordable) or gather missing wood/stone
+E5.5 governor redirect still active
+E6 raid + military utility live
 
-Retest seed 100.
+This should finally close seed-100 science path.
 ```
 
 ```bash
 git pull
 python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --snapshot-every 250 --quiet
 ```
-
-Determinism sacred. Ledger = status.
