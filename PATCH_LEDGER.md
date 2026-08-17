@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Status:** E5.0 Lab LIVE (core)  
+**Status:** E5.0 Lab LIVE  
 **Last updated:** 2026-08-17
 
 ---
@@ -12,7 +12,7 @@ Era 1–3 complete
 E4.0–E4.5 LOCKED
 E5.0 Lab — inquiry + library | +0.40 knowledge/tick (LIVE)
 
-God-view icons: C # ~ L Y O X  (S pending)
+God-view icons: C # ~ L Y O X R
 
 Repo: https://github.com/999nike/AI-world
 Workspace: E:\WIZZ-Server\workspaces\AI-world
@@ -29,7 +29,7 @@ Workspace: E:\WIZZ-Server\workspaces\AI-world
 | Foundry | craft | 3w 3s | +0.15 tools/tick | Y |
 | Hall | organisation | 3w 3s | +0.15 food + surplus-1 | O |
 | Command | strategy | 3w 4s | +0.20 soldiers; soldiers eat 0.05 food | X |
-| Lab | inquiry + library | 4w 4s | +0.40 knowledge/tick | S |
+| Lab | inquiry + library | 4w 4s | +0.40 knowledge/tick | R |
 
 E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 
@@ -39,9 +39,8 @@ E4 age-up gate: era3 + inquiry subject + academy + pop≥20
 |--------|--------|
 | Era 1–3 | **Live** |
 | E4.0–E4.5 | **LOCKED** |
-| E5.0 Lab | **LIVE (core)** |
-| God-view --play | **Live** (icon S still pending) |
-| multi_seed_validate | Updated for full E4 |
+| E5.0 Lab | **LIVE** |
+| God-view --play | **Live** |
 
 ---
 
