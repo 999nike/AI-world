@@ -1,19 +1,18 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-17
+**Hand-off:** 2026-08-17 late
 
 ## Snapshot
 
 ```
-E5.9c LIVE (seed-7 Library fix):
-  - Hard-gate scans ALL settlements for inquiry+era4 (not just nearest)
-  - can_build_library / resolve_building same global inquiry check
-  - Library may overwrite road tiles
-  - road+hut redirected to Library once inquiry live
-  - road utility -8 after inquiry
+E5.9c LIVE on main:
+  utility_agent: hard-gate scans ALL settlements for inquiry+era4
+  build_governors: any_inquiry global; road+hut redirect to Library
+  simloop: library can overwrite road tiles; occupied fails before spend
 
-Seed 7 now builds Library. Seed 42 still full path.
-Seed 100 still stuck pre-academy (separate issue).
+Confirmed: seed 7 builds Library (lib=1) at 1000–1500 ticks.
+Seed 42 full path still OK.
+Seed 100 still pre-academy (separate).
 
 Test:
   git pull
