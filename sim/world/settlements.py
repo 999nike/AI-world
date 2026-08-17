@@ -29,9 +29,11 @@ SETTLEMENT_RULES = {
     "raid_interval": 25,
     "raid_min_soldiers": 3.0,
     "raid_cost": 2.0,
-    "raid_loot_wood": 3,
-    "raid_loot_stone": 2,
-    "raid_loot_food": 2,
+    "raid_loot_wood": 4,
+    "raid_loot_stone": 3,
+    "raid_loot_food": 3,
+    "raid_loot_scale": 8.0,
+    "raid_loot_cap": 12,
     "age_up_min_pop": 15,
     "age_up_food_bonus": 5.0,
     "era3_farm_bonus": 0.30,
@@ -512,13 +514,16 @@ class SettlementManager:
             return
         min_soldiers = float(SETTLEMENT_RULES.get("raid_min_soldiers", 3.0))
         base_cost = float(SETTLEMENT_RULES.get("raid_cost", 2.0))
-        loot_w = int(SETTLEMENT_RULES.get("raid_loot_wood", 3))
-        loot_s = int(SETTLEMENT_RULES.get("raid_loot_stone", 2))
-        loot_f = int(SETTLEMENT_RULES.get("raid_loot_food", 2))
+        base_w = int(SETTLEMENT_RULES.get("raid_loot_wood", 4))
+        base_s = int(SETTLEMENT_RULES.get("raid_loot_stone", 3))
+        base_f = int(SETTLEMENT_RULES.get("raid_loot_food", 3))
+        scale = float(SETTLEMENT_RULES.get("raid_loot_scale", 8.0))
+        cap = int(SETTLEMENT_RULES.get("raid_loot_cap", 12))
         all_s = list(self.settlements.items())
         ranked = sorted(all_s, key=lambda x: float(x[1].get("soldiers", 0)), reverse=True)
         atk_sid, atk = ranked[0]
-        if float(atk.get("soldiers", 0)) < min_soldiers:
+        atk_soldiers = float(atk.get("soldiers", 0))
+        if atk_soldiers < min_soldiers:
             return
         others = [(sid, s) for sid, s in all_s if sid != atk_sid]
         if not others:
@@ -527,14 +532,25 @@ class SettlementManager:
         cost = base_cost
         if self.settlement_has_walls(tgt_sid, world):
             cost += float(SETTLEMENT_RULES.get("walls_raid_extra_cost", 1.0))
-        if float(atk.get("soldiers", 0)) < cost:
+        if atk_soldiers < cost:
             return
+        # Scaled loot from attacker strength
+        extra = min(cap, int(atk_soldiers / scale))
+        loot_w = base_w + extra
+        loot_s = base_s + max(0, extra // 2)
+        loot_f = base_f + max(0, extra // 2)
+        # Strategy subject on defender reduces loot taken
+        tgt_subjects = tgt.get("subjects") or []
+        if "strategy" in tgt_subjects:
+            loot_w = max(1, int(loot_w * 0.75))
+            loot_s = max(1, int(loot_s * 0.75))
+            loot_f = max(1, int(loot_f * 0.75))
         take_w = min(loot_w, int(tgt.get("wood_stock", 0)))
         take_s = min(loot_s, int(tgt.get("stone_stock", 0)))
         take_f = min(loot_f, int(float(tgt.get("food_stock", 0))))
         if take_w + take_s + take_f == 0:
             return
-        atk["soldiers"] = float(atk.get("soldiers", 0)) - cost
+        atk["soldiers"] = atk_soldiers - cost
         tgt["wood_stock"] = int(tgt.get("wood_stock", 0)) - take_w
         tgt["stone_stock"] = int(tgt.get("stone_stock", 0)) - take_s
         tgt["food_stock"] = float(tgt.get("food_stock", 0)) - take_f
@@ -548,6 +564,8 @@ class SettlementManager:
             "cost_soldiers": cost, "loot": {"wood": take_w, "stone": take_s, "food": take_f},
             "attacker_soldiers_after": atk["soldiers"],
             "target_had_walls": self.settlement_has_walls(tgt_sid, world),
+            "target_had_strategy": "strategy" in tgt_subjects,
+            "scaled_extra": extra,
         })
 
     def _try_age_up(self, world, tick: int) -> None:
