@@ -217,7 +217,7 @@ class UtilityAgent:
                 if not has_market or has_temple:
                     return -3.0 if has_temple else -1.5
                 can = _can_afford(inv, 3, 4, obs)
-                return w["w_build_temple"] * can + 1.9 + inv_term - hunger * 0.2
+                return w["w_build_temple"] * can + 1.9 + inv_term - hunger * 0.200
             if b == "academy":
                 has_temple = "temple" in types
                 has_academy = "academy" in types
@@ -243,7 +243,9 @@ class UtilityAgent:
                 if era < 4 or "inquiry" not in subjects or has_library:
                     return -3.0 if has_library else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                return w["w_build_library"] * can + 5.5 + inv_term - hunger * 0.05
+                # Hard priority once inquiry is unlocked and Library missing
+                priority = 12.0 if can >= 0.7 else 6.0
+                return w["w_build_library"] * can + priority + inv_term - hunger * 0.03
             if b == "foundry":
                 has_foundry = "foundry" in types
                 if era < 4 or "craft" not in subjects or has_foundry:
@@ -261,7 +263,6 @@ class UtilityAgent:
                 has_barracks = "barracks" in types
                 if era < 4 or "strategy" not in subjects or not has_barracks or has_command:
                     return -3.0 if has_command else -1.5
-                # Only soft-discourage under extreme pressure
                 if pressure > 0.85:
                     return 0.5
                 can = _can_afford(inv, 3, 4, obs)
