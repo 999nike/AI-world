@@ -69,6 +69,26 @@ class UtilityAgent:
             if has_farm and not has_storage and inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                 return Action(type="build", building="storage")
 
+        # E5.6 hard gate: once inquiry unlocked and no Library, force science path
+        nearest = obs.nearest_settlement or {}
+        era = int(nearest.get("era", 2))
+        subjects = nearest.get("subjects") or []
+        types = {st.get("type") for st in structs}
+        if era >= 4 and "inquiry" in subjects and "library" not in types:
+            if structure is None:
+                # Prefer building Library if we can afford it (inv or settlement)
+                can = _can_afford(inv, 3, 3, obs)
+                if can >= 0.7:
+                    return Action(type="build", building="library")
+                # Otherwise gather the missing resource on this tile
+                if inv.get("wood", 0) < 3 and obs.tile.get("wood", 0) > 0:
+                    return Action(type="gather", resource="wood")
+                if inv.get("stone", 0) < 3 and obs.tile.get("stone", 0) > 0:
+                    return Action(type="gather", resource="stone")
+            # If standing on a structure, just try to move to free a tile
+            else:
+                return self._random_action(obs, rng)
+
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
             return self._random_action(obs, rng)
@@ -243,7 +263,6 @@ class UtilityAgent:
                 if era < 4 or "inquiry" not in subjects or has_library:
                     return -3.0 if has_library else -1.5
                 can = _can_afford(inv, 3, 3, obs)
-                # Hard priority once inquiry is unlocked and Library missing
                 priority = 12.0 if can >= 0.7 else 6.0
                 return w["w_build_library"] * can + priority + inv_term - hunger * 0.03
             if b == "foundry":
