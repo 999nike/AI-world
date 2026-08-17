@@ -29,7 +29,6 @@ BUILD_ALIASES = {
 
 FARM_SOFT_CAP = 3
 
-# Late-game buildings that should yield to Library when inquiry is unlocked
 LIBRARY_PRIORITY_TARGETS = {
     "irrigation", "foundry", "hall", "command", "lab", "observatory", "walls",
     "road", "hut",
@@ -156,15 +155,19 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
             return "barracks", "market_needs_barracks"
 
     if b == "temple":
-        if temple >= 1:
+        any_temple = any(sm.count_structures_of_type(sid, "temple", world) >= 1 for sid in sm.settlements)
+        any_market = any(sm.count_structures_of_type(sid, "market", world) >= 1 for sid in sm.settlements)
+        if any_temple:
             return "hut", "temple_capped_to_hut"
-        if market < 1:
+        if not any_market:
             return "market", "temple_needs_market"
 
     if b == "academy":
-        if academy >= 1:
+        any_academy = any(sm.count_structures_of_type(sid, "academy", world) >= 1 for sid in sm.settlements)
+        any_temple = any(sm.count_structures_of_type(sid, "temple", world) >= 1 for sid in sm.settlements)
+        if any_academy:
             return "hut", "academy_capped_to_hut"
-        if temple < 1:
+        if not any_temple:
             return "temple", "academy_needs_temple"
 
     if b == "walls":
@@ -339,16 +342,15 @@ def can_build_market(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_temple(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "temple_needs_settlement"
-    best_sid = sm.nearest(agent_x, agent_y)
-    if best_sid is None:
-        return False, "temple_needs_settlement"
-    s = sm.get(best_sid)
-    if int(s.get("era", 2)) < 3:
+    # E5.10: any settlement with market unlocks temple globally (one temple total)
+    any_market = any(sm.count_structures_of_type(sid, "market", world) >= 1 for sid in sm.settlements)
+    any_temple = any(sm.count_structures_of_type(sid, "temple", world) >= 1 for sid in sm.settlements)
+    any_era3 = any(int(s.get("era", 2)) >= 3 for s in sm.settlements.values())
+    if not any_era3:
         return False, "temple_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, hall, command, lab, observatory, total = _settlement_struct_counts(best_sid, sm, world)
-    if market < 1:
+    if not any_market:
         return False, "temple_needs_market"
-    if temple >= 1:
+    if any_temple:
         return False, "temple_already_exists"
     return True, ""
 
@@ -356,16 +358,15 @@ def can_build_temple(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_academy(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "academy_needs_settlement"
-    best_sid = sm.nearest(agent_x, agent_y)
-    if best_sid is None:
-        return False, "academy_needs_settlement"
-    s = sm.get(best_sid)
-    if int(s.get("era", 2)) < 3:
+    # E5.10: any temple unlocks academy globally
+    any_temple = any(sm.count_structures_of_type(sid, "temple", world) >= 1 for sid in sm.settlements)
+    any_academy = any(sm.count_structures_of_type(sid, "academy", world) >= 1 for sid in sm.settlements)
+    any_era3 = any(int(s.get("era", 2)) >= 3 for s in sm.settlements.values())
+    if not any_era3:
         return False, "academy_needs_era3"
-    farms, stor, gran, mine, road, workshop, barracks, market, temple, academy, walls, irrigation, library, foundry, hall, command, lab, observatory, total = _settlement_struct_counts(best_sid, sm, world)
-    if temple < 1:
+    if not any_temple:
         return False, "academy_needs_temple"
-    if academy >= 1:
+    if any_academy:
         return False, "academy_already_exists"
     return True, ""
 
