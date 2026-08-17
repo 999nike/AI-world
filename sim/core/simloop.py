@@ -271,9 +271,10 @@ def run_sim(
                     ok, note = False, "bad_building"
                 elif ok and world.structure_at(a.x, a.y) is not None:
                     existing = world.structure_at(a.x, a.y)
-                    # E5.10: library/temple/academy may overwrite a road
-                    if existing and not (b in ("library", "temple", "academy") and existing.type == "road"):
-                        if b not in STACKABLE or existing.type == b or b in ("library", "temple", "academy"):
+                    soft = ("road", "hut", "farm", "walls")
+                    overwritable = ("library", "temple", "academy", "lab", "observatory", "market")
+                    if existing and not (b in overwritable and existing.type in soft):
+                        if b not in STACKABLE or existing.type == b or b in overwritable:
                             ok, note = False, "occupied"
 
                 if ok:
@@ -328,7 +329,7 @@ def run_sim(
                                 logger.event({"type": "build_funded", "tick": t, "agent_id": a.agent_id,
                                               "settlement_id": funded_sid, "building": b})
                             sm.link_structure(a.x, a.y, owner_id=a.agent_id, world=world, tick=t)
-                        elif b in ("library", "temple", "academy") and existing.type == "road":
+                        elif b in ("library", "temple", "academy", "lab", "observatory", "market") and existing.type in ("road", "hut", "farm", "walls"):
                             existing.type = b
                             existing.owner_id = a.agent_id
                             note = f"built_{b}"
