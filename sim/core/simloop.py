@@ -58,6 +58,7 @@ def run_sim(
     quiet: bool = False,
     playable: bool = False, choice_policy: str = "first", decision_picker=None,
     on_tick=None, on_tick_every: int = 4,
+    rival_agents: int = 0,
 ):
     scenario = Scenario()
     if scenario_commands:
@@ -74,7 +75,8 @@ def run_sim(
     logger = RunLogger(run_dir, quiet=quiet)
     cfg = WorldConfig()
     rng = RNG(seed)
-    world = make_world(cfg, rng, num_agents=num_agents)
+    world = make_world(cfg, rng, num_agents=num_agents, rival_agents=rival_agents)
+
 
     if scenario.start_food or scenario.start_wood or scenario.start_stone:
         for a in world.agents:
@@ -83,18 +85,28 @@ def run_sim(
                       "food": scenario.start_food, "wood": scenario.start_wood, "stone": scenario.start_stone})
 
     gov = Governor()
+    rival_gov = Governor()
     if governor_command:
         status = gov.apply_command(governor_command)
         logger.event({"type": "governor_command", "tick": 0, "command": governor_command,
                       "status": status, "state": gov.to_dict()})
+    if rival_agents:
+        rival_focus = "army" if (int(seed) % 2 == 0) else "science"
+        rival_gov.apply_command(f"focus {rival_focus}")
+        logger.event({"type": "rival_governor", "tick": 0, "command": f"focus {rival_focus}",
+                      "state": rival_gov.to_dict()})
     if scenario_commands:
         logger.event({"type": "scenario_loaded", "tick": 0, "commands": scenario_commands, "state": scenario.to_dict()})
 
     if agent_kind == "utility":
         from sim.agents.utility_agent import UtilityAgent
         w = policy_weights or {}
-        bias = gov.bias_weights()
-        brains = {a.agent_id: UtilityAgent(a.agent_id, w, governor_bias=bias) for a in world.agents}
+        player_bias = gov.bias_weights()
+        rival_bias = rival_gov.bias_weights()
+        brains = {}
+        for a in world.agents:
+            bias = rival_bias if getattr(a, "faction", "player") == "rival" else player_bias
+            brains[a.agent_id] = UtilityAgent(a.agent_id, w, governor_bias=bias)
     else:
         brains = {a.agent_id: RandomAgent(a.agent_id) for a in world.agents}
 
@@ -127,12 +139,16 @@ def run_sim(
     if playable:
         from sim.core.playable import PlayableState
         play_state = PlayableState(policy=choice_policy, seed=seed, picker=decision_picker)
+        play_state.player_ids = {
+            a.agent_id for a in world.agents if getattr(a, "faction", "player") == "player"
+        }
 
     (run_dir / "config.json").write_text(json.dumps({
         "seed": seed, "ticks": ticks, "num_agents": num_agents, "snapshot_every": snapshot_every,
-        "quiet": quiet,
+        "quiet": quiet, "rival_agents": rival_agents,
         "world": cfg.__dict__, "build_costs": BUILD_COSTS, "settlement_rules": SETTLEMENT_RULES,
-        "governor": gov.to_dict(), "scenario": scenario.to_dict(),
+        "governor": gov.to_dict(), "rival_governor": rival_gov.to_dict() if rival_agents else None,
+        "scenario": scenario.to_dict(),
     }, indent=2), encoding="utf-8")
 
     logger.event({"type": "run_started", "run_id": run_id, "seed": seed, "num_agents": num_agents})
@@ -164,19 +180,31 @@ def run_sim(
                 tile.stone = min(tile.stone + 1, cfg.max_stone)
 
         for a in world.agents:
+            fac = getattr(a, "faction", "player")
+            sm.active_faction = fac if rival_agents else None
             tile = world.tile_at(a.x, a.y)
             st = world.structure_at(a.x, a.y)
             sm.try_deposit(a, tick=t, world=world)
             nearest_sid = sm.nearest(a.x, a.y)
             nearest_data = sm.get(nearest_sid) if nearest_sid else None
+            own_settlements = list(sm.own().values()) if rival_agents else sm.all()
+            own_structs = []
+            if rival_agents:
+                for stx in world.structures:
+                    sid = sm.structure_settlement_id(stx.x, stx.y)
+                    st_fac = sm.get(sid).get("faction", "player") if sid else "player"
+                    if st_fac == fac:
+                        own_structs.append(stx.to_dict())
+            else:
+                own_structs = [s.to_dict() for s in world.structures]
 
             obs = Observation(
                 tick=t, self_id=a.agent_id, x=a.x, y=a.y,
                 width=world.width, height=world.height,
                 tile=tile.to_dict(), inventory=a.inv_dict(),
                 structure=(st.to_dict() if st else None),
-                structures=[s.to_dict() for s in world.structures],
-                settlements=sm.all(), nearest_settlement=nearest_data,
+                structures=own_structs,
+                settlements=own_settlements, nearest_settlement=nearest_data,
             )
             action = brains[a.agent_id].act(obs, rng)
 
@@ -315,24 +343,30 @@ def run_sim(
                         need_wood -= use_wood
                         need_stone -= use_stone
 
-                    if (need_wood > 0 or need_stone > 0) and sm.count() == 0:
+                    own_n = len(sm.own())
+                    if (need_wood > 0 or need_stone > 0) and own_n == 0:
                         ok, note = False, "insufficient_resources"
                         a.inv_wood += use_wood
                         a.inv_stone += use_stone
 
                     funded_sid = None
-                    if (need_wood > 0 or need_stone > 0) and sm.count() > 0:
+                    if (need_wood > 0 or need_stone > 0) and own_n > 0:
                         best_sid = sm.nearest(a.x, a.y)
-                        funded_sid = best_sid
-                        s = sm.get(best_sid)  # type: ignore
-                        if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
-                            s["wood_stock"] -= need_wood
-                            s["stone_stock"] -= need_stone
-                            need_wood = need_stone = 0
-                        else:
+                        if best_sid is None:
                             ok, note = False, "insufficient_resources"
                             a.inv_wood += use_wood
                             a.inv_stone += use_stone
+                        else:
+                            funded_sid = best_sid
+                            s = sm.get(best_sid)
+                            if s["wood_stock"] >= need_wood and s["stone_stock"] >= need_stone:
+                                s["wood_stock"] -= need_wood
+                                s["stone_stock"] -= need_stone
+                                need_wood = need_stone = 0
+                            else:
+                                ok, note = False, "insufficient_resources"
+                                a.inv_wood += use_wood
+                                a.inv_stone += use_stone
 
                     if ok and need_wood == 0 and need_stone == 0:
                         if world.structure_at(a.x, a.y) is None:
@@ -357,18 +391,26 @@ def run_sim(
                           "pos": {"x": a.x, "y": a.y}, "tile": tile2.to_dict(), "inv": a.inv_dict(),
                           "structure": (st2.to_dict() if st2 else None), "settlement_id": sid2})
 
+        sm.active_faction = None
         sm.tick(world, tick=t)
 
         if on_tick is not None and (t % max(1, int(on_tick_every)) == 0 or t == ticks - 1):
             snap = world.to_dict_summary()
             snap["settlements"] = sm.all()
             snap["metrics"] = dict(metrics)
+            tagged = []
+            for st3 in snap.get("structures") or []:
+                sid = sm.structure_settlement_id(st3["x"], st3["y"])
+                fac = sm.get(sid).get("faction", "player") if sid else "player"
+                tagged.append({**st3, "settlement_id": sid, "faction": fac})
+            snap["structures"] = tagged
             on_tick(snap)
 
         if play_state is not None:
             from sim.core.playable import maybe_decide
+            player_towns = [s for s in sm.all() if s.get("faction", "player") == "player"]
             maybe_decide(
-                play_state, gov, brains, logger, t, metrics, sm.all(),
+                play_state, gov, brains, logger, t, metrics, player_towns,
                 drought_this_tick=drought_this_tick,
             )
 
@@ -392,6 +434,8 @@ def run_sim(
         "run_id": run_id, "seed": seed, "ticks": ticks, "num_agents": num_agents,
         "final": final, "metrics": metrics, "score": score,
         "governor": gov.to_dict(), "scenario": scenario.to_dict(),
+        "rival_agents": rival_agents,
+        "rival_governor": rival_gov.to_dict() if rival_agents else None,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     logger.event({"type": "run_finished", "run_id": run_id})

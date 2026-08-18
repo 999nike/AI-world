@@ -20,6 +20,7 @@ class AgentState:
     inv_food: int = 0
     inv_wood: int = 0
     inv_stone: int = 0
+    faction: str = "player"
 
     def inv_dict(self) -> Dict[str, int]:
         return {"food": self.inv_food, "wood": self.inv_wood, "stone": self.inv_stone}
@@ -87,7 +88,7 @@ class WorldState:
             "tick": self.tick,
             "width": self.width,
             "height": self.height,
-            "agents": [{"id": a.agent_id, "x": a.x, "y": a.y, "inv": a.inv_dict()} for a in self.agents],
+            "agents": [{"id": a.agent_id, "x": a.x, "y": a.y, "inv": a.inv_dict(), "faction": getattr(a, "faction", "player")} for a in self.agents],
             "structures": [s.to_dict() for s in self.structures],
             "settlements": [s.to_dict() for s in self.settlements],
             "totals": {"food": total_food, "wood": total_wood, "stone": total_stone},

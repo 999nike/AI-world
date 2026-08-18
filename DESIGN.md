@@ -142,7 +142,7 @@ Those games are huge because they sell 100 hours. This is a 32×32 deterministic
 Steal only this:
 
 - Ages change the rules (we have this)
-- One visible rival (we barely have this)
+- One visible rival (Layer 3 — west / east, own governor, cross-faction raids)
 - A victory you can point at (science path)
 - Presentation that makes stocks feel like a city (we do not have this)
 
@@ -153,19 +153,21 @@ Steal only this:
 ```
 Now (lab)          Playable              Civ-shaped
 ─────────          ────────              ──────────
-kernel             pause on decision     rival civ on same map
-utility agents     governor choices      raids become war
-logs/snapshots     watchable map         win / lose clock
+kernel             pause on decision     rival civ on same map   ← shipped
+utility agents     governor choices      raids become someone    ← shipped
+logs/snapshots     watchable map         win / lose clock        ← next
 ```
 
 **Layer 1 — Watchable**  
-Paced god-view: one screen, events as sentences. “s2 unlocked Inquiry.” “Raid took 4 food.” `--play` and snapshots already exist. Make it something a human stays on.
+Paced god-view: one screen, events as sentences. “s2 unlocked Inquiry.” “They raided s1.” The web map is this layer.
 
 **Layer 2 — Steerable (this is the game)**  
-Pause. 3–5 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules.
+Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules.
 
-**Layer 3 — Contested**  
-Second settlement / second civ on the same map with its own governor (AI). Raids stop being weather and become *someone*. Fog + scouts only if exploration earns a choice.
+**Layer 3 — Contested (shipped)**  
+Second civ on the same map, far side, own governor. `rival_agents=0` is the default so validate RNG is untouched. Edicts only move your people. Science gates and deposits are own-faction. When two factions exist, raids are strongest-of-one vs weakest-of-the-other — not weather.
+
+Do not pile civic / hunger / age-up on top of this. One axis at a time.
 
 ### Win / lose (use what we have)
 
@@ -173,14 +175,12 @@ Second settlement / second civ on the same map with its own governor (AI). Raids
 - **Domination:** other civ’s pop broken / soldiers
 - **Survival:** still alive at tick 5000 with era 4
 
-That is a short Civ. That is enough.
+That is a short Civ. That is enough. The clock is the next axis, not more buildings.
 
-### First playable patch (when we start this axis)
-
-Not “Lab-2.” Not more buildings.
+### First playable patch (done)
 
 Pause the sim → show 3 choices → apply one governor bias → resume.  
-Same seeds. Same multi-seed validate. Then it starts being a game.
+Same seeds. Same multi-seed validate. Then it started being a game.
 
 ---
 

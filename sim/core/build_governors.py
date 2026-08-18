@@ -90,19 +90,19 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
 
     any_inquiry = any(
         int(ss.get("era", 2)) >= 4 and "inquiry" in (ss.get("subjects") or [])
-        for ss in sm.settlements.values()
+        for ss in sm.own().values()
     )
     any_library = any(
         sm.count_structures_of_type(sid, "library", world) >= 1
-        for sid in sm.settlements
+        for sid in sm.own()
     )
     any_lab = any(
         sm.count_structures_of_type(sid, "lab", world) >= 1
-        for sid in sm.settlements
+        for sid in sm.own()
     )
     any_observatory = any(
         sm.count_structures_of_type(sid, "observatory", world) >= 1
-        for sid in sm.settlements
+        for sid in sm.own()
     )
 
     # E5.12: Library priority is global — any inquiry town, not just nearest
@@ -409,7 +409,7 @@ def can_build_irrigation(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_library(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "library_needs_settlement"
-    for sid, s in sm.settlements.items():
+    for sid, s in sm.own().items():
         if int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or []):
             if sm.count_structures_of_type(sid, "library", world) < 1:
                 return True, ""
@@ -472,7 +472,7 @@ def can_build_lab(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     any_inquiry = False
     any_library = False
     any_lab = False
-    for sid, s in sm.settlements.items():
+    for sid, s in sm.own().items():
         if int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or []):
             any_inquiry = True
         if sm.count_structures_of_type(sid, "library", world) >= 1:
@@ -493,7 +493,7 @@ def can_build_observatory(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
         return False, "observatory_needs_settlement"
     any_lab = False
     any_obs = False
-    for sid in sm.settlements:
+    for sid in sm.own():
         if sm.count_structures_of_type(sid, "lab", world) >= 1:
             any_lab = True
         if sm.count_structures_of_type(sid, "observatory", world) >= 1:

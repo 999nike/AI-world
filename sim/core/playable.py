@@ -52,6 +52,7 @@ class PlayableState:
     last_discovery: int = 0
     had_inquiry: bool = False
     picker: Optional[Callable[[Dict[str, Any]], str]] = None
+    player_ids: Optional[Set[str]] = None
 
 
 def _has_inquiry(settlements: List[Dict[str, Any]]) -> bool:
@@ -69,13 +70,11 @@ def detect_reason(
     inquiry_new = now_inquiry and not state.had_inquiry
     state.had_inquiry = now_inquiry
 
-    age4 = int(metrics.get("age_up4_events", 0) or 0)
-    era4_new = age4 > state.last_age_up4
-    state.last_age_up4 = age4
+    era4_now = any(int(s.get("era", 2)) >= 4 for s in settlements)
+    era4_new = era4_now and "era4" not in state.asked
 
-    disc = int(metrics.get("discovery_events", 0) or 0)
-    disc_new = disc > state.last_discovery
-    state.last_discovery = disc
+    disc_now = any(int(s.get("discoveries", 0) or 0) > 0 for s in settlements)
+    disc_new = disc_now and "discovery" not in state.asked
 
     candidates = []
     if drought_this_tick and "drought" not in state.asked:
@@ -154,11 +153,13 @@ def pick_edict(state: PlayableState, payload: Dict[str, Any]) -> str:
     return chosen if chosen in valid else EDICTS[0]["id"]
 
 
-def apply_edict(gov: Governor, brains: Dict[str, Any], edict_id: str, logger, tick: int, reason: str) -> None:
+def apply_edict(gov: Governor, brains: Dict[str, Any], edict_id: str, logger, tick: int, reason: str, player_ids: Optional[Set[str]] = None) -> None:
     edict = next(e for e in EDICTS if e["id"] == edict_id)
     status = gov.apply_command(edict["command"])
     bias = gov.bias_weights()
-    for brain in brains.values():
+    for aid, brain in brains.items():
+        if player_ids is not None and aid not in player_ids:
+            continue
         if hasattr(brain, "governor_bias"):
             brain.governor_bias = bias
     logger.event({
@@ -200,7 +201,7 @@ def maybe_decide(
         "prompt": REASON_TEXT.get(reason, reason),
         "choices": list(EDICTS),
         "settlements": [
-            {k: s.get(k) for k in ("id", "era", "population", "food_stock", "subjects")}
+            {k: s.get(k) for k in ("id", "era", "population", "food_stock", "subjects", "faction")}
             for s in settlements
         ],
     }
@@ -211,7 +212,7 @@ def maybe_decide(
         "choices": [e["id"] for e in EDICTS],
     })
     edict_id = pick_edict(state, payload)
-    apply_edict(gov, brains, edict_id, logger, tick, reason)
+    apply_edict(gov, brains, edict_id, logger, tick, reason, player_ids=state.player_ids)
     if state.picker is None and state.policy != "human":
         print(f"  edict @ tick {tick} [{reason}] → {edict_id}")
     return edict_id

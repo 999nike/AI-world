@@ -12,6 +12,7 @@ examples:
   python -m sim run --agents 6 --governor "focus expand" --scenario "seed 7; event boom 80"
   python -m sim run --playable --seed 42 --ticks 2000
   python -m sim run --playable --choice-policy seeded --seed 42 --ticks 2000
+  python -m sim run --playable --rival --seed 42 --ticks 2500
 """
 
 
@@ -80,6 +81,11 @@ def main():
              "first=always feed; seeded=deterministic from seed.",
     )
 
+    runp.add_argument(
+        "--rival", action="store_true",
+        help="Spawn a rival civ on the far side of the map (4 agents, own governor).",
+    )
+
     args = p.parse_args()
 
     if args.cmd == "run":
@@ -94,6 +100,7 @@ def main():
             control_policy=args.control_policy,
             playable=args.playable,
             choice_policy=args.choice_policy if args.playable else "first",
+            rival_agents=4 if args.rival else 0,
         )
 
 

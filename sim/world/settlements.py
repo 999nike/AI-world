@@ -79,11 +79,13 @@ class SettlementManager:
         self.struct_to_settlement: Dict[str, str] = {}
         self.metrics = metrics
         self.logger = logger
+        self.active_faction = None
 
-    def create(self, x, y, owner_id, world, tick) -> str:
+    def create(self, x, y, owner_id, world, tick, faction=None) -> str:
         sid = f"s{len(self.settlements) + 1}"
         self.settlements[sid] = {
             "id": sid, "x": x, "y": y, "owner_id": owner_id,
+            "faction": faction or self.active_faction or "player",
             "population": int(SETTLEMENT_RULES.get("starting_population", 1)),
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0, "soldiers": 0.0, "knowledge": 0.0,
@@ -106,17 +108,23 @@ class SettlementManager:
         k = pos_key(x, y)
         sid = self.struct_to_settlement.get(k)
         if sid:
-            return sid
-        if not self.settlements:
+            s = self.settlements.get(sid)
+            if s and (not self.active_faction or s.get("faction", "player") == self.active_faction):
+                return sid
+        if not self.own():
             sid = self.create(x, y, "system", world, tick)
             self.struct_to_settlement[k] = sid
             return sid
         best_sid = self.nearest(x, y)
-        self.struct_to_settlement[k] = best_sid  # type: ignore
-        return best_sid  # type: ignore
+        if best_sid is None:
+            sid = self.create(x, y, "system", world, tick)
+            self.struct_to_settlement[k] = sid
+            return sid
+        self.struct_to_settlement[k] = best_sid
+        return best_sid
 
     def link_structure(self, x, y, owner_id, world, tick) -> str:
-        if not self.settlements:
+        if not self.own():
             sid = self.create(x, y, owner_id, world, tick)
             self.struct_to_settlement[pos_key(x, y)] = sid
             return sid
@@ -127,11 +135,18 @@ class SettlementManager:
         self.struct_to_settlement[pos_key(x, y)] = sid
         return sid
 
-    def nearest(self, x, y) -> Optional[str]:
-        if not self.settlements:
+    def own(self, faction=None):
+        fac = faction if faction is not None else self.active_faction
+        if not fac:
+            return self.settlements
+        return {sid: s for sid, s in self.settlements.items() if s.get("faction", "player") == fac}
+
+    def nearest(self, x, y, faction=None) -> Optional[str]:
+        pool = self.own(faction)
+        if not pool:
             return None
         best_sid, best_d = None, 10**9
-        for sid, s in self.settlements.items():
+        for sid, s in pool.items():
             d = abs(x - s["x"]) + abs(y - s["y"])
             if d < best_d:
                 best_d, best_sid = d, sid
@@ -520,12 +535,18 @@ class SettlementManager:
         scale = float(SETTLEMENT_RULES.get("raid_loot_scale", 8.0))
         cap = int(SETTLEMENT_RULES.get("raid_loot_cap", 12))
         all_s = list(self.settlements.items())
+        factions = {s.get("faction", "player") for _, s in all_s}
+        cross = len(factions) > 1
         ranked = sorted(all_s, key=lambda x: float(x[1].get("soldiers", 0)), reverse=True)
         atk_sid, atk = ranked[0]
         atk_soldiers = float(atk.get("soldiers", 0))
         if atk_soldiers < min_soldiers:
             return
-        others = [(sid, s) for sid, s in all_s if sid != atk_sid]
+        if cross:
+            atk_fac = atk.get("faction", "player")
+            others = [(sid, s) for sid, s in all_s if s.get("faction", "player") != atk_fac]
+        else:
+            others = [(sid, s) for sid, s in all_s if sid != atk_sid]
         if not others:
             return
         tgt_sid, tgt = min(others, key=lambda x: float(x[1].get("soldiers", 0)))
@@ -561,12 +582,20 @@ class SettlementManager:
         self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
         self.logger.event({
             "type": "raid", "tick": tick, "attacker": atk_sid, "target": tgt_sid,
+            "attacker_faction": atk.get("faction", "player"),
+            "target_faction": tgt.get("faction", "player"),
             "cost_soldiers": cost, "loot": {"wood": take_w, "stone": take_s, "food": take_f},
             "attacker_soldiers_after": atk["soldiers"],
             "target_had_walls": self.settlement_has_walls(tgt_sid, world),
             "target_had_strategy": "strategy" in tgt_subjects,
             "scaled_extra": extra,
         })
+        self.metrics["last_raid"] = {
+            "tick": tick, "attacker": atk_sid, "target": tgt_sid,
+            "attacker_faction": atk.get("faction", "player"),
+            "target_faction": tgt.get("faction", "player"),
+            "loot": {"wood": take_w, "stone": take_s, "food": take_f},
+        }
 
     def _try_age_up(self, world, tick: int) -> None:
         min_pop = int(SETTLEMENT_RULES.get("age_up_min_pop", 15))

@@ -30,6 +30,9 @@ python -m sim run --control A0 --control-policy gather_food
 # Playable: pause at fat moments, pick an edict
 python -m sim run --playable --seed 42 --ticks 2000
 python -m sim run --playable --choice-policy seeded --seed 42 --ticks 2000
+
+# Rival civ on the far side (own governor; edicts still only yours)
+python -m sim run --playable --rival --seed 42 --ticks 2500
 ```
 
 On Windows if `python` is not on PATH:
@@ -60,11 +63,12 @@ python tools/multi_seed_validate.py
 |------|------|--------|
 | **Governor** | `--governor "focus food"` | Soft bias on all agents |
 | **Playable** | `--playable` | Pause at fat moments; pick food / science / army |
+| **Rival** | `--rival` | Second civ on the east; own governor; cross-faction raids |
 | **Scenario** | `--scenario "..."` | Starting conditions + timed events |
 | **Drop-in** | `--control A0 --control-policy gather_food` | Direct control of one agent |
 
 Playable: `--choice-policy human|first|seeded` (human asks; first always feeds; seeded is deterministic)  
-Web: `python tools/play_web.py --host 0.0.0.0 --port 8080`  
+Web: `python tools/play_web.py --host 0.0.0.0 --port 8080` (rival on; you are west)  
 Governor commands: `focus food|build|expand|science|army`, `build farm|hut|storage|none`, `clear`  
 
 Scenario commands: `seed N`, `ticks N`, `agents N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`  
