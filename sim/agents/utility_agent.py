@@ -69,20 +69,16 @@ class UtilityAgent:
             if has_farm and not has_storage and inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                 return Action(type="build", building="storage")
 
-        # E5.7 hard gate: force Library path once inquiry is live
-        nearest = obs.nearest_settlement or {}
-        era = int(nearest.get("era", 2))
-        subjects = nearest.get("subjects") or []
+        # E5.12: Library if ANY settlement is era4 + inquiry (not just nearest)
         types = {st.get("type") for st in structs}
-        if era >= 4 and "inquiry" in subjects and "library" not in types:
+        settlements = obs.settlements or ([obs.nearest_settlement] if obs.nearest_settlement else [])
+        need_library = any(
+            s and int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or [])
+            for s in settlements
+        )
+        if need_library and "library" not in types:
             if structure is None:
-                # Always attempt the build — simloop will fund from settlement stocks
                 return Action(type="build", building="library")
-            # Standing on a structure: move to free a tile, or gather if resources present
-            if obs.tile.get("wood", 0) > 0:
-                return Action(type="gather", resource="wood")
-            if obs.tile.get("stone", 0) > 0:
-                return Action(type="gather", resource="stone")
             return self._random_action(obs, rng)
 
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
