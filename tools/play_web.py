@@ -455,7 +455,13 @@ function renderDecision(state) {
     edicts.innerHTML = "";
   } else {
     banner.className = "banner";
-    banner.textContent = state.status === "running" ? "The settlement is working." : (state.status||"");
+    if (state.status === "error") {
+      banner.className = "banner lose";
+      banner.textContent = "Could not run. Hit Begin again.";
+      $("begin").disabled = false;
+    } else {
+      banner.textContent = state.status === "running" ? "The settlement is working." : (state.status||"");
+    }
     prompt.textContent = "";
     edicts.innerHTML = "";
   }
@@ -505,11 +511,18 @@ async function begin() {
   const seed = Number($("seed").value)||42;
   const ticks = Number($("ticks").value)||2500;
   logLine(`Began seed ${seed} · ${ticks} ticks`);
-  await fetch("/api/start", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({seed, ticks})
-  });
+  try {
+    const res = await fetch("/api/start", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({seed, ticks})
+    });
+    if (!res.ok) throw new Error("start " + res.status);
+  } catch (err) {
+    logLine("Could not start. Hit Begin again.");
+    $("begin").disabled = false;
+    return;
+  }
   if (timer) clearInterval(timer);
   timer = setInterval(poll, 280);
   poll();
@@ -537,6 +550,7 @@ class Game:
         self.lock = threading.Lock()
         self.choice_q: Queue = Queue()
         self.thread: Optional[threading.Thread] = None
+        self.generation = 0
         self.state: Dict[str, Any] = {"status": "idle", "world": None, "decision": None}
 
     def snapshot(self) -> Dict[str, Any]:
@@ -548,8 +562,12 @@ class Game:
             self.state.update(kwargs)
 
     def start(self, seed: int, ticks: int) -> None:
-        if self.thread and self.thread.is_alive():
-            return
+        self.generation += 1
+        gen = self.generation
+        try:
+            self.choice_q.put_nowait("food")
+        except Exception:
+            pass
         while True:
             try:
                 self.choice_q.get_nowait()
@@ -557,11 +575,22 @@ class Game:
                 break
         self._set(status="running", world=None, decision=None, score=None, run_id=None, error=None, outcome=None)
 
+        class Cancelled(Exception):
+            pass
+
         def picker(payload):
+            if gen != self.generation:
+                raise Cancelled()
             self._set(status="decision", decision=payload)
-            return self.choice_q.get()
+            while True:
+                edict = self.choice_q.get()
+                if gen != self.generation:
+                    raise Cancelled()
+                return edict
 
         def on_tick(snap):
+            if gen != self.generation:
+                raise Cancelled()
             with self.lock:
                 self.state["world"] = snap
                 if self.state.get("status") != "decision":
@@ -582,22 +611,29 @@ class Game:
                     on_tick_every=4,
                     rival_agents=4,
                 )
-                summary = None
-                path = ROOT / "runs" / str(rid) / "summary.json"
-                if path.exists():
-                    summary = json.loads(path.read_text(encoding="utf-8"))
-                world = None
-                if summary:
-                    world = summary.get("final") or {}
-                    world["metrics"] = summary.get("metrics") or {}
-                    world["tick"] = (summary.get("final") or {}).get("tick", summary.get("ticks_ran") or summary.get("ticks"))
-                self._set(
-                    status="done", score=score, run_id=rid, decision=None,
-                    world=world or self.state.get("world"),
-                    outcome=(summary or {}).get("outcome"),
-                )
+            except Cancelled:
+                return
             except Exception as exc:
+                if gen != self.generation:
+                    return
                 self._set(status="error", error=str(exc), decision=None)
+                return
+            if gen != self.generation:
+                return
+            summary = None
+            path = ROOT / "runs" / str(rid) / "summary.json"
+            if path.exists():
+                summary = json.loads(path.read_text(encoding="utf-8"))
+            world = None
+            if summary:
+                world = summary.get("final") or {}
+                world["metrics"] = summary.get("metrics") or {}
+                world["tick"] = (summary.get("final") or {}).get("tick", summary.get("ticks_ran") or summary.get("ticks"))
+            self._set(
+                status="done", score=score, run_id=rid, decision=None,
+                world=world or self.state.get("world"),
+                outcome=(summary or {}).get("outcome"),
+            )
 
         self.thread = threading.Thread(target=run, daemon=True)
         self.thread.start()
@@ -607,6 +643,7 @@ class Game:
         self.choice_q.put(edict)
 
 
+
 GAME = Game()
 
 
@@ -614,12 +651,18 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         return
 
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Cache-Control", "no-store")
+
     def _json(self, obj, code=200):
         raw = json.dumps(obj).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
-        self.send_header("Cache-Control", "no-store")
+        self._cors()
         self.end_headers()
         self.wfile.write(raw)
 
@@ -628,16 +671,31 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(raw)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path in ("/", "/index.html"):
             self._html(HTML)
             return
         if path == "/api/state":
             self._json(GAME.snapshot())
+            return
+        if path == "/api/start":
+            from urllib.parse import parse_qs
+            q = parse_qs(parsed.query)
+            seed = int((q.get("seed") or ["42"])[0] or 42)
+            ticks = int((q.get("ticks") or ["2500"])[0] or 2500)
+            GAME.start(seed, ticks)
+            self._json({"ok": True})
             return
         self._json({"error": "not_found"}, 404)
 
