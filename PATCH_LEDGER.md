@@ -1,6 +1,8 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-18 22:30 BST — canvas recipe for the next chat
+**Hand-off:** 2026-08-18 23:25 BST — Expert vs Build is the canvas
+
+**If the right pane is a file tree: user is in Expert. Tell them Expert → Build. You cannot click it.**
 
 ## Snapshot
 
