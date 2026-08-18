@@ -69,17 +69,25 @@ class UtilityAgent:
             if has_farm and not has_storage and inv.get("wood", 0) >= 3 and inv.get("stone", 0) >= 2:
                 return Action(type="build", building="storage")
 
-        # E5.12: Library if ANY settlement is era4 + inquiry (not just nearest)
+        # E5.13: science chain is global — Library → Lab → Observatory
         types = {st.get("type") for st in structs}
         settlements = obs.settlements or ([obs.nearest_settlement] if obs.nearest_settlement else [])
-        need_library = any(
+        need_science = any(
             s and int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or [])
             for s in settlements
         )
-        if need_library and "library" not in types:
-            if structure is None:
-                return Action(type="build", building="library")
-            return self._random_action(obs, rng)
+        if need_science:
+            target = None
+            if "library" not in types:
+                target = "library"
+            elif "lab" not in types:
+                target = "lab"
+            elif "observatory" not in types:
+                target = "observatory"
+            if target:
+                if structure is None:
+                    return Action(type="build", building=target)
+                return self._random_action(obs, rng)
 
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:

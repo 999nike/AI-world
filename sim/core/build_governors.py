@@ -96,6 +96,14 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
         sm.count_structures_of_type(sid, "library", world) >= 1
         for sid in sm.settlements
     )
+    any_lab = any(
+        sm.count_structures_of_type(sid, "lab", world) >= 1
+        for sid in sm.settlements
+    )
+    any_observatory = any(
+        sm.count_structures_of_type(sid, "observatory", world) >= 1
+        for sid in sm.settlements
+    )
 
     # E5.12: Library priority is global — any inquiry town, not just nearest
     if any_inquiry and not any_library and b in LIBRARY_PRIORITY_TARGETS:
@@ -213,21 +221,17 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
             return "barracks", "command_needs_barracks"
 
     if b == "lab":
-        if lab >= 1:
+        if any_lab:
             return "hut", "lab_capped_to_hut"
-        if era < 4:
-            return "hut", "lab_needs_era4"
-        if "inquiry" not in subjects:
+        if not any_inquiry:
             return "hut", "lab_needs_inquiry"
-        if library < 1:
+        if not any_library:
             return "library", "lab_needs_library"
 
     if b == "observatory":
-        if observatory >= 1:
+        if any_observatory:
             return "hut", "observatory_capped_to_hut"
-        if era < 4:
-            return "hut", "observatory_needs_era4"
-        if lab < 1:
+        if not any_lab:
             return "lab", "observatory_needs_lab"
 
     return b, note
@@ -465,17 +469,21 @@ def can_build_command(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_lab(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "lab_needs_settlement"
-    best_sid = sm.nearest(agent_x, agent_y)
-    if best_sid is None:
-        return False, "lab_needs_settlement"
-    s = sm.get(best_sid)
-    if int(s.get("era", 2)) < 4:
-        return False, "lab_needs_era4"
-    if "inquiry" not in (s.get("subjects") or []):
+    any_inquiry = False
+    any_library = False
+    any_lab = False
+    for sid, s in sm.settlements.items():
+        if int(s.get("era", 2)) >= 4 and "inquiry" in (s.get("subjects") or []):
+            any_inquiry = True
+        if sm.count_structures_of_type(sid, "library", world) >= 1:
+            any_library = True
+        if sm.count_structures_of_type(sid, "lab", world) >= 1:
+            any_lab = True
+    if not any_inquiry:
         return False, "lab_needs_inquiry"
-    if sm.count_structures_of_type(best_sid, "library", world) < 1:
+    if not any_library:
         return False, "lab_needs_library"
-    if sm.count_structures_of_type(best_sid, "lab", world) >= 1:
+    if any_lab:
         return False, "lab_already_exists"
     return True, ""
 
@@ -483,14 +491,15 @@ def can_build_lab(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
 def can_build_observatory(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
     if sm.count() == 0:
         return False, "observatory_needs_settlement"
-    best_sid = sm.nearest(agent_x, agent_y)
-    if best_sid is None:
-        return False, "observatory_needs_settlement"
-    s = sm.get(best_sid)
-    if int(s.get("era", 2)) < 4:
-        return False, "observatory_needs_era4"
-    if sm.count_structures_of_type(best_sid, "lab", world) < 1:
+    any_lab = False
+    any_obs = False
+    for sid in sm.settlements:
+        if sm.count_structures_of_type(sid, "lab", world) >= 1:
+            any_lab = True
+        if sm.count_structures_of_type(sid, "observatory", world) >= 1:
+            any_obs = True
+    if not any_lab:
         return False, "observatory_needs_lab"
-    if sm.count_structures_of_type(best_sid, "observatory", world) >= 1:
+    if any_obs:
         return False, "observatory_already_exists"
     return True, ""
