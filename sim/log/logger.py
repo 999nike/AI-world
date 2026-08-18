@@ -12,6 +12,7 @@ KEY_TYPES: Set[str] = {
     "governor_command", "agent_controlled", "rival_governor",
     "decision_offered", "decision_taken",
     "build_funded",
+    "outcome",
 }
 
 

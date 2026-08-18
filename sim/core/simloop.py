@@ -77,7 +77,6 @@ def run_sim(
     rng = RNG(seed)
     world = make_world(cfg, rng, num_agents=num_agents, rival_agents=rival_agents)
 
-
     if scenario.start_food or scenario.start_wood or scenario.start_stone:
         for a in world.agents:
             a.inv_food, a.inv_wood, a.inv_stone = scenario.start_food, scenario.start_wood, scenario.start_stone
@@ -136,6 +135,8 @@ def run_sim(
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
     play_state = None
+    outcome = None
+    founded: set = set()
     if playable:
         from sim.core.playable import PlayableState
         play_state = PlayableState(policy=choice_policy, seed=seed, picker=decision_picker)
@@ -394,7 +395,19 @@ def run_sim(
         sm.active_faction = None
         sm.tick(world, tick=t)
 
-        if on_tick is not None and (t % max(1, int(on_tick_every)) == 0 or t == ticks - 1):
+        if rival_agents:
+            from sim.core.outcome import detect_early, side_from_world
+            for s in sm.all():
+                founded.add(s.get("faction", "player"))
+            outcome = detect_early(
+                t, side_from_world(sm, world, "player"),
+                side_from_world(sm, world, "rival"), founded,
+            )
+
+        emit_view = on_tick is not None and (
+            outcome or t % max(1, int(on_tick_every)) == 0 or t == ticks - 1
+        )
+        if emit_view:
             snap = world.to_dict_summary()
             snap["settlements"] = sm.all()
             snap["metrics"] = dict(metrics)
@@ -405,6 +418,10 @@ def run_sim(
                 tagged.append({**st3, "settlement_id": sid, "faction": fac})
             snap["structures"] = tagged
             on_tick(snap)
+
+        if outcome:
+            logger.event(outcome)
+            break
 
         if play_state is not None:
             from sim.core.playable import maybe_decide
@@ -425,6 +442,15 @@ def run_sim(
             logger.snapshot({"type": "snapshot", **snap})
             logger.event({"type": "snapshot_saved", "tick": t})
 
+    if rival_agents and outcome is None:
+        from sim.core.outcome import detect_survival, side_from_world
+        last_t = world.tick if ticks else 0
+        outcome = detect_survival(
+            last_t, side_from_world(sm, world, "player"),
+            side_from_world(sm, world, "rival"),
+        )
+        logger.event(outcome)
+
     final = world.to_dict_summary()
     final["settlements"] = sm.all()
     total_pop = sum(int(s["population"]) for s in sm.all()) if sm.count() else 0
@@ -432,16 +458,20 @@ def run_sim(
              + metrics["food_deposited_total"] - metrics["population_starved_events"] * 5)
     summary = {
         "run_id": run_id, "seed": seed, "ticks": ticks, "num_agents": num_agents,
+        "ticks_ran": int(world.tick) + 1 if ticks else 0,
         "final": final, "metrics": metrics, "score": score,
         "governor": gov.to_dict(), "scenario": scenario.to_dict(),
         "rival_agents": rival_agents,
         "rival_governor": rival_gov.to_dict() if rival_agents else None,
+        "outcome": outcome,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     logger.event({"type": "run_finished", "run_id": run_id})
     logger.close()
     print(f"Run complete: {run_id}")
     print(f"Outputs in: {run_dir}")
+    if outcome:
+        print(f"Outcome: {outcome.get('winner')} / {outcome.get('kind')} — {outcome.get('reason')}")
     if return_score:
         return score, run_id
     return None

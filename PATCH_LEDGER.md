@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-18 Layer 3 rival civ
+**Hand-off:** 2026-08-18 win / lose clock
 
 ## Snapshot
 
@@ -9,7 +9,8 @@ LIVE on e5-lib-global:
   E5.13 science path global (lib → lab → obs)
   Playable edicts: food / science / army
   Layer 3: rival civ on the far side (own governor)
-  Web god-view: You / Rival, clay cells, raid chronicle
+  Win / lose: science (obs + 2 disc) / wipe / clock
+  Web: You win / They win + chronicle
   Validate path unchanged (rival_agents=0, playable off)
 
 Pass bar (no --playable, no --rival):
@@ -23,11 +24,11 @@ python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --qui
 python tools/play_web.py --host 0.0.0.0 --port 8080
 ```
 
-## Layer 3 contract
+## Clock contract
 
-- `rival_agents=0` (default): spawn + RNG identical to playable v2. Validate must match.
-- `--rival` / web Begin: 4 player west (x 1–10) + 4 rival east (x width-11..width-2).
-- Rival governor: seed even → army, odd → science. Edicts never touch rival brains.
-- `sm.active_faction` scopes nearest / own / science gates / deposits.
-- Two factions on the map → raids are cross-faction only. One faction → old strongest-vs-weakest.
+- Only when `rival_agents > 0`. Default 0 = no early stop, no outcome, validate identical.
+- Science: own-faction Observatory + 2 discoveries. First one wins. Same tick + same count = draw.
+- Domination: both factions have founded; one side's total pop hits 0.
+- Survival: only if the clock expires. Win = era 4 AND more people. More people without era 4, or fewer people = they win. Tie + era 4 = draw.
+- Edicts, gates, spawn, RNG unchanged.
 - Do not start another axis until this is green.

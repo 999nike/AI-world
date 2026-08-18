@@ -31,7 +31,7 @@ python -m sim run --control A0 --control-policy gather_food
 python -m sim run --playable --seed 42 --ticks 2000
 python -m sim run --playable --choice-policy seeded --seed 42 --ticks 2000
 
-# Rival civ on the far side (own governor; edicts still only yours)
+# Rival civ on the far side. Ends on science, wipe, or the clock.
 python -m sim run --playable --rival --seed 42 --ticks 2500
 ```
 
@@ -63,7 +63,7 @@ python tools/multi_seed_validate.py
 |------|------|--------|
 | **Governor** | `--governor "focus food"` | Soft bias on all agents |
 | **Playable** | `--playable` | Pause at fat moments; pick food / science / army |
-| **Rival** | `--rival` | Second civ on the east; own governor; cross-faction raids |
+| **Rival** | `--rival` | Second civ on the east; own governor; clock can end it |
 | **Scenario** | `--scenario "..."` | Starting conditions + timed events |
 | **Drop-in** | `--control A0 --control-policy gather_food` | Direct control of one agent |
 

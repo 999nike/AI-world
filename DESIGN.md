@@ -143,7 +143,7 @@ Steal only this:
 
 - Ages change the rules (we have this)
 - One visible rival (Layer 3 — west / east, own governor, cross-faction raids)
-- A victory you can point at (science path)
+- A victory you can point at (win / lose clock: science, wipe, or hold)
 - Presentation that makes stocks feel like a city (we do not have this)
 
 ---
@@ -155,7 +155,7 @@ Now (lab)          Playable              Civ-shaped
 ─────────          ────────              ──────────
 kernel             pause on decision     rival civ on same map   ← shipped
 utility agents     governor choices      raids become someone    ← shipped
-logs/snapshots     watchable map         win / lose clock        ← next
+logs/snapshots     watchable map         win / lose clock        ← shipped
 ```
 
 **Layer 1 — Watchable**  
@@ -169,13 +169,17 @@ Second civ on the same map, far side, own governor. `rival_agents=0` is the defa
 
 Do not pile civic / hunger / age-up on top of this. One axis at a time.
 
-### Win / lose (use what we have)
+### Win / lose (shipped)
 
-- **Science:** Observatory + N discoveries
-- **Domination:** other civ’s pop broken / soldiers
-- **Survival:** still alive at tick 5000 with era 4
+- **Science:** your Observatory + 2 discoveries, first
+- **Domination:** the other civ’s pop hits 0 after both have founded
+- **Survival:** clock ends — era 4 and more people, or they outgrew you / you never reached era 4
 
-That is a short Civ. That is enough. The clock is the next axis, not more buildings.
+Early stop on science or wipe only when a rival is on the map.  
+`rival_agents=0` still runs the full tick count. Validate is untouched.
+
+That is a short Civ. That is enough. Do not add more buildings to make it feel finished.
+
 
 ### First playable patch (done)
 

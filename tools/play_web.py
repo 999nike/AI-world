@@ -135,6 +135,9 @@ input[type="number"] {
 .log div { border-top: 1px solid var(--border); padding: 6px 0; }
 .banner { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-subtle); margin-bottom: 12px; }
 .banner.ask { border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent); }
+.banner.win { border: 1px solid color-mix(in oklab, var(--ok) 50%, transparent); }
+.banner.lose { border: 1px solid color-mix(in oklab, var(--danger) 50%, transparent); }
+.banner.draw { border: 1px solid var(--border); }
 .hidden { display: none !important; }
 @media (max-width: 880px) {
   .row { flex-direction: column; }
@@ -151,7 +154,7 @@ input[type="number"] {
     <header>
       <div>
         <h1>AI-world</h1>
-        <div class="sub">You are the spirit of one settlement. A rival civ works the far side. Raids are them, not weather.</div>
+        <div class="sub">You are the spirit of one settlement. A rival civ works the far side. The clock can end it.</div>
       </div>
       <div class="controls" id="startRow">
         <label class="kicker">Seed <input id="seed" type="number" value="42" min="1"/></label>
@@ -164,7 +167,8 @@ input[type="number"] {
       <div class="kicker">Watchable</div>
       <p style="margin:8px 0 0;color:var(--fg-muted);max-width:56ch">
         Same kernel. You hold the west. A rival civ holds the east with its own governor.
-        When the world asks, pick feed, science, or army. Cross-map raids are the other tribe.
+        When the world asks, pick feed, science, or army. It ends when someone finishes
+        science, wipes the other tribe, or the clock runs out.
       </p>
     </div>
 
@@ -180,6 +184,7 @@ input[type="number"] {
         <div class="col side">
           <div class="panel">
             <div class="kicker">Edict</div>
+            <div class="meta" style="color:var(--fg-muted);margin:6px 0 10px;font-size:0.8rem">Win: observatory + 2 discoveries, wipe them, or era 4 with more people when the clock ends.</div>
             <div id="askBox">
               <div class="banner" id="statusBanner">Running…</div>
               <div class="prompt" id="prompt"></div>
@@ -203,6 +208,7 @@ const $ = (id) => document.getElementById(id);
 let timer = null;
 let lastRaidTick = -1;
 let lastTick = -1;
+let lastOutcomeTick = -1;
 
 function logLine(t) {
   const el = $("log");
@@ -291,15 +297,22 @@ function renderDecision(state) {
       btn.onclick = () => choose(btn.dataset.id);
     });
   } else if (state.status === "done") {
-    banner.className = "banner";
-    const m = (state.world && state.world.metrics) || {};
+    const o = state.outcome;
     const {you, them} = splitTowns(state.world);
     const yp = you.reduce((a,s)=>a+Number(s.population||0),0);
     const tp = them.reduce((a,s)=>a+Number(s.population||0),0);
-    const sci = (m.build_library&&m.build_lab&&m.build_observatory) ? "Science path complete." : "Science path incomplete.";
-    const hold = yp > tp ? "You hold more people." : (tp > yp ? "The rival outgrew you." : "Even on people.");
-    banner.textContent = `Finished. Score ${state.score ?? "—"}. ${sci} ${hold}`;
-    prompt.textContent = "";
+    if (o && o.winner) {
+      const cls = o.winner === "player" ? "win" : (o.winner === "rival" ? "lose" : "draw");
+      const title = o.winner === "player" ? "You win" : (o.winner === "rival" ? "They win" : "Draw");
+      banner.className = "banner " + cls;
+      banner.textContent = `${title} — ${o.kind || "survival"}`;
+      prompt.textContent = o.reason || "";
+    } else {
+      banner.className = "banner";
+      const hold = yp > tp ? "You hold more people." : (tp > yp ? "The rival outgrew you." : "Even on people.");
+      banner.textContent = `Finished. Score ${state.score ?? "—"}. ${hold}`;
+      prompt.textContent = "";
+    }
     edicts.innerHTML = "";
   } else {
     banner.className = "banner";
@@ -328,6 +341,12 @@ async function poll() {
   }
   renderDecision(state);
   if (state.status === "done") {
+    if (state.outcome && state.outcome.reason && lastOutcomeTick < 0) {
+      lastOutcomeTick = state.outcome.tick ?? lastTick;
+      const o = state.outcome;
+      const title = o.winner === "player" ? "You win" : (o.winner === "rival" ? "They win" : "Draw");
+      logLine(`${title} — ${o.reason}`);
+    }
     clearInterval(timer);
     timer = null;
     $("begin").disabled = false;
@@ -341,6 +360,7 @@ async function begin() {
   $("log").innerHTML = "";
   lastTick = -1;
   lastRaidTick = -1;
+  lastOutcomeTick = -1;
   const seed = Number($("seed").value)||42;
   const ticks = Number($("ticks").value)||2500;
   logLine(`Began seed ${seed} · ${ticks} ticks`);
@@ -394,7 +414,7 @@ class Game:
                 self.choice_q.get_nowait()
             except Empty:
                 break
-        self._set(status="running", world=None, decision=None, score=None, run_id=None, error=None)
+        self._set(status="running", world=None, decision=None, score=None, run_id=None, error=None, outcome=None)
 
         def picker(payload):
             self._set(status="decision", decision=payload)
@@ -429,8 +449,12 @@ class Game:
                 if summary:
                     world = summary.get("final") or {}
                     world["metrics"] = summary.get("metrics") or {}
-                    world["tick"] = summary.get("ticks")
-                self._set(status="done", score=score, run_id=rid, decision=None, world=world or self.state.get("world"))
+                    world["tick"] = (summary.get("final") or {}).get("tick", summary.get("ticks_ran") or summary.get("ticks"))
+                self._set(
+                    status="done", score=score, run_id=rid, decision=None,
+                    world=world or self.state.get("world"),
+                    outcome=(summary or {}).get("outcome"),
+                )
             except Exception as exc:
                 self._set(status="error", error=str(exc), decision=None)
 
