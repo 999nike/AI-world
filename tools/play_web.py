@@ -171,6 +171,34 @@ input[type="number"] {
 </style>
 </head>
 <body>
+<script>
+(function(){
+  try {
+    if (window.parent === window) return;
+    var ref = document.referrer || "";
+    var origin = null;
+    if (ref) origin = new URL(ref).origin;
+    if (!origin && location.ancestorOrigins && location.ancestorOrigins.length)
+      origin = location.ancestorOrigins[0];
+    if (!origin) return;
+    var msg = function(type, extra){
+      var o = {channel:"grok-preview-bridge", version:1, type:type};
+      if (extra) for (var k in extra) o[k] = extra[k];
+      window.parent.postMessage(o, origin);
+    };
+    msg("location", {path: location.pathname||"/", search: location.search, hash: location.hash});
+    msg("ready");
+    window.addEventListener("message", function(ev){
+      if (ev.source !== window.parent) return;
+      if (!ev.data || ev.data.channel !== "grok-preview-bridge") return;
+      if (ev.data.type === "hello") {
+        msg("location", {path: location.pathname||"/", search: location.search, hash: location.hash});
+        msg("ready");
+      }
+    });
+  } catch (e) {}
+})();
+</script>
   <div class="wrap">
     <header>
       <div>
