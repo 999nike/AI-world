@@ -77,7 +77,12 @@ h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.03em
 .stat span { color: var(--fg-muted); font-size: 0.75rem; }
 .map-wrap { overflow: auto; border-radius: var(--radius-md); background: #0a0908; padding: 10px; }
 #map { display: grid; gap: 1px; width: max-content; }
-.cell { width: 13px; height: 13px; border-radius: 2px; background: #1a1814; }
+.cell {
+  width: 14px; height: 14px; border-radius: 2px; background: #1a1814;
+  display: flex; align-items: center; justify-content: center;
+  font: 7px/1 var(--font-mono); color: color-mix(in oklab, var(--fg) 72%, transparent);
+  user-select: none;
+}
 .cell.agent { background: var(--accent); }
 .cell.settlement { background: #c4b8a4; }
 .cell.farm { background: #4d6a45; }
@@ -99,9 +104,25 @@ h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.03em
 .cell.command { background: #5a3a38; }
 .cell.lab { background: #3a5868; }
 .cell.observatory { background: #2f3e55; }
-.cell.rival-agent { background: #c47a62; }
+.cell.rival-agent { background: #c47a62; color: transparent; }
+.cell.agent { color: transparent; }
 .cell.rival { box-shadow: inset 0 0 0 1px #a85a48; }
 .town.rival { border-color: color-mix(in oklab, #c47a62 45%, transparent); }
+.city { margin-bottom: var(--space-4); }
+.city h2 { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 4px; }
+.city .lead { color: var(--fg-muted); margin: 0; font-size: 0.95rem; }
+.chain { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chain span { color: var(--fg-subtle); font-size: 0.8rem; }
+.chain span.on { color: var(--fg); }
+.bar { height: 4px; background: var(--bg); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); width: 0%; }
+.bar.low > i { background: var(--danger); }
+.chip {
+  display: inline-block; font-size: 0.68rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--fg-subtle);
+  border: 1px solid var(--border); border-radius: 99px;
+  padding: 2px 7px; margin: 6px 4px 0 0;
+}
 .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .settlements { display: flex; flex-direction: column; gap: 8px; }
 .town { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
@@ -154,7 +175,7 @@ input[type="number"] {
     <header>
       <div>
         <h1>AI-world</h1>
-        <div class="sub">You are the spirit of one settlement. A rival civ works the far side. The clock can end it.</div>
+        <div class="sub">Watch the settlement. When the world asks, you choose. The clock can end it.</div>
       </div>
       <div class="controls" id="startRow">
         <label class="kicker">Seed <input id="seed" type="number" value="42" min="1"/></label>
@@ -166,9 +187,8 @@ input[type="number"] {
     <div id="idleNote" class="panel">
       <div class="kicker">Watchable</div>
       <p style="margin:8px 0 0;color:var(--fg-muted);max-width:56ch">
-        Same kernel. You hold the west. A rival civ holds the east with its own governor.
-        When the world asks, pick feed, science, or army. It ends when someone finishes
-        science, wipes the other tribe, or the clock runs out.
+        The map is the city. Farms, libraries, people. Chronicle speaks in sentences.
+        You hold the west. They hold the east. When the world asks, pick feed, science, or army.
       </p>
     </div>
 
@@ -176,9 +196,10 @@ input[type="number"] {
       <div class="row">
         <div class="col" style="flex:1">
           <div class="panel">
+            <div id="city"></div>
             <div class="stats" id="stats"></div>
             <div class="map-wrap" style="margin-top:16px"><div id="map"></div></div>
-            <div class="legend">Pale = your people · clay = rival · F farm · B barracks · L library · R lab · V observatory</div>
+            <div class="legend">Pale people · clay rival · F farm · B barracks · L library · R lab · V observatory · + town</div>
           </div>
         </div>
         <div class="col side">
@@ -192,7 +213,7 @@ input[type="number"] {
             </div>
           </div>
           <div class="panel">
-            <div class="kicker">Settlements</div>
+            <div class="kicker">Towns</div>
             <div class="settlements" id="towns"></div>
           </div>
           <div class="panel">
@@ -209,6 +230,19 @@ let timer = null;
 let lastRaidTick = -1;
 let lastTick = -1;
 let lastOutcomeTick = -1;
+let prevWorld = null;
+
+const GLYPH = {
+  farm:"F", storage:"S", hut:"H", granary:"G", mine:"M", road:".",
+  workshop:"W", barracks:"B", market:"K", temple:"T", academy:"C",
+  walls:"#", irrigation:"~", library:"L", foundry:"Y", hall:"O",
+  command:"X", lab:"R", observatory:"V",
+};
+const EDICT_LINE = {
+  food: "You chose to feed the people.",
+  science: "You chose to pursue science.",
+  army: "You chose to raise the army.",
+};
 
 function logLine(t) {
   const el = $("log");
@@ -225,23 +259,70 @@ function splitTowns(world) {
   };
 }
 
-function renderStats(world, extra) {
-  const m = (world && world.metrics) || {};
+function foodDays(s) {
+  const pop = Number(s.population||0);
+  const sold = Number(s.soldiers||0);
+  const need = pop * 0.22 + sold * 0.03;
+  const food = Number(s.food_stock||0);
+  if (need <= 0) return null;
+  return food / need;
+}
+
+function capital(towns) {
+  if (!towns.length) return null;
+  return towns.slice().sort((a,b) => Number(b.population||0) - Number(a.population||0))[0];
+}
+
+function ownStructs(world, fac) {
+  return (world.structures||[]).filter(s => (s.faction||"player") === fac);
+}
+
+function renderCity(world) {
+  const el = $("city");
+  if (!el) return;
   const {you, them} = splitTowns(world);
-  const era = you.reduce((a,s)=>Math.max(a, Number(s.era||2)), 2);
-  const pop = you.reduce((a,s)=>a + Number(s.population||0), 0);
-  const rpop = them.reduce((a,s)=>a + Number(s.population||0), 0);
-  const food = you.reduce((a,s)=>a + Number(s.food_stock||0), 0);
+  const cap = capital(you);
+  const rcap = capital(them);
+  const west = ownStructs(world, "player");
+  const has = t => west.some(s => s.type === t);
+  const disc = you.reduce((a,s)=>a + Number(s.discoveries||0), 0);
+  const days = cap ? foodDays(cap) : null;
+  const people = you.reduce((a,s)=>a + Number(s.population||0), 0);
+  let lead;
+  if (!cap) lead = "No town yet. The people are still walking.";
+  else if (days == null) lead = `${people} people.`;
+  else if (days < 1) lead = `${people} people. Food is short.`;
+  else lead = `${people} people. ${Math.floor(days)} days of food.`;
+  const title = cap ? `${cap.id} · era ${cap.era||2}` : "No town yet";
+  const chain = [
+    ["Library", has("library")],
+    ["Lab", has("lab")],
+    ["Observatory", has("observatory")],
+    [disc + "/2 discoveries", disc >= 2],
+  ];
+  const rivalLine = rcap
+    ? `Rival ${rcap.id} is era ${rcap.era||2}, ${them.reduce((a,s)=>a+Number(s.population||0),0)} people.`
+    : "No rival town yet.";
+  const fill = days == null ? 0 : Math.max(0, Math.min(100, (days / 20) * 100));
+  const low = days != null && days < 3;
+  el.innerHTML = `<h2>${title}</h2>
+    <p class="lead">${lead}</p>
+    <p class="lead" style="margin-top:4px">${rivalLine}</p>
+    <div class="chain">${chain.map(([n,on]) => `<span class="${on?"on":""}">${n}</span>`).join("")}</div>
+    <div class="bar${low?" low":""}"><i style="width:${fill.toFixed(0)}%"></i></div>`;
+}
+
+function renderStats(world) {
+  const {you, them} = splitTowns(world);
+  const daysList = you.map(foodDays).filter(d => d != null);
+  const days = daysList.length ? Math.min(...daysList) : null;
   const items = [
     ["Tick", world ? world.tick : "—"],
-    ["Your era", era],
-    ["Your pop", pop],
-    ["Rival pop", rpop],
-    ["Your food", Math.round(food)],
-    ["Library", m.build_library||0],
-    ["Raids", m.raid_events||0],
-    ["Soldiers", you.reduce((a,s)=>a+Number(s.soldiers||0),0).toFixed(1)],
-    ["Starve", m.population_starved_events||0],
+    ["People", you.reduce((a,s)=>a + Number(s.population||0), 0)],
+    ["Rival", them.reduce((a,s)=>a + Number(s.population||0), 0)],
+    ["Food", days == null ? "—" : (days < 1 ? "short" : Math.floor(days) + "d")],
+    ["Soldiers", you.reduce((a,s)=>a + Number(s.soldiers||0), 0).toFixed(1)],
+    ["Raids", (world.metrics||{}).raid_events || 0],
   ];
   $("stats").innerHTML = items.map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
 }
@@ -256,14 +337,35 @@ function cellClass(world, x, y) {
   return "";
 }
 
+function cellMark(world, x, y) {
+  const agent = (world.agents||[]).find(a => a.x===x && a.y===y);
+  if (agent) return "";
+  const st = (world.structures||[]).find(s => s.x===x && s.y===y);
+  if (st && GLYPH[st.type]) return GLYPH[st.type];
+  const town = (world.settlements||[]).find(s => s.x===x && s.y===y);
+  if (town) return "+";
+  return "";
+}
+
+function cellTitle(world, x, y) {
+  const agent = (world.agents||[]).find(a => a.x===x && a.y===y);
+  if (agent) return agent.faction === "rival" ? "rival" : "yours";
+  const st = (world.structures||[]).find(s => s.x===x && s.y===y);
+  if (st && st.type) return st.type;
+  const town = (world.settlements||[]).find(s => s.x===x && s.y===y);
+  if (town) return town.id;
+  return "";
+}
+
 function renderMap(world) {
   if (!world) return;
   const w = world.width||32, h = world.height||32;
   const map = $("map");
-  map.style.gridTemplateColumns = `repeat(${w}, 13px)`;
+  map.style.gridTemplateColumns = `repeat(${w}, 14px)`;
   let html = "";
   for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
-    html += `<div class="cell ${cellClass(world,x,y)}"></div>`;
+    const t = cellTitle(world,x,y);
+    html += `<div class="cell ${cellClass(world,x,y)}"${t?` title="${t}"`:""}>${cellMark(world,x,y)}</div>`;
   }
   map.innerHTML = html;
 }
@@ -273,13 +375,50 @@ function renderTowns(world) {
   const block = (list, rival) => {
     if (!list.length) return `<div class="meta" style="color:var(--fg-muted)">${rival?"No rival town yet.":"None yet."}</div>`;
     return list.map(s => {
-      const sub = (s.subjects||[]).join(", ") || "—";
+      const days = foodDays(s);
+      const foodBit = days == null ? "no mouths" : (days < 1 ? "food is short" : Math.floor(days) + " days of food");
+      const chips = (s.subjects||[]).map(sub => `<span class="chip">${sub}</span>`).join("");
+      const fill = days == null ? 0 : Math.max(0, Math.min(100, (days / 20) * 100));
+      const low = days != null && days < 3;
       return `<div class="town${rival?" rival":""}"><strong>${s.id}</strong> · era ${s.era||2}
-        <div class="meta">pop ${s.population||0} · food ${Math.round(s.food_stock||0)} · sold ${Number(s.soldiers||0).toFixed(1)} · ${sub}</div></div>`;
+        <div class="meta">${s.population||0} people · ${foodBit}${Number(s.soldiers||0)>0.5?` · ${Number(s.soldiers).toFixed(1)} soldiers`:""}</div>
+        <div class="bar${low?" low":""}"><i style="width:${fill.toFixed(0)}%"></i></div>
+        ${chips}</div>`;
     }).join("");
   };
   $("towns").innerHTML = `<div class="kicker" style="margin-bottom:6px">You</div>${block(you,false)}
     <div class="kicker" style="margin:12px 0 6px">Rival</div>${block(them,true)}`;
+}
+
+function chronicleDiff(world) {
+  if (!prevWorld) { prevWorld = world; return; }
+  const oldBy = {};
+  for (const s of prevWorld.settlements||[]) oldBy[s.id] = s;
+  for (const s of world.settlements||[]) {
+    const o = oldBy[s.id];
+    const whose = s.faction === "rival" ? "They founded" : "We founded";
+    if (!o) { logLine(`${whose} ${s.id}.`); continue; }
+    if (Number(s.era||2) > Number(o.era||2)) logLine(`${s.id} reached era ${s.era}.`);
+    const had = new Set(o.subjects||[]);
+    for (const sub of (s.subjects||[])) {
+      if (!had.has(sub)) logLine(`${s.id} unlocked ${sub}.`);
+    }
+    if (Number(s.discoveries||0) > Number(o.discoveries||0)) logLine(`${s.id} made a discovery.`);
+    if (Number(s.population||0) < Number(o.population||0)) logLine(`${s.id} lost people.`);
+  }
+  const risen = {
+    library: "A library rose",
+    lab: "A lab rose",
+    observatory: "An observatory rose",
+    barracks: "Barracks rose",
+    academy: "An academy rose",
+  };
+  for (const [typ, line] of Object.entries(risen)) {
+    const n = (w, fac) => (w.structures||[]).filter(s => s.type===typ && (s.faction||"player")===fac).length;
+    if (n(world,"player") > n(prevWorld,"player")) logLine(`${line} in the west.`);
+    if (n(world,"rival") > n(prevWorld,"rival")) logLine(`${line} in the east.`);
+  }
+  prevWorld = world;
 }
 
 function renderDecision(state) {
@@ -328,15 +467,16 @@ async function poll() {
   const world = state.world;
   if (world && world.tick !== lastTick) {
     lastTick = world.tick;
+    renderCity(world);
     renderStats(world);
     renderMap(world);
     renderTowns(world);
+    chronicleDiff(world);
     const raid = (world.metrics||{}).last_raid;
     if (raid && raid.tick !== lastRaidTick) {
       lastRaidTick = raid.tick;
       const us = raid.attacker_faction === "player";
-      const loot = raid.loot || {};
-      logLine(`${us ? "We raided" : "They raided"} ${raid.target}  +${loot.food||0}f ${loot.wood||0}w`);
+      logLine(`${us ? "We raided" : "They raided"} ${raid.target}.`);
     }
   }
   renderDecision(state);
@@ -361,6 +501,7 @@ async function begin() {
   lastTick = -1;
   lastRaidTick = -1;
   lastOutcomeTick = -1;
+  prevWorld = null;
   const seed = Number($("seed").value)||42;
   const ticks = Number($("ticks").value)||2500;
   logLine(`Began seed ${seed} · ${ticks} ticks`);
@@ -375,7 +516,7 @@ async function begin() {
 }
 
 async function choose(id) {
-  logLine(`Edict: ${id}`);
+  logLine(EDICT_LINE[id] || `You chose ${id}.`);
   $("edicts").innerHTML = "";
   await fetch("/api/choose", {
     method: "POST",

@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-18 win / lose clock
+**Hand-off:** 2026-08-18 watchable city
 
 ## Snapshot
 
@@ -8,9 +8,8 @@
 LIVE on e5-lib-global:
   E5.13 science path global (lib → lab → obs)
   Playable edicts: food / science / army
-  Layer 3: rival civ on the far side (own governor)
-  Win / lose: science (obs + 2 disc) / wipe / clock
-  Web: You win / They win + chronicle
+  Layer 3: rival civ + win/lose clock
+  Watchable city: glyphs, days of food, chronicle sentences
   Validate path unchanged (rival_agents=0, playable off)
 
 Pass bar (no --playable, no --rival):
@@ -24,11 +23,9 @@ python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --qui
 python tools/play_web.py --host 0.0.0.0 --port 8080
 ```
 
-## Clock contract
+## Watchable contract
 
-- Only when `rival_agents > 0`. Default 0 = no early stop, no outcome, validate identical.
-- Science: own-faction Observatory + 2 discoveries. First one wins. Same tick + same count = draw.
-- Domination: both factions have founded; one side's total pop hits 0.
-- Survival: only if the clock expires. Win = era 4 AND more people. More people without era 4, or fewer people = they win. Tie + era 4 = draw.
-- Edicts, gates, spawn, RNG unchanged.
+- Presentation only. No kernel, edict, gate, or RNG change.
+- Map glyphs match god-view letters. Food shown as days (pop * 0.22).
+- Chronicle diffs settlements / science buildings / raids into sentences.
 - Do not start another axis until this is green.

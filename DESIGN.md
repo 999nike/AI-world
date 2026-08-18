@@ -108,7 +108,8 @@ A human cannot yet:
 3. **See a rival** doing the same
 4. **Read the map** as a place, not a table
 
-Until those four exist, this is a lab with a god-view. Fine as a lab. Not Civ.
+The first three exist. The map now carries glyphs, days of food, and a chronicle in sentences. Still not a painting. Good enough to watch.
+
 
 ---
 
@@ -144,7 +145,7 @@ Steal only this:
 - Ages change the rules (we have this)
 - One visible rival (Layer 3 — west / east, own governor, cross-faction raids)
 - A victory you can point at (win / lose clock: science, wipe, or hold)
-- Presentation that makes stocks feel like a city (we do not have this)
+- Presentation that makes stocks feel like a city (watchable map + chronicle)
 
 ---
 
@@ -158,8 +159,8 @@ utility agents     governor choices      raids become someone    ← shipped
 logs/snapshots     watchable map         win / lose clock        ← shipped
 ```
 
-**Layer 1 — Watchable**  
-Paced god-view: one screen, events as sentences. “s2 unlocked Inquiry.” “They raided s1.” The web map is this layer.
+**Layer 1 — Watchable (shipped)**  
+Paced god-view: one screen, events as sentences. “s2 unlocked Inquiry.” “They raided s1.” The web map is this layer. Glyphs on the grid. Food as days left. Chronicle, not a table.
 
 **Layer 2 — Steerable (this is the game)**  
 Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules.
