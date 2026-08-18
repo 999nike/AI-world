@@ -15,19 +15,19 @@ EDICTS: List[Dict[str, str]] = [
         "id": "food",
         "command": "focus food",
         "title": "Feed the people",
-        "hurt": "Farms first. Army and civic slow.",
+        "hurt": "Farms first. Science and army slow.",
     },
     {
-        "id": "build",
-        "command": "focus build",
-        "title": "Build the town",
-        "hurt": "Stores and houses. Food pressure stays.",
+        "id": "science",
+        "command": "focus science",
+        "title": "Pursue science",
+        "hurt": "Library, lab, observatory. The town eats less labour.",
     },
     {
-        "id": "expand",
-        "command": "focus expand",
-        "title": "Expand the tribe",
-        "hurt": "More huts. Hungry risk.",
+        "id": "army",
+        "command": "focus army",
+        "title": "Raise the army",
+        "hurt": "Soldiers eat. Science waits.",
     },
 ]
 
@@ -212,6 +212,6 @@ def maybe_decide(
     })
     edict_id = pick_edict(state, payload)
     apply_edict(gov, brains, edict_id, logger, tick, reason)
-    if state.policy != "human":
+    if state.picker is None and state.policy != "human":
         print(f"  edict @ tick {tick} [{reason}] → {edict_id}")
     return edict_id

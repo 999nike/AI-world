@@ -10,14 +10,14 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 
-VALID_FOCUS = {"food", "build", "expand"}
+VALID_FOCUS = {"food", "build", "expand", "science", "army"}
 VALID_BUILD = {"farm", "hut", "storage", "none"}
 
 
 @dataclass
 class Governor:
     """Holds current soft preferences."""
-    focus: Optional[str] = None          # food | build | expand
+    focus: Optional[str] = None          # food | build | expand | science | army
     preferred_building: Optional[str] = None  # farm | hut | storage | none
 
     def apply_command(self, cmd: str) -> str:
@@ -72,6 +72,25 @@ class Governor:
             bias["w_build_hut"] = 7.0
             bias["w_build_storage"] = 5.0
             bias["w_build_farm"] = 4.0
+
+        elif self.focus == "science":
+            bias["w_build_library"] = 10.0
+            bias["w_build_lab"] = 9.0
+            bias["w_build_observatory"] = 9.0
+            bias["w_build_academy"] = 6.0
+            bias["w_build_farm"] = 2.0
+            bias["w_build_barracks"] = 1.4
+            bias["w_build_command"] = 1.4
+            bias["w_food"] = 2.0
+
+        elif self.focus == "army":
+            bias["w_build_barracks"] = 8.0
+            bias["w_build_command"] = 8.0
+            bias["w_build_walls"] = 6.0
+            bias["w_build_farm"] = 2.4
+            bias["w_build_library"] = 1.5
+            bias["w_build_lab"] = 1.5
+            bias["w_food_pressure"] = 3.2
 
         if self.preferred_building == "farm":
             bias["w_build_farm"] = bias.get("w_build_farm", 5.0) + 3.0

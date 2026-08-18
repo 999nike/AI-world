@@ -57,6 +57,7 @@ def run_sim(
     control_agent_id: Optional[str] = None, control_policy: str = "idle", num_agents: int = 4,
     quiet: bool = False,
     playable: bool = False, choice_policy: str = "first", decision_picker=None,
+    on_tick=None, on_tick_every: int = 4,
 ):
     scenario = Scenario()
     if scenario_commands:
@@ -357,6 +358,12 @@ def run_sim(
                           "structure": (st2.to_dict() if st2 else None), "settlement_id": sid2})
 
         sm.tick(world, tick=t)
+
+        if on_tick is not None and (t % max(1, int(on_tick_every)) == 0 or t == ticks - 1):
+            snap = world.to_dict_summary()
+            snap["settlements"] = sm.all()
+            snap["metrics"] = dict(metrics)
+            on_tick(snap)
 
         if play_state is not None:
             from sim.core.playable import maybe_decide

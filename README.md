@@ -59,12 +59,14 @@ python tools/multi_seed_validate.py
 | Role | Flag | Purpose |
 |------|------|--------|
 | **Governor** | `--governor "focus food"` | Soft bias on all agents |
-| **Playable** | `--playable` | Pause at fat moments; pick food / build / expand |
+| **Playable** | `--playable` | Pause at fat moments; pick food / science / army |
 | **Scenario** | `--scenario "..."` | Starting conditions + timed events |
 | **Drop-in** | `--control A0 --control-policy gather_food` | Direct control of one agent |
 
-Governor commands: `focus food|build|expand`, `build farm|hut|storage|none`, `clear`  
 Playable: `--choice-policy human|first|seeded` (human asks; first always feeds; seeded is deterministic)  
+Web: `python tools/play_web.py --host 0.0.0.0 --port 8080`  
+Governor commands: `focus food|build|expand|science|army`, `build farm|hut|storage|none`, `clear`  
+
 Scenario commands: `seed N`, `ticks N`, `agents N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`  
 Control policies: `gather_food`, `gather_wood`, `gather_stone`, `build_farm`, `build_hut`, `build_storage`, `idle`
 

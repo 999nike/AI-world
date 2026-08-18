@@ -71,7 +71,7 @@ def main():
     )
     runp.add_argument(
         "--playable", action="store_true",
-        help="Pause at fat moments and pick a governor edict (food / build / expand).",
+        help="Pause at fat moments and pick a governor edict (food / science / army).",
     )
     runp.add_argument(
         "--choice-policy", type=str, default="human",
