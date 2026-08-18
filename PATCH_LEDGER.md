@@ -1,34 +1,48 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-18 21:45 BST — new chat, this thread is full
+**Hand-off:** 2026-08-18 22:30 BST — canvas recipe for the next chat
 
 ## Snapshot
 
 ```
-LIVE on e5-lib-global @ 59581b2
+LIVE on e5-lib-global @ 5fe9d2f (+ canvas docs)
   E5.13 science path global (lib → lab → obs)
   Playable edicts: food / science / army
   Layer 3: rival civ + win/lose clock
   Watchable city: glyphs, days of food, chronicle sentences
   Validate path unchanged (rival_agents=0, playable off)
+  Web: Begin always cancels a leftover paused run
 
 Pass bar (no --playable, no --rival):
   seeds 42,100,7,999,2026 @ 5000 → era4 + lib + lab + obs + 5 subjects
   expected scores: 42=1205, 100=1600, 7=2207, 999=1267, 2026=1933
 ```
 
-```bash
-git fetch && git checkout e5-lib-global
-python tools/multi_seed_validate.py --seeds 42 100 7 999 2026 --ticks 5000 --quiet
-python tools/play_web.py --host 0.0.0.0 --port 8080
-```
+---
+
+## NEW CHAT — PUT THE GAME IN THE RIGHT CANVAS FIRST
+
+Read `CANVAS.md`. The user tests **only** in the Grok right-hand preview.
+
+That preview = `python3 tools/play_web.py --host 0.0.0.0 --port 8080`.
+Not Vite. Not a second frontend.
+
+In the Grok App Builder sandbox:
+
+1. Kernel at `/workspace/ai-world`. Persisted copy: `/workspace/artifacts/ai-world`.
+2. If `play_web.py` / `simloop.py` / `settlements.py` is PLACEHOLDER or <1KB, copy artifacts over it. Codex wiped those on origin once.
+3. `cp /workspace/artifacts/startup.sh /workspace/startup.sh && sh /workspace/startup.sh`
+4. Success: page contains `AI-world` and a Begin button. Leave the process up.
+5. Do not `npm run dev`. Do not `pkill -f`. Do not leave a sim paused on an edict.
+
+User has no terminal. If they cannot click Begin on the right and see pale west / clay east agents, it is not running.
 
 ---
 
-## NEW CHAT HANDOFF (read this first)
+## NEW CHAT HANDOFF (kernel)
 
 **Repo:** [999nike/AI-world](https://github.com/999nike/AI-world)  
-**Branch:** `e5-lib-global` (tracking origin). Tip `59581b2`.  
+**Branch:** `e5-lib-global` (tracking origin). Tip around `5fe9d2f`.  
 **Do not use `main`.** `main` @ `d9ff28e` is later broken E5.11 civic-gate work. Do not merge it. Do not force-push main. Do not Frankenstein 1444db0 files onto E5.11.
 
 **Locked-good historical commit:** `1444db0` (E5.7). We did **not** revert. We patched forward on this branch. Stay on `e5-lib-global`.
@@ -38,6 +52,7 @@ python tools/play_web.py --host 0.0.0.0 --port 8080
 **Two files, two jobs**
 - `PATCH_LEDGER.md` = status (this file)
 - `DESIGN.md` = vision (do not turn it into a checklist)
+- `CANVAS.md` = how the right-hand preview gets the game
 
 ### What this branch is
 
@@ -74,18 +89,19 @@ sim/world/settlements.py     own/nearest/raids/last_raid
 sim/world/state.py           AgentState.faction
 tools/play_web.py            the product UI
 tools/multi_seed_validate.py sacred bar
+CANVAS.md                    right-hand preview recipe
 ```
 
 ### How to work in the Grok sandbox
 
-- Git clone lives at `/tmp/ai-world` (or re-clone). Preview copy at `/workspace/ai-world`.
+- Git clone lives at `/tmp/ai-world` (or re-clone). Preview copy at `/workspace/ai-world`. Persisted: `/workspace/artifacts/ai-world`.
 - After edits: copy those files to `/workspace/ai-world`, kill the old `play_web.py` **by PID** (do not `pkill -f`, it kills the wrapper), then `sh /workspace/startup.sh`.
-- Preview = `0.0.0.0:8080`. Leave it running. Eyeball with Playwright. User has no shell.
+- Preview = `0.0.0.0:8080`. Leave it running. User has no shell. If they can click Begin, you passed.
 - Commit as `999nike <999nike@users.noreply.github.com>` on `e5-lib-global`. Push origin. Never force-push main.
 
-### Next axis (not started)
+### Next axis (Codex started, then wiped the kernel — do not take PLACEHOLDER)
 
-**Richer mid/late decisions after Observatory.** Discoveries are the first sink. Not more chrome. Not more buildings. Not civic/hunger. One fat choice that can hurt (DESIGN: take the farm bonus *or* bank knowledge). Propose the exact 3 buttons, then apply. Validate path must still match.
+Richer mid/late decisions after Observatory was proposed (farm bonus vs bank knowledge). Codex commits on origin (`4b12b64`..`f4bb5ed`) replaced `simloop.py` / `settlements.py` / `play_web.py` with the word PLACEHOLDER. **Do not pull that over a working tree.** Restore those three files from `5fe9d2f` first. Then, if you actually ship the discovery choice, do it as one axis on top of the restored kernel. Validate path must still match.
 
 Do **not** start religion, unique civs, hex combat, RL agents, or a second frontend.
 
