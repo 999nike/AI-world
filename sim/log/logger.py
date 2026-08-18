@@ -10,6 +10,7 @@ KEY_TYPES: Set[str] = {
     "raid", "soldier_defend",
     "scenario_event", "scenario_loaded", "scenario_start_inventory",
     "governor_command", "agent_controlled",
+    "decision_offered", "decision_taken",
     "build_funded",
 }
 

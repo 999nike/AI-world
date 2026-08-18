@@ -30,6 +30,7 @@ ICON = {
 KEY_EVENT_TYPES = {
     "age_transition", "subject_unlocked", "raid", "soldier_defend",
     "settlement_created", "discovery",
+    "decision_offered", "decision_taken", "governor_command",
 }
 
 

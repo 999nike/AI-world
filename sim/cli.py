@@ -10,6 +10,8 @@ examples:
   python -m sim run --scenario "seed 42; start_food 6; event drought 120"
   python -m sim run --control A0 --control-policy gather_food
   python -m sim run --agents 6 --governor "focus expand" --scenario "seed 7; event boom 80"
+  python -m sim run --playable --seed 42 --ticks 2000
+  python -m sim run --playable --choice-policy seeded --seed 42 --ticks 2000
 """
 
 
@@ -67,6 +69,16 @@ def main():
              "gather_food, gather_wood, gather_stone, "
              "build_farm, build_hut, build_storage, idle (default: idle)",
     )
+    runp.add_argument(
+        "--playable", action="store_true",
+        help="Pause at fat moments and pick a governor edict (food / build / expand).",
+    )
+    runp.add_argument(
+        "--choice-policy", type=str, default="human",
+        choices=["human", "first", "seeded"],
+        help="How edicts are picked when --playable (default: human). "
+             "first=always feed; seeded=deterministic from seed.",
+    )
 
     args = p.parse_args()
 
@@ -80,6 +92,8 @@ def main():
             scenario_commands=args.scenario,
             control_agent_id=args.control,
             control_policy=args.control_policy,
+            playable=args.playable,
+            choice_policy=args.choice_policy if args.playable else "first",
         )
 
 

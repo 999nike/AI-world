@@ -56,6 +56,7 @@ def run_sim(
     governor_command: Optional[str] = None, scenario_commands: Optional[str] = None,
     control_agent_id: Optional[str] = None, control_policy: str = "idle", num_agents: int = 4,
     quiet: bool = False,
+    playable: bool = False, choice_policy: str = "first", decision_picker=None,
 ):
     scenario = Scenario()
     if scenario_commands:
@@ -117,9 +118,14 @@ def run_sim(
         "age_up_events": 0, "age_up4_events": 0,
         "market_wood_total": 0, "market_stone_total": 0, "temple_food_total": 0,
         "academy_knowledge_total": 0, "subject_unlock_events": 0,
+        "discovery_events": 0,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
+    play_state = None
+    if playable:
+        from sim.core.playable import PlayableState
+        play_state = PlayableState(policy=choice_policy, seed=seed, picker=decision_picker)
 
     (run_dir / "config.json").write_text(json.dumps({
         "seed": seed, "ticks": ticks, "num_agents": num_agents, "snapshot_every": snapshot_every,
@@ -134,9 +140,11 @@ def run_sim(
         world.tick = t
         logger.event({"type": "tick_started", "tick": t})
 
+        drought_this_tick = False
         for ev in scenario.pending_events(t):
             if ev.kind == "drought":
                 drought_active = True
+                drought_this_tick = True
             elif ev.kind == "boom":
                 for _ in range(40):
                     x, y = rng.randint(0, world.width - 1), rng.randint(0, world.height - 1)
@@ -349,6 +357,13 @@ def run_sim(
                           "structure": (st2.to_dict() if st2 else None), "settlement_id": sid2})
 
         sm.tick(world, tick=t)
+
+        if play_state is not None:
+            from sim.core.playable import maybe_decide
+            maybe_decide(
+                play_state, gov, brains, logger, t, metrics, sm.all(),
+                drought_this_tick=drought_this_tick,
+            )
 
         if snapshot_every > 0 and (t % snapshot_every) == 0:
             snap = world.to_dict_summary()

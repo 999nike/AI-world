@@ -26,6 +26,10 @@ python -m sim run --scenario "seed 42; start_food 6; event drought 120"
 
 # Take control of one agent
 python -m sim run --control A0 --control-policy gather_food
+
+# Playable: pause at fat moments, pick an edict
+python -m sim run --playable --seed 42 --ticks 2000
+python -m sim run --playable --choice-policy seeded --seed 42 --ticks 2000
 ```
 
 On Windows if `python` is not on PATH:
@@ -55,10 +59,12 @@ python tools/multi_seed_validate.py
 | Role | Flag | Purpose |
 |------|------|--------|
 | **Governor** | `--governor "focus food"` | Soft bias on all agents |
+| **Playable** | `--playable` | Pause at fat moments; pick food / build / expand |
 | **Scenario** | `--scenario "..."` | Starting conditions + timed events |
 | **Drop-in** | `--control A0 --control-policy gather_food` | Direct control of one agent |
 
 Governor commands: `focus food|build|expand`, `build farm|hut|storage|none`, `clear`  
+Playable: `--choice-policy human|first|seeded` (human asks; first always feeds; seeded is deterministic)  
 Scenario commands: `seed N`, `ticks N`, `agents N`, `start_food/wood/stone N`, `event drought TICK`, `event boom TICK`  
 Control policies: `gather_food`, `gather_wood`, `gather_stone`, `build_farm`, `build_hut`, `build_storage`, `idle`
 
