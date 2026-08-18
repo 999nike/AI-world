@@ -11,6 +11,7 @@ KEY_TYPES: Set[str] = {
     "scenario_event", "scenario_loaded", "scenario_start_inventory",
     "governor_command", "agent_controlled", "rival_governor",
     "decision_offered", "decision_taken",
+    "discovery_mode",
     "build_funded",
     "outcome",
 }

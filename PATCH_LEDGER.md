@@ -10,6 +10,7 @@ LIVE on e5-lib-global @ 5fe9d2f (+ canvas docs)
   Playable edicts: food / science / army
   Layer 3: rival civ + win/lose clock
   Watchable city: glyphs, days of food, chronicle sentences
+  Discovery choice (Observatory): farm bonus | bank knowledge | auto-claim
   Validate path unchanged (rival_agents=0, playable off)
   Web: Begin always cancels a leftover paused run
 
@@ -61,7 +62,7 @@ Deterministic multi-agent settler sim. Utility agent = hands. Human = spirit of 
 | Layer | Status | What |
 |---|---|---|
 | Science path | shipped | Library → Lab → Observatory gates are **global** (`sm.own()`), not nearest-only. Seed 100 split-town is why. |
-| Playable | shipped | Pause at opening / era4 / inquiry / discovery / drought. 3 edicts: food / science / army. `sim/core/playable.py` |
+| Playable | shipped | Pause at opening / era4 / inquiry / discovery / drought. Base edicts food/science/army; discovery reason has farm/bank/auto. `sim/core/playable.py` |
 | Rival | shipped | `--rival` / web Begin: 4 player west + 4 rival east. `rival_agents=0` default = **identical spawn/RNG** to pre-rival. |
 | Clock | shipped | Rival-on only. Science = own Observatory + 2 discoveries. Wipe = both founded, one pop 0. Clock end = era 4 AND more people. `sim/core/outcome.py` |
 | Watchable | shipped | `tools/play_web.py` — glyphs, days of food, You/Rival, chronicle sentences. Presentation only. |
