@@ -31,11 +31,33 @@ EDICTS: List[Dict[str, str]] = [
     },
 ]
 
+# One-time choice after Observatory: farm bonus vs bank knowledge (or auto).
+DISCOVERY_EDICTS: List[Dict[str, str]] = [
+    {
+        "id": "farm",
+        "command": "focus food",
+        "title": "Claim the farm bonus",
+        "hurt": "Spend knowledge for permanent +8% farm yield. Stockpile is gone.",
+    },
+    {
+        "id": "bank",
+        "command": "focus food",
+        "title": "Bank the knowledge",
+        "hurt": "Hold the stockpile. No farm bonus. Growth stays hungry while you wait.",
+    },
+    {
+        "id": "auto",
+        "command": "focus science",
+        "title": "Auto-claim every discovery",
+        "hurt": "Spend as knowledge arrives. Science path races. Food labour suffers.",
+    },
+]
+
 REASON_TEXT = {
     "opening": "The tribe looks to you. Where do we put our labour?",
     "era4": "A settlement reached Era 4. What do we pursue?",
     "inquiry": "Inquiry is unlocked. Science is possible. What now?",
-    "discovery": "First discovery. Do we double down, or steady the town?",
+    "discovery": "Observatory is ready. Knowledge can become farm yield — or stay banked.",
     "drought": "Drought. Regrowth is thin. How do we answer?",
 }
 
@@ -59,6 +81,15 @@ def _has_inquiry(settlements: List[Dict[str, Any]]) -> bool:
     return any("inquiry" in (s.get("subjects") or []) for s in settlements)
 
 
+def _discovery_opportunity(settlements: List[Dict[str, Any]]) -> bool:
+    """True when a town has enough knowledge for a discovery and none yet taken."""
+    cost = 40.0  # SETTLEMENT_RULES discovery_cost; kept local to avoid import cycle
+    return any(
+        float(s.get("knowledge", 0) or 0) >= cost and int(s.get("discoveries", 0) or 0) == 0
+        for s in settlements
+    )
+
+
 def detect_reason(
     state: PlayableState,
     tick: int,
@@ -73,8 +104,8 @@ def detect_reason(
     era4_now = any(int(s.get("era", 2)) >= 4 for s in settlements)
     era4_new = era4_now and "era4" not in state.asked
 
-    disc_now = any(int(s.get("discoveries", 0) or 0) > 0 for s in settlements)
-    disc_new = disc_now and "discovery" not in state.asked
+    # Opportunity-based (before spend). Pending mode leaves knowledge unspent.
+    disc_new = _discovery_opportunity(settlements) and "discovery" not in state.asked
 
     candidates = []
     if drought_this_tick and "drought" not in state.asked:
@@ -94,15 +125,22 @@ def detect_reason(
     return None
 
 
-def _seeded_index(seed: int, reason: str) -> int:
+def _choices_for(reason: str) -> List[Dict[str, str]]:
+    if reason == "discovery":
+        return list(DISCOVERY_EDICTS)
+    return list(EDICTS)
+
+
+def _seeded_index(seed: int, reason: str, n: int) -> int:
     # Separate from world RNG. Stable for (seed, reason).
     h = (int(seed) * 1000003) ^ (sum((i + 1) * ord(c) for i, c in enumerate(reason)) * 9176)
-    return abs(h) % len(EDICTS)
+    return abs(h) % n
 
 
 def _print_decision(payload: Dict[str, Any]) -> None:
     reason = payload["reason"]
     tick = payload["tick"]
+    choices = payload.get("choices") or EDICTS
     print()
     print("=" * 60)
     print(f"  TICK {tick}  —  {reason.upper()}")
@@ -118,67 +156,83 @@ def _print_decision(payload: Dict[str, Any]) -> None:
             bits.append(f"{s.get('id','?')} era{era} pop={pop} food={food:.0f}")
         print("  " + " | ".join(bits))
     print()
-    for i, e in enumerate(EDICTS, 1):
-        print(f"  [{i}] {e['title']:<18}  {e['hurt']}")
+    for i, e in enumerate(choices, 1):
+        print(f"  [{i}] {e['title']:<22}  {e['hurt']}")
     print()
 
 
 def _human_pick(payload: Dict[str, Any]) -> str:
     import sys
+    choices = payload.get("choices") or EDICTS
     _print_decision(payload)
     if not sys.stdin.isatty():
-        return EDICTS[0]["id"]
+        return choices[0]["id"]
     while True:
         raw = input("Choice [1-3] (Enter=1): ").strip()
         if raw == "":
-            return EDICTS[0]["id"]
+            return choices[0]["id"]
         if raw in ("1", "2", "3"):
-            return EDICTS[int(raw) - 1]["id"]
-        for e in EDICTS:
+            return choices[int(raw) - 1]["id"]
+        for e in choices:
             if raw.lower() == e["id"]:
                 return e["id"]
         print("  Pick 1, 2, or 3.")
 
 
 def pick_edict(state: PlayableState, payload: Dict[str, Any]) -> str:
+    choices = payload.get("choices") or EDICTS
     if state.picker is not None:
         chosen = state.picker(payload)
     elif state.policy == "human":
         chosen = _human_pick(payload)
     elif state.policy == "seeded":
-        chosen = EDICTS[_seeded_index(state.seed, payload["reason"])]["id"]
+        chosen = choices[_seeded_index(state.seed, payload["reason"], len(choices))]["id"]
     else:
-        chosen = EDICTS[0]["id"]
-    valid = {e["id"] for e in EDICTS}
-    return chosen if chosen in valid else EDICTS[0]["id"]
+        chosen = choices[0]["id"]
+    valid = {e["id"] for e in choices}
+    return chosen if chosen in valid else choices[0]["id"]
 
 
-def apply_edict(gov: Governor, brains: Dict[str, Any], edict_id: str, logger, tick: int, reason: str, player_ids: Optional[Set[str]] = None) -> None:
-    edict = next(e for e in EDICTS if e["id"] == edict_id)
-    status = gov.apply_command(edict["command"])
-    bias = gov.bias_weights()
-    for aid, brain in brains.items():
-        if player_ids is not None and aid not in player_ids:
-            continue
-        if hasattr(brain, "governor_bias"):
-            brain.governor_bias = bias
+def apply_edict(
+    gov: Governor,
+    brains: Dict[str, Any],
+    edict_id: str,
+    logger,
+    tick: int,
+    reason: str,
+    player_ids: Optional[Set[str]] = None,
+    choices: Optional[List[Dict[str, str]]] = None,
+) -> None:
+    pool = choices or EDICTS
+    edict = next((e for e in pool if e["id"] == edict_id), pool[0])
+    command = edict.get("command")
+    status = None
+    if command:
+        status = gov.apply_command(command)
+        bias = gov.bias_weights()
+        for aid, brain in brains.items():
+            if player_ids is not None and aid not in player_ids:
+                continue
+            if hasattr(brain, "governor_bias"):
+                brain.governor_bias = bias
     logger.event({
         "type": "decision_taken",
         "tick": tick,
         "reason": reason,
         "edict": edict_id,
-        "command": edict["command"],
+        "command": command,
         "status": status,
-        "state": gov.to_dict(),
+        "state": gov.to_dict() if command else None,
     })
-    logger.event({
-        "type": "governor_command",
-        "tick": tick,
-        "command": edict["command"],
-        "status": status,
-        "state": gov.to_dict(),
-        "reason": reason,
-    })
+    if command:
+        logger.event({
+            "type": "governor_command",
+            "tick": tick,
+            "command": command,
+            "status": status,
+            "state": gov.to_dict(),
+            "reason": reason,
+        })
 
 
 def maybe_decide(
@@ -190,18 +244,20 @@ def maybe_decide(
     metrics: Dict[str, Any],
     settlements: List[Dict[str, Any]],
     drought_this_tick: bool = False,
+    sm=None,
 ) -> Optional[str]:
     reason = detect_reason(state, tick, metrics, settlements, drought_this_tick)
     if reason is None:
         return None
     state.asked.add(reason)
+    choices = _choices_for(reason)
     payload = {
         "tick": tick,
         "reason": reason,
         "prompt": REASON_TEXT.get(reason, reason),
-        "choices": list(EDICTS),
+        "choices": choices,
         "settlements": [
-            {k: s.get(k) for k in ("id", "era", "population", "food_stock", "subjects", "faction")}
+            {k: s.get(k) for k in ("id", "era", "population", "food_stock", "subjects", "faction", "knowledge", "discoveries")}
             for s in settlements
         ],
     }
@@ -209,10 +265,25 @@ def maybe_decide(
         "type": "decision_offered",
         "tick": tick,
         "reason": reason,
-        "choices": [e["id"] for e in EDICTS],
+        "choices": [e["id"] for e in choices],
     })
     edict_id = pick_edict(state, payload)
-    apply_edict(gov, brains, edict_id, logger, tick, reason, player_ids=state.player_ids)
+    apply_edict(gov, brains, edict_id, logger, tick, reason, player_ids=state.player_ids, choices=choices)
+
+    # Discovery axis: set permanent mode + optional immediate claim.
+    if reason == "discovery" and sm is not None:
+        if edict_id == "bank":
+            sm.discovery_mode = "bank"
+            logger.event({"type": "discovery_mode", "tick": tick, "mode": "bank"})
+        else:
+            # farm or auto → claim from now on
+            sm.discovery_mode = "auto"
+            logger.event({"type": "discovery_mode", "tick": tick, "mode": "auto", "claim": edict_id})
+            # Force the spend that was held while pending.
+            for s in settlements:
+                if s.get("faction", "player") == "player":
+                    sm._try_discovery(s["id"], s, tick)
+
     if state.picker is None and state.policy != "human":
         print(f"  edict @ tick {tick} [{reason}] → {edict_id}")
     return edict_id
