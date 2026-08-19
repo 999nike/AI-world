@@ -30,6 +30,7 @@ def make_world(cfg: WorldConfig, rng: RNG, num_agents: int = 4, rival_agents: in
                 x=x, y=y,
                 inv_food=0, inv_wood=0, inv_stone=0,
                 faction="player",
+                role="walker",
             )
         )
     if split:
@@ -41,6 +42,7 @@ def make_world(cfg: WorldConfig, rng: RNG, num_agents: int = 4, rival_agents: in
                     y=rng.randint(6, max(6, cfg.height - 7)),
                     inv_food=0, inv_wood=0, inv_stone=0,
                     faction="rival",
+                    role="walker",
                 )
             )
 
