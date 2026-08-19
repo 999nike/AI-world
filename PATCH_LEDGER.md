@@ -19,10 +19,10 @@ This is the rollback point the owner asked to save.
 | | |
 |---|---|
 | **Name** | `v19-safe` (alias **1.9**) |
-| **Branch** | `e5-lib-global` |
+| **Branch** | `v19-safe` (also on `e5-lib-global`) |
 | **Repo** | `999nike/AI-world` |
 | **Stamp** | · v19 |
-| **Commit** | _filled after push_ |
+| **Commit** | `5ce0355b09a33f919575d8e83293cf0e331f441a` |
 | **Date** | 2026-08-19 |
 
 Do not restore older than this pin without the owner.
