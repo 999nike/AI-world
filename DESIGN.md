@@ -13,8 +13,8 @@
 
 **Research lab** underneath: fully deterministic, seed-controlled, every decision logged. Logs become the animation / god-view pipeline. Humans watch or steer; later agents learn.
 
-Feel target when a human plays:  
-“I am watching a living settlement make real choices. Bad priorities hurt. Good ones compound.”
+**Current product (2026-08-19):** watch-first. Human edicts are **hidden**, not deleted. Default web run is `playable=False`, rival on, paced god-view. Layer 2 still exists in the kernel; the UI does not ask. We are heading at the long-watch city picture (ages, event log, rates), not more buttons.
+
 
 Not pure spreadsheet. Not pure action game.  
 **Lab engine first → watchable game → optional learning agents on the same rules.**

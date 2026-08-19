@@ -1,8 +1,10 @@
 # AI-world Patch Ledger
 
-**Hand-off:** 2026-08-18 23:25 BST — Expert vs Build is the canvas
+**Hand-off:** 2026-08-19 01:15 BST — watch-first skin
 
 **If the right pane is a file tree: user is in Expert. Tell them Expert → Build. You cannot click it.**
+
+Product now: hide edicts. `play_web` Watch button, age ribbon, rates, event log, pause/speed. Kernel untouched. `playable=False`, rival on.
 
 ## Snapshot
 
