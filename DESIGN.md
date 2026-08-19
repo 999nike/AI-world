@@ -1,10 +1,8 @@
 # AI-world Design Notes (Internal)
 
 **Last updated:** 2026-08-19  
-**Content ceiling:** Era 4 + E5 science line + discoveries  
-**Look north star:** the concept painting (dense city, farms, river, people) — not a Civ 6 screenshot.
-
-Ledger owns status. This file owns vision. Memory Space owns long-term answers across chats — search it if stuck, propose into it when the north star moves.
+**Content ceiling (built):** Era 4 + science line + discoveries  
+**Content ceiling (vision):** Era 6 world city
 
 ---
 
@@ -14,65 +12,82 @@ Ledger owns status. This file owns vision. Memory Space owns long-term answers a
 
 **Civilization** for structure: ages, subjects/tech, long-horizon choices, guns-vs-butter tension.
 
+**SimCity** for the late picture: districts you can read, streets, traffic, a city that looks like a place.
+
 **Research lab** underneath: fully deterministic, seed-controlled, every decision logged. Logs become the animation / god-view pipeline. Humans watch or steer; later agents learn.
 
-**Current product (2026-08-19 v10):** watch-first documentary. Human edicts are **hidden**, not deleted. Default web run is `playable=False`, rival on, paced god-view, `soft_outcome=True` so a science hold is a headline and the year keeps climbing. Layer 2 still exists in the kernel; the UI does not ask.
-
-We are heading at the **long-watch city picture** (ages, event log, rates, a map that fills toward the painting), not more buttons.
-
+**Current product (2026-08-19):** watch-first. Two peoples (west / east). Human edicts are **hidden**, not deleted. Default web run is `playable=False`, rival on, paced god-view. We are heading at the long-watch city picture. More peoples, and memory-app agents, come **after** the island can carry a real city.
 
 Not pure spreadsheet. Not pure action game.  
-**Lab engine first → watchable game → optional learning agents on the same rules.**
+**Lab engine first → watchable city → industry → world city → optional learning agents on the same rules.**
 
 ---
 
-## Where we are (2026-08-19)
+## The route (eras)
 
-The old “not playable yet” list is done:
+Each era must **last**. It is a finished sit that *leads into* the next — not a skip. That is the upgrade / DLC workflow: ship an era as a complete picture, then unlock the next.
 
-1. Stop time at a decision — shipped (hidden)
-2. Pick one thing that hurts something else — shipped (hidden)
-3. See a rival doing the same — shipped
-4. Read the map as a place — started (v10 districts, plaza, farm rows). **Not the painting yet.**
+| Era | Name | Built? | What you should see |
+|---|---|---|---|
+| Camp | Walkers, no hearth | yes | Four hands, empty land |
+| Settlement | First hut, shared stock | yes | A hearth, a yard |
+| Town (3) | Workshop + barracks, 15 souls | yes | Streets starting, a camp |
+| City (4) | Academy + inquiry, 20 souls | yes | Districts, houses, fields, food chain |
+| Science | Library → lab → observatory | yes | Knowledge buildings, discoveries, *hold* |
+| **5 Industry** | Rail, mills, power, warehouses | **later** | **Trains.** Goods move on lines. Foundries smoke. The town is a machine. |
+| **6 World city** | Airports, highways, ports, skyline | **later** | **Planes, taxis, buses.** Real-world vision towns. A map you could mistake for a place. |
 
-Engine is roughly **80% of a Civ-shaped kernel**. Watch is roughly **30% of the painting**.  
-The remaining product is not more victory conditions. It is **volume, labour, and a late game that still changes after Observatory**.
+### What belongs in those later eras (not now)
 
-Seed 42 still tells the story: east holds science ~Year 708, west has more people, both sit in city + observatory, then thousands of years of raids and food. That late sit is the hole.
+- **Streets, bars, unis** — academy stands in for the uni until 5; market is the bar on the street
+- **Pyramids / wonders** — one fat landmark per people, era 5+
+- **Trains** — era 5 spine. Roads we paint now *become* rail
+- **Planes / airports** — era 6, sit on the rail spine
+- **Taxis, buses** — era 6 traffic, the city feels busy as fek
+- **Housing / civic / industry / green districts** — started in the city picture, finished in 5–6
+
+You do not jump to airports. Rail is the spine. Airports sit on the spine.
+
+### What comes after the city can carry this
+
+1. Memory-app agents — walkers get clever, same rules
+2. More peoples — four tribes or four houses, after two tribes look like cities
+
+Do not drop clever agents or extra players onto a camp with letters.
 
 ---
 
-## Goals
+## Goals (hand-off)
 
-### Near-term (watch)
-- City picture denser toward the painting (building volume, districts, streets)
-- Hour-scale clock you can leave running
-- After the science hold, the map must still grow
+### Near-term (city that plays like a city)
+- Districts you can read (housing / civic / industry / fields / military)
+- Food chain you can see: farm → granary → souls. Empty granary reads on the map
+- Streets as a network (they become rail in era 5)
+- Late sits that don’t silently starve and stall
 
-### Mid-term (depth on the same kernel)
-- Richer mid/late after Observatory (discoveries are the first sink — they should leave a mark)
-- Military / raid depth worth caring about over long horizons
-- Specialisation identities you can **see** (craft / organisation / strategy / inquiry)
+### Mid-term (era 5)
+- Industry: rail, mills, power
+- One wonder slot (pyramid / landmark)
+- Uni / bars as real buildings, not stand-ins
 
-### Longer vision
-- Visible haul labour (Settlers) — people and paths, not villager micro
-- Science labs → physics-style experiments / tech unlocks
-- Later-age civic density (not a Civ modern-era dump)
-- Learning agents that improve inside the same deterministic rules
-- Playable governor layer stays on the kernel — unhide only after the watch is a painting
+### Longer (era 6 + agents)
+- Airports, highways, taxis, buses
+- Learning / memory-app agents inside the same deterministic rules
+- More peoples on the same island
+- Playable governor layer (edicts still exist in the kernel)
 
 ### Non-goals (for now)
 - Perfect balance for human multiplayer
 - Replacing the utility agent with RL immediately
 - DESIGN.md as a patch checklist (ledger owns status)
 - Cloning Civ 6/7 systems (religion, tourism, great people, hex unit combat, 20 unique civs)
-- Unhiding edicts to “make it a game” while the map is still a glyph board
+- Airports before rail
 
 ---
 
 ## Intent
 
-Deterministic multi-agent civilisation lab → watchable Settlers × Civ hybrid.  
+Deterministic multi-agent civilisation lab → watchable Settlers × Civ × SimCity hybrid.  
 Logs = animation pipeline. Ages progression. Learning agents later.  
 One simulation kernel; lab and human UI are layers on top.
 
@@ -81,31 +96,15 @@ Do not micro villagers. Do not replace the kernel to “feel more like Firaxis.�
 
 ---
 
-## The painting vs the grid
-
-The concept art is the look we are walking toward: a living town, mixed roof sizes, farm animals, river, smoke, people on paths.
-
-The grid is 32×32. We will never paste that painting onto tiles. We steal:
-
-- **Volume** — many roofs, not one hut per town
-- **Edge** — farms and trees meet the city, not a hard square of yards
-- **Labour** — dots that read as people with jobs
-- **River as a place** — water already exists; boats / shore work later
-- **Two palettes that become two cultures** — west pale wood, east clay, then craft vs inquiry should split the skyline
-
-If a patch does not move the map toward that, it is not a watch patch.
-
----
-
 ## Current content shape (vision, not checklist)
 
-**Survival → specialisation → science → civic life**
+**Survival → specialisation → science → industry → world city**
 
 - Early: farms, storage, food pressure
 - Mid: workshop → barracks → civic chain → academy / subjects
 - Era 4: subject buildings (irrigation, library, foundry, hall, command)
-- E5: Lab → Observatory → discoveries (knowledge sink → permanent farm bonus)
-- **After the hold (missing):** the city keeps filling. Discoveries, foundry, hall, command, walls, roads, extra housing should read as a skyline, not a HUD chip.
+- Science: Lab → Observatory → discoveries (knowledge sink → permanent farm bonus)
+- Later: rail, wonders, airports, traffic
 
 Guns-vs-butter remains core: soldiers help raids/defend but always cost food; soft-cap vs population.
 
@@ -120,16 +119,34 @@ This project already has the spine those games sit on:
 | Civ feeling | AI-world equivalent |
 |---|---|
 | Found / grow a city | Settlements, pop, food pressure, starve |
-| Ages | Era 2 → 4 |
+| Ages | Era 2 → 4, then science; 5–6 later |
 | Tech / civics | Subjects: agriculture, craft, organisation, strategy, inquiry |
-| Districts / chains | Farm → workshop → barracks → civic → academy |
+| Districts / chains | Farm → granary → souls. Workshop → foundry. Civic square |
 | Science victory line | Library → Lab → Observatory → discoveries |
 | Guns vs butter | Soldiers cost food every tick |
 | Production | Agents + settlement stocks + build gates |
 | Replay / seed | Deterministic logs, seed-controlled runs |
-| Watch | Dual age ribbon, chronicle, rival on one map |
 
-A broken science path is not a game. Multi-seed reachability (era 4 + Library + Lab + Observatory) is the floor. That floor is shipped.
+A broken science path is not a game. Multi-seed reachability (era 4 + Library + Lab + Observatory) is the floor the playable layer stands on.
+
+We are roughly **70% of a Civ-shaped engine** and **15% of a game**.  
+The remaining game is not more buildings. It is decisions, a watchable city, one rival, and win/lose.  
+Buildings that *arrive later* (trains, planes, wonders) are eras, shipped as upgrades, each one a finished sit.
+
+---
+
+## Why it is not playable yet
+
+Right now the utility agent is the player. A human watches. Governor text (`focus food`) is a cheat code, not a turn.
+
+A human cannot yet:
+
+1. **Stop time** at a decision
+2. **Pick one thing** that hurts something else
+3. **See a rival** doing the same
+4. **Read the map** as a place, not a table
+
+The first three exist. The map now carries districts, houses, a food chain, and a chronicle in sentences. Still not a painting. Good enough to watch.
 
 ---
 
@@ -141,10 +158,8 @@ The human is the **spirit of the settlement**. Villagers keep walking. You do no
 
 You only get decisions when the world asks. Agents execute. Logs already are the animation.
 
-That is Settlers to look at, Civ to decide.  
+That is Settlers to look at, Civ to decide, SimCity to *see*.  
 Closer to Civ 7’s ages + crises than to Civ 6’s 400-click city screens. The tick engine wants **few, fat choices** — not a production queue of 40.
-
-Watch-first means: the documentary is the face. Playable is the spine underneath. Do not surface 3 buttons until the map is worth sitting with.
 
 ### Choices that map onto systems we already have
 
@@ -160,7 +175,7 @@ Every choice must be able to hurt (rule 5).
 
 Do **not** add religion, tourism, great people, diplomatic quarter, 20 unique civs, hex combat with 8 unit classes.
 
-Those games are huge because they sell 100 hours. This is a 32×32 deterministic lab. Their surface would break the kernel.
+Those games are huge because they sell 100 hours. This is a 48×48 deterministic lab. Their surface would break the kernel.
 
 Steal only this:
 
@@ -181,11 +196,11 @@ utility agents     governor choices      raids become someone    ← shipped
 logs/snapshots     watchable map         win / lose clock        ← shipped
 ```
 
-**Layer 1 — Watchable (shipped, still thin)**  
-Paced god-view: one screen, events as sentences. v10: river, forest clumps, district radius, plaza, farm rows, west/east skins. Still a board. The painting is the remaining work.
+**Layer 1 — Watchable (shipped)**  
+Paced god-view: one screen, events as sentences. Districts, food chain, chronicle. The web map is this layer.
 
-**Layer 2 — Steerable (kernel shipped, UI hidden)**  
-Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules. Stay hidden until Layer 1 looks like a city.
+**Layer 2 — Steerable (this is the game)**  
+Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules.
 
 **Layer 3 — Contested (shipped)**  
 Second civ on the same map, far side, own governor. `rival_agents=0` is the default so validate RNG is untouched. Edicts only move your people. Science gates and deposits are own-faction. When two factions exist, raids are strongest-of-one vs weakest-of-the-other — not weather.
@@ -198,46 +213,16 @@ Do not pile civic / hunger / age-up on top of this. One axis at a time.
 - **Domination:** the other civ’s pop hits 0 after both have founded
 - **Survival:** clock ends — era 4 and more people, or they outgrew you / you never reached era 4
 
-Watch uses `soft_outcome=True`: first hold is a headline, sim runs to the clock.  
-Validate stays `soft_outcome=False`. `rival_agents=0` still runs the full tick count.
+Early stop on science or wipe only when a rival is on the map.  
+`rival_agents=0` still runs the full tick count. Validate is untouched.
 
-That is a short Civ. That is enough victory. Do not add more win types to make it feel finished.
+That is a short Civ. That is enough. Do not add more buildings to make it feel finished. **Do** add later *eras* as upgrades when the city picture can carry them.
 
----
 
-## Long-term axes (propose, then one at a time)
+### First playable patch (done)
 
-Ranked by how much they move the watch toward the painting. Approve one. Do not start two.
-
-### 1. Civic volume after the hold *(highest — this is the empty late game)*
-
-After Observatory the skyline freezes. Foundry / hall / command / walls / extra huts / roads already exist in the kernel; they do not read as a city. Each discovery should leave a mark (garden, wing, tower), not only `+0.08` farm. Presentation first if the structures already spawn; kernel only if they do not.
-
-This is the ledger’s “more building volume toward the concept painting.”
-
-### 2. Hour sit
-
-Default clock long enough to leave in the corner. Named chapters (Camp → Town → City → After the hold). Soft outcome already lets Year 708 be a card, not an ending. Do not add a new victory. Just more years of the same rules, with axis 1 filling the map.
-
-### 3. Visible labour
-
-Agents as jobs: farmer, hauler, soldier. Paths from field to plaza. Smoke on workshops. No click-to-move. Settlers to look at, still Civ to decide.
-
-### 4. Two peoples, not two palettes
-
-West pale / east clay is a start. Specialisation should split the skyline: inquiry towns grow library/lab/observatory mass; strategy towns grow barracks/command/walls; craft grows foundry/workshop. Same kernel, different governor bias made visible.
-
-### 5. Raid as a war you can watch
-
-Cross-faction raids exist. They should read as a season (a year of raids in the log, a scar on a district), not a one-line “East raided s3.” Depth later; naming and map mark first.
-
-### 6. Playable face *(after the painting)*
-
-Unhide the three edicts only when sitting with the watch is already good. Do not use buttons to paper over a thin map.
-
-### 7. Learning agents *(last)*
-
-Same deterministic rules. Logs are the dataset. Do not fork the sim.
+Pause the sim → show 3 choices → apply one governor bias → resume.  
+Same seeds. Same multi-seed validate. Then it started being a game.
 
 ---
 
@@ -246,15 +231,7 @@ Same deterministic rules. Logs are the dataset. Do not fork the sim.
 `--play` auto-steps snapshots with key event callouts.  
 Icons: C academy | # walls | ~ irrigation | L library | Y foundry | O hall | X command | R lab | V observatory
 
-Web Watch is the god-view people actually see.
-
----
-
-## Memory Space
-
-Long-term answers live there across chats (product, contracts, next axis). If a new chat is stuck, search Memory Space before inventing a second product. Propose new north-star items there as well as here.
-
-If Memory Space is not shared with the agent, DESIGN.md + PATCH_LEDGER.md + CANVAS.md are the fallback.
+God-view is the watchable layer. It is not the playable layer until it can pause and accept a choice.
 
 ---
 
@@ -268,4 +245,49 @@ If Memory Space is not shared with the agent, DESIGN.md + PATCH_LEDGER.md + CANV
 6. Ledger = status; DESIGN = vision  
 7. Utility agent stays the hands; human is the brain  
 8. Playable layer sits on the kernel — do not fork the sim to make a game  
-9. Watch patches must move the map toward the painting, or they are not watch patches  
+9. Each era is a finished sit that leads into the next (DLC / upgrade workflow)  
+10. Rail before airports. City before clever agents. Two tribes before more peoples.  
+11. Four walkers cannot run a world city. Hands grow. One walker is knighted, then crowned. Paint is not rank.
+
+---
+
+## Locked plan (2026-08-19) — do not invent a different one
+
+**Confirmed with the owner. This is the spine. Next chat starts here.**
+
+Four bots cannot run a major city, trains, or an airport. Today the eight walkers are the only bodies. Souls and soldiers are numbers painted as houses and tents. A sim that wants to feel like the age it’s in must grow **hands**, not just the score.
+
+### For now (gameplay solid)
+
+- **Two tribes only.** East vs west. Same 48×48 island.
+- Start **4 walkers a side.** They are labour, not kings.
+- The **people** still age: camp → settlement → town → city → science.
+- The **walkers evolve** on that same path:
+  - Settlement — they **breed**. Extra villagers appear as souls grow. Hands are no longer stuck at 4.
+  - Town — one walker can be raised to **knight** (raids, guard). The others stay labour.
+  - City — that knight (or one child) can be raised to **king**. **Government** starts (hall, one crown).
+  - Science — specialists (scribe, builder). Same people, new jobs.
+- Grow toward **8–10 hands a side by city.** Not 4 dots on a carpet.
+- v17 gold/silver “kings” are **paint only**. Undo that lie when rank is real. One crown a side, when earned.
+
+### Later (not this next patch)
+
+- Start **10 a side** if the island can carry it.
+- **North / south** as the other two poles — four peoples, four corners — only after two tribes feel true.
+- **Era 5 Industry** — trains, rail crews, mills. Many hands.
+- **Era 6 World city** — airports, taxis, buses. Crowds. You will *see* a station crew.
+- Memory-app agents (smarter walkers, same rules) after the city can carry this.
+- Playable governor / edicts still exist in the kernel; UI stays watch-first until we open them.
+
+### What this is not
+
+- Not 2×2 fake kings + villagers (v17 paint).
+- Not four kingdoms yet.
+- Not 4 walkers forever.
+- Not airports before rail. Not clever agents before hands.
+
+### Next patch (when a new chat picks it up)
+
+**Hands grow with the town, and one walker can be knighted.**  
+One axis. Determinism sacred. Re-check seed 42 (east science Year 358) if the kernel walker count or roles change.
+

@@ -19,8 +19,8 @@ def make_world(cfg: WorldConfig, rng: RNG, num_agents: int = 4, rival_agents: in
     split = int(rival_agents) > 0
     for i in range(n):
         if split:
-            x = rng.randint(1, 10)
-            y = rng.randint(4, max(4, cfg.height - 5))
+            x = rng.randint(6, 16)
+            y = rng.randint(6, max(6, cfg.height - 7))
         else:
             x = rng.randint(0, cfg.width - 1)
             y = rng.randint(0, cfg.height - 1)
@@ -37,8 +37,8 @@ def make_world(cfg: WorldConfig, rng: RNG, num_agents: int = 4, rival_agents: in
             agents.append(
                 AgentState(
                     agent_id=f"R{i}",
-                    x=rng.randint(cfg.width - 11, cfg.width - 2),
-                    y=rng.randint(4, max(4, cfg.height - 5)),
+                    x=rng.randint(cfg.width - 17, cfg.width - 7),
+                    y=rng.randint(6, max(6, cfg.height - 7)),
                     inv_food=0, inv_wood=0, inv_stone=0,
                     faction="rival",
                 )

@@ -134,7 +134,6 @@ class Game:
             if gen != self.generation:
                 return
             summary = None
-            # simloop writes runs/<id> relative to process cwd — check both
             candidates = [
                 ROOT / "runs" / str(rid) / "summary.json",
                 Path.cwd() / "runs" / str(rid) / "summary.json",
@@ -153,10 +152,8 @@ class Game:
                 world["tick"] = (summary.get("final") or {}).get(
                     "tick", summary.get("ticks_ran") or summary.get("ticks")
                 )
-            # keep last live world if summary final is thin
             live = self.state.get("world")
             if isinstance(live, dict) and live.get("structures"):
-                # keep last tagged snapshot so east/west skins survive the summary write
                 if world:
                     live = dict(live)
                     live["metrics"] = world.get("metrics") or live.get("metrics")

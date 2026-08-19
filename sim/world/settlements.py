@@ -65,6 +65,8 @@ SETTLEMENT_RULES = {
     # E5.2 post-Observatory knowledge sink
     "discovery_cost": 40,
     "discovery_farm_bonus": 0.08,
+    "city_food_floor": 1.0,
+    "city_food_hold_days": 3.0,
     "discovery_max": 8,
 }
 
@@ -353,6 +355,13 @@ class SettlementManager:
                 recruit_scale = 0.15
             elif soldiers_now >= soft_cap * 0.7:
                 recruit_scale = 0.4
+            city = era >= 4 or has_observatory
+            soldier_eat = float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
+            if city:
+                people_need = pop_before * cons
+                hold_days = float(SETTLEMENT_RULES.get("city_food_hold_days", 3.0))
+                if stock_at_start <= people_need * hold_days + buffer_food:
+                    recruit_scale = 0.0
 
             if has_barracks:
                 barracks_soldiers = float(SETTLEMENT_RULES.get("barracks_soldiers_per_tick", 0.15)) * recruit_scale
@@ -380,6 +389,17 @@ class SettlementManager:
                 hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.20))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + hf
                 self.metrics["hall_food_total"] = self.metrics.get("hall_food_total", 0) + hf
+            used_floor = False
+            if city and farms > 0:
+                people_need = pop_before * cons
+                have = float(s.get("food_stock", 0) or 0)
+                hold_days = float(SETTLEMENT_RULES.get("city_food_hold_days", 3.0))
+                target = people_need * (float(SETTLEMENT_RULES.get("city_food_floor", 1.0)) + hold_days)
+                if have < target:
+                    extra = target - have
+                    s["food_stock"] = target
+                    used_floor = True
+                    self.metrics["city_floor_food_total"] = self.metrics.get("city_floor_food_total", 0.0) + extra
 
             k_add = 0.0
             if has_academy:
@@ -402,6 +422,31 @@ class SettlementManager:
             soldiers_now = float(s.get("soldiers", 0.0))
             soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
             need = pop_before * cons + soldier_upkeep
+            if city and soldiers_now > 0:
+                people_need = pop_before * cons
+                eat = float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
+                keep = people_need * 2.0
+                room = max(0.0, post_harvest - keep)
+                max_soldiers = room / eat if eat > 0 else soldiers_now
+                if soldiers_now > max_soldiers:
+                    cut = soldiers_now - max_soldiers
+                    s["soldiers"] = max(0.0, max_soldiers)
+                    soldiers_now = float(s["soldiers"])
+                    soldier_upkeep = soldiers_now * eat
+                    need = pop_before * cons + soldier_upkeep
+                    self.metrics["stand_down_events"] = self.metrics.get("stand_down_events", 0) + 1
+                    self.metrics["stand_down_cut_total"] = self.metrics.get("stand_down_cut_total", 0.0) + cut
+                    if cut >= 1.0:
+                        self.metrics["last_stand_down"] = {
+                            "tick": tick, "settlement_id": sid,
+                            "faction": s.get("faction", "player"),
+                            "cut": cut, "soldiers_after": soldiers_now,
+                        }
+                        self.logger.event({
+                            "type": "stand_down", "tick": tick, "settlement_id": sid,
+                            "faction": s.get("faction", "player"),
+                            "cut": cut, "soldiers_after": soldiers_now,
+                        })
             starve_needed = granary_starve if has_granary else starve_needed_default
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
             if "organisation" in subjects:
@@ -419,7 +464,7 @@ class SettlementManager:
             elif post_harvest >= need:
                 s["food_stock"] = post_harvest - need
                 s["starve_ticks"] = 0
-                if float(s["food_stock"]) >= (need + buffer_food):
+                if (not used_floor) and float(s["food_stock"]) >= (need + buffer_food):
                     s["surplus_ticks"] = int(s.get("surplus_ticks", 0)) + 1
                     if int(s["surplus_ticks"]) >= local_surplus_needed:
                         s["population"] = pop_before + min(max_growth, 1)
