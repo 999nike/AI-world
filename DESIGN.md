@@ -286,8 +286,24 @@ Four bots cannot run a major city, trains, or an airport. Today the eight walker
 - Not 4 walkers forever.
 - Not airports before rail. Not clever agents before hands.
 
+### Shipped v18 — hands + knight
+
+Hands breed with population (cap 10). One knight a side at town + barracks. Fake king paint removed.
+
+### Shipped v19 — king + hall government
+
+City era crowns one king a side (the knight if they exist). Capital tagged government. Hall is the seat when it rises. Event log is wired to last_breed / last_knight / last_king.
+
+### Safe pin (do not lose this)
+
+**Name:** `v19-safe` · alias **1.9**  
+**Repo:** `999nike/AI-world` · branch `e5-lib-global`  
+**Commit:** see PATCH_LEDGER.md  
+**Date:** 2026-08-19  
+
+Next chat: restore this pin if the canvas dies. Stamp must show · v19.
+
 ### Next patch (when a new chat picks it up)
 
-**Hands grow with the town, and one walker can be knighted.**  
-One axis. Determinism sacred. Re-check seed 42 (east science Year 358) if the kernel walker count or roles change.
-
+**Science: specialists (scribe, builder). Same people, new jobs.**  
+One axis. Determinism sacred. Re-check seed 42 after role changes.
