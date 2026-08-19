@@ -21,7 +21,7 @@ class AgentState:
     inv_wood: int = 0
     inv_stone: int = 0
     faction: str = "player"
-    role: str = "walker"  # walker | knight | king (king not used yet)
+    role: str = "walker"  # walker | knight | king
 
     def inv_dict(self) -> Dict[str, int]:
         return {"food": self.inv_food, "wood": self.inv_wood, "stone": self.inv_stone}
