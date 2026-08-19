@@ -59,6 +59,7 @@ def run_sim(
     playable: bool = False, choice_policy: str = "first", decision_picker=None,
     on_tick=None, on_tick_every: int = 4,
     rival_agents: int = 0,
+    soft_outcome: bool = False,
 ):
     scenario = Scenario()
     if scenario_commands:
@@ -136,6 +137,7 @@ def run_sim(
     drought_active = False
     play_state = None
     outcome = None
+    headline = None
     founded: set = set()
     if playable:
         from sim.core.playable import PlayableState
@@ -395,22 +397,30 @@ def run_sim(
         sm.active_faction = None
         sm.tick(world, tick=t)
 
-        if rival_agents:
+        if rival_agents and headline is None:
             from sim.core.outcome import detect_early, side_from_world
             for s in sm.all():
                 founded.add(s.get("faction", "player"))
-            outcome = detect_early(
+            early = detect_early(
                 t, side_from_world(sm, world, "player"),
                 side_from_world(sm, world, "rival"), founded,
             )
+            if early:
+                headline = early
+                logger.event(headline)
+                if not soft_outcome:
+                    outcome = early
 
         emit_view = on_tick is not None and (
-            outcome or t % max(1, int(on_tick_every)) == 0 or t == ticks - 1
+            outcome is not None or
+            t % max(1, int(on_tick_every)) == 0 or t == ticks - 1
         )
         if emit_view:
             snap = world.to_dict_summary()
             snap["settlements"] = sm.all()
             snap["metrics"] = dict(metrics)
+            if headline:
+                snap["outcome"] = headline
             tagged = []
             for st3 in snap.get("structures") or []:
                 sid = sm.structure_settlement_id(st3["x"], st3["y"])
@@ -420,7 +430,6 @@ def run_sim(
             on_tick(snap)
 
         if outcome:
-            logger.event(outcome)
             break
 
         if play_state is not None:
@@ -442,14 +451,15 @@ def run_sim(
             logger.snapshot({"type": "snapshot", **snap})
             logger.event({"type": "snapshot_saved", "tick": t})
 
-    if rival_agents and outcome is None:
+    if rival_agents and headline is None:
         from sim.core.outcome import detect_survival, side_from_world
         last_t = world.tick if ticks else 0
-        outcome = detect_survival(
+        headline = detect_survival(
             last_t, side_from_world(sm, world, "player"),
             side_from_world(sm, world, "rival"),
         )
-        logger.event(outcome)
+        logger.event(headline)
+    outcome = headline
 
     final = world.to_dict_summary()
     final["settlements"] = sm.all()

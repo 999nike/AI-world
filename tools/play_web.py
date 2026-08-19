@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 import threading
@@ -23,7 +24,8 @@ if str(ROOT) not in sys.path:
 from sim.core.simloop import run_sim  # noqa: E402
 
 HTML_PATH = Path(__file__).with_name("play_ui.html")
-HTML = HTML_PATH.read_text(encoding="utf-8")
+def load_html() -> str:
+    return HTML_PATH.read_text(encoding="utf-8")
 
 
 DELAY = {0: 0.0, 1: 0.12, 2: 0.05, 4: 0.02}
@@ -101,12 +103,15 @@ class Game:
                 raise Cancelled()
             with self.lock:
                 self.state["world"] = snap
+                if snap.get("outcome") and not self.state.get("outcome"):
+                    self.state["outcome"] = snap["outcome"]
                 if self.state.get("status") != "decision":
                     self.state["status"] = "running"
             pace()
 
         def run():
             try:
+                os.chdir(ROOT)
                 score, rid = run_sim(
                     seed=int(seed),
                     ticks=int(ticks),
@@ -117,6 +122,7 @@ class Game:
                     on_tick=on_tick,
                     on_tick_every=4,
                     rival_agents=4,
+                    soft_outcome=True,
                 )
             except Cancelled:
                 return
@@ -128,20 +134,41 @@ class Game:
             if gen != self.generation:
                 return
             summary = None
-            path = ROOT / "runs" / str(rid) / "summary.json"
-            if path.exists():
-                summary = json.loads(path.read_text(encoding="utf-8"))
+            # simloop writes runs/<id> relative to process cwd — check both
+            candidates = [
+                ROOT / "runs" / str(rid) / "summary.json",
+                Path.cwd() / "runs" / str(rid) / "summary.json",
+                Path("runs") / str(rid) / "summary.json",
+            ]
+            for path in candidates:
+                if path.exists():
+                    summary = json.loads(path.read_text(encoding="utf-8"))
+                    break
             world = None
+            outcome = (summary or {}).get("outcome") if summary else None
+            print(f"[play_web] rid={rid} summary={bool(summary)} outcome={outcome}", flush=True)
             if summary:
                 world = summary.get("final") or {}
                 world["metrics"] = summary.get("metrics") or {}
                 world["tick"] = (summary.get("final") or {}).get(
                     "tick", summary.get("ticks_ran") or summary.get("ticks")
                 )
+            # keep last live world if summary final is thin
+            live = self.state.get("world")
+            if isinstance(live, dict) and live.get("structures"):
+                # keep last tagged snapshot so east/west skins survive the summary write
+                if world:
+                    live = dict(live)
+                    live["metrics"] = world.get("metrics") or live.get("metrics")
+                    if world.get("tick") is not None:
+                        live["tick"] = world.get("tick")
+                    if world.get("settlements"):
+                        live["settlements"] = world["settlements"]
+                world = live
             self._set(
                 status="done", score=score, run_id=rid, decision=None,
-                world=world or self.state.get("world"),
-                outcome=(summary or {}).get("outcome"),
+                world=world,
+                outcome=outcome,
             )
 
         self.thread = threading.Thread(target=run, daemon=True)
@@ -192,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         if path in ("/", "/index.html"):
-            self._html(HTML)
+            self._html(load_html())
             return
         if path == "/api/state":
             self._json(GAME.snapshot())
