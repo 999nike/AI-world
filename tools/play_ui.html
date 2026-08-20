@@ -10,7 +10,7 @@
   --fg:#e7eef6; --fg-muted:#8b9aab; --fg-subtle:#5d6b7a;
   --border: color-mix(in oklab, var(--fg) 10%, transparent);
   --accent:#c9d4e0; --accent-fg:#0b1016; --ok:#6fbf8a; --danger:#c45b55;
-  --you:#d8d2c6; --them:#c47a62;
+  --you:#d8d2c6; --them:#c47a62; --north:#7aa0c0; --south:#7a9a62;
   --font-display:"Iowan Old Style", Palatino, Georgia, serif;
   --font-body:"Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, Menlo, Consolas, monospace;
@@ -42,24 +42,32 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .stat em.down{color:var(--danger)}
 .stat.west{box-shadow:inset 3px 0 0 var(--you)}
 .stat.east{box-shadow:inset 3px 0 0 var(--them)}
+.stat.north{box-shadow:inset 3px 0 0 var(--north)}
+.stat.south{box-shadow:inset 3px 0 0 var(--south)}
 .ages-block{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .ages-row{display:flex;align-items:center;gap:8px}
-.ages-row .who{flex:0 0 44px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.ages-row .who{flex:0 0 52px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
 .ages-row.west .who{color:var(--you)}
 .ages-row.east .who{color:var(--them)}
+.ages-row.north .who{color:var(--north)}
+.ages-row.south .who{color:var(--south)}
 .ages{display:flex;flex:1;overflow-x:auto;background:var(--bg-elevated);border:1px solid var(--border);border-radius:99px;padding:4px}
 .age{flex:1;text-align:center;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-subtle);padding:5px 6px;white-space:nowrap;border-radius:99px}
 .age.on{color:var(--fg);background:var(--bg-subtle)}
 .age.now.west{color:#1a1814;background:var(--you);font-weight:700}
 .age.now.east{color:#1c100e;background:var(--them);font-weight:700}
+.age.now.north{color:#101820;background:var(--north);font-weight:700}
+.age.now.south{color:#12180e;background:var(--south);font-weight:700}
 .race{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
 .lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .lane .pair{display:flex;justify-content:space-between;gap:8px;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-subtle);margin-bottom:6px}
 .lane .pair b{color:var(--fg);font-weight:600;letter-spacing:0;text-transform:none;font-size:.78rem}
-.dual{display:flex;height:7px;border-radius:99px;overflow:hidden;background:#080c11;gap:2px}
-.dual i{display:block;height:100%}
+.dual{display:flex;flex-direction:column;gap:2px;border-radius:6px;overflow:hidden;background:#080c11;padding:3px}
+.dual i{display:block;height:4px;border-radius:99px;min-width:0}
 .dual i.w{background:var(--you)}
 .dual i.e{background:var(--them)}
+.dual i.n{background:var(--north)}
+.dual i.s{background:var(--south)}
 .stage{display:grid;grid-template-columns:240px 1fr 280px;gap:12px}
 .panel{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:0}
 .kicker{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-subtle);font-weight:600;margin-bottom:8px}
@@ -83,20 +91,34 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .cell.rock{background:#3a423c}
 .cell.yard.west{background:#5a4e3a}
 .cell.yard.east{background:#5a3e36}
+.cell.yard.north{background:#3e4e5a}
+.cell.yard.south{background:#3e5a3a}
 .cell.plaza.west{background:#8a7860}
 .cell.plaza.east{background:#8a5a4c}
+.cell.plaza.north{background:#6a7a8a}
+.cell.plaza.south{background:#6a8a60}
 .cell.field.west{background:#4a7a38}
 .cell.field.east{background:#6a6a34}
+.cell.field.north{background:#3a6a58}
+.cell.field.south{background:#4a7a40}
 .cell.crop-a{background:#5a8a3c}
 .cell.crop-b{background:#3d6a30}
 .cell.path{background:#5a4a34}
 .cell.street{background:#3a342c}
 .cell.haul{background:#8a7a40}
+.cell.rail,.cell.street.rail,.cell.road.rail,.cell.path.rail,.cell.haul.rail{
+  background:repeating-linear-gradient(90deg,#2a2824 0 3px,#8a8a94 3px 5px,#2a2824 5px 8px);
+  box-shadow:inset 0 0 0 1px #1a1814;
+}
 .cell.civic{background:#4a5060}
 .cell.civic.east{background:#5a4048}
+.cell.civic.north{background:#3a5060}
+.cell.civic.south{background:#3a5040}
 .cell.works{background:#4a3c30}
 .cell.house.west{background:#c4a06a}
 .cell.house.east{background:#b47858}
+.cell.house.north{background:#8aa4b8}
+.cell.house.south{background:#8ab06a}
 .cell.house.fed{box-shadow:inset 0 -2px 0 #c4b060}
 .cell.house.hungry{filter:saturate(.45) brightness(.72)}
 .cell.granary{background:#6a5430}
@@ -115,6 +137,18 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
   color:transparent;
   box-shadow:0 0 0 2px #2e3840, 0 0 10px #c8d2dc;
 }
+.cell.knight.west{
+  background:#d4b060;
+  border-radius:3px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #6a5010, 0 0 6px #c4a040;
+}
+.cell.knight.east{
+  background:#9aa4ae;
+  border-radius:3px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a4450, 0 0 6px #b0bac4;
+}
 .cell.vil.west{
   background:#c4b090;
   border-radius:50%;
@@ -127,22 +161,209 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
   color:transparent;
   box-shadow:inset 0 0 0 2px #4a302c;
 }
+.cell.scribe.west{
+  background:radial-gradient(circle at 30% 25%, #f7f1e2, #d4c4a0 58%, #7a6848);
+  border-radius:2px 9px 2px 9px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #5a4a30, 0 0 6px #c8b890;
+}
+.cell.scribe.east{
+  background:radial-gradient(circle at 30% 25%, #eef3f8, #a8b6c2 58%, #3e4c56);
+  border-radius:2px 9px 2px 9px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2e3a42, 0 0 6px #b0bec8;
+}
+.cell.builder.west{
+  background:#b08650;
+  border-radius:2px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #5a3c18, 0 2px 0 #6a4a20;
+}
+.cell.builder.east{
+  background:#8a6458;
+  border-radius:2px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a241c, 0 2px 0 #4a3028;
+}
+.cell.king.north{
+  background:radial-gradient(circle at 35% 30%, #e8f2fa, #7aa0c0 55%, #2a4050);
+  border-radius:50%;
+  color:transparent;
+  box-shadow:0 0 0 2px #1e303c, 0 0 10px #8ab4d0;
+}
+.cell.king.south{
+  background:radial-gradient(circle at 35% 30%, #e8f4d8, #7a9a62 55%, #2a4018);
+  border-radius:50%;
+  color:transparent;
+  box-shadow:0 0 0 2px #243818, 0 0 10px #8ab060;
+}
+.cell.knight.north{
+  background:#7a98ac;
+  border-radius:3px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2a4050, 0 0 6px #8ab0c4;
+}
+.cell.knight.south{
+  background:#7a9a58;
+  border-radius:3px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a5020, 0 0 6px #8ab060;
+}
+.cell.vil.north{
+  background:#8aa0b0;
+  border-radius:50%;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a4c58;
+}
+.cell.vil.south{
+  background:#8aa072;
+  border-radius:50%;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a4c28;
+}
+.cell.scribe.north{
+  background:radial-gradient(circle at 30% 25%, #eef4f8, #a0b8c8 58%, #3a5060);
+  border-radius:2px 9px 2px 9px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2e4048, 0 0 6px #b0c8d4;
+}
+.cell.scribe.south{
+  background:radial-gradient(circle at 30% 25%, #eef6e4, #a8c090 58%, #3a5028);
+  border-radius:2px 9px 2px 9px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2e4020, 0 0 6px #b0c898;
+}
+.cell.builder.north{
+  background:#6a8494;
+  border-radius:2px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2a3840, 0 2px 0 #3a4850;
+}
+.cell.builder.south{
+  background:#6a8450;
+  border-radius:2px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2a3818, 0 2px 0 #3a4820;
+}
+.cell.crew.west{
+  background:#6a6258;
+  border-radius:1px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a342c, 0 0 5px #8a8070;
+}
+.cell.crew.east{
+  background:#6a524c;
+  border-radius:1px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #3a2c28, 0 0 5px #8a7068;
+}
+.cell.crew.north{
+  background:#4a5a66;
+  border-radius:1px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2a3840, 0 0 5px #708898;
+}
+.cell.crew.south{
+  background:#4a5a38;
+  border-radius:1px;
+  color:transparent;
+  box-shadow:inset 0 0 0 2px #2a3818, 0 0 5px #708850;
+}
+.cell.train{
+  background:linear-gradient(90deg,#3a3a42,#c4c4cc 40%,#2a2a30);
+  border-radius:3px;
+  color:#1a1814;
+  font-weight:700;
+  box-shadow:0 0 0 1px #111, 0 0 8px #c8c0a0;
+}
+.cell.train.west{box-shadow:0 0 0 1px #5a4008, 0 0 8px #e8c040}
+.cell.train.east{box-shadow:0 0 0 1px #5a3028, 0 0 8px #c47a62}
+.cell.train.north{box-shadow:0 0 0 1px #2a4050, 0 0 8px #7aa0c0}
+.cell.train.south{box-shadow:0 0 0 1px #2a4018, 0 0 8px #7a9a62}
+.cell.mill{background:#5a4a38}
+.cell.mill.west{background:#6a5a40}
+.cell.mill.east{background:#6a4a38}
+.cell.mill.north{background:#4a5a60}
+.cell.mill.south{background:#4a5a38}
+.cell.mill.live{box-shadow:0 0 10px #c8a050, inset 0 0 0 1px #e8d080}
+.cell.mill.dry{filter:saturate(.4) brightness(.7)}
+.cell.warehouse{background:#4a4034}
+.cell.warehouse.west{background:#5a4a30}
+.cell.warehouse.east{background:#5a3a30}
+.cell.warehouse.north{background:#3a4a50}
+.cell.warehouse.south{background:#3a4a28}
+.cell.wonder{
+  background:linear-gradient(180deg,#e8d090,#8a7030);
+  color:#2a2008;
+  font-weight:800;
+  box-shadow:0 0 0 1px #5a4010, 0 0 12px #d4b060;
+}
+.cell.wonder.west{background:linear-gradient(180deg,#f0d878,#8a6810)}
+.cell.wonder.east{background:linear-gradient(180deg,#e0b0a0,#8a5040)}
+.cell.wonder.north{background:linear-gradient(180deg,#c0d0e0,#4a6070)}
+.cell.wonder.south{background:linear-gradient(180deg,#c8d090,#4a6030)}
+.cell.airport{background:#3a3a42;color:#d8d8e0;font-weight:700}
+.cell.airport.west{background:#4a4030}
+.cell.airport.east{background:#4a3030}
+.cell.airport.north{background:#303848}
+.cell.airport.south{background:#304030}
+.cell.runway{
+  background:repeating-linear-gradient(90deg,#2a2a30 0 6px,#d8d8c8 6px 8px,#2a2a30 8px 14px);
+}
+.cell.plane{
+  background:#e8e8f0;
+  color:#101018;
+  font-weight:800;
+  border-radius:6px 2px 6px 2px;
+  box-shadow:0 0 8px #c0c8d8;
+}
+.cell.plane.west{box-shadow:0 0 8px #e8c040}
+.cell.plane.east{box-shadow:0 0 8px #c47a62}
+.cell.plane.north{box-shadow:0 0 8px #7aa0c0}
+.cell.plane.south{box-shadow:0 0 8px #7a9a62}
+.cell.taxi{
+  background:#d8b020;
+  color:#201800;
+  font-weight:800;
+  border-radius:2px;
+  box-shadow:0 0 4px #e8c040;
+}
+.cell.bus{
+  background:#2a3850;
+  color:#d8e0ec;
+  font-weight:800;
+  border-radius:2px;
+  box-shadow:0 0 0 1px #101820;
+}
+.cell.race{
+  background:linear-gradient(90deg,#1a3040,#3a7088 50%,#1a3040);
+  box-shadow:inset 0 0 0 1px #0a1820;
+}
 .cell.settlement{background:#d4c4a4;color:#2a2418;font-weight:700}
+.cell.settlement.east,.cell.settlement.rival{background:#c4a090;color:#2a1814}
+.cell.settlement.north{background:#a0b8c8;color:#141c24}
+.cell.settlement.south{background:#a8c490;color:#182414}
 .cell.farm{background:#4d7a40}
 .cell.storage{background:#5c4638}
 .cell.hut{background:#8a6844}
 .cell.hut.west{background:#c49a62}
 .cell.hut.east{background:#b07050}
+.cell.hut.north{background:#7090a8}
+.cell.hut.south{background:#709858}
 .cell.house.west{background:#c4a06a}
 .cell.house.east{background:#b47858}
 .cell.camp.west{background:#7a7058}
 .cell.camp.east{background:#7a5048}
+.cell.camp.north{background:#5a6e7a}
+.cell.camp.south{background:#5a6e48}
 .cell.granary{background:#6a5430}
 .cell.mine{background:#4a4a4a}
 .cell.road{background:#3a342c}
 .cell.workshop{background:#5e4232}
 .cell.workshop.west{background:#6e5238}
 .cell.workshop.east{background:#6e4234}
+.cell.workshop.north{background:#4e5e68}
+.cell.workshop.south{background:#4e6e44}
 .cell.barracks{background:#6e3c36}
 .cell.market{background:#4a4e3c}
 .cell.temple{background:#3e4250}
@@ -156,13 +377,20 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .cell.lab{background:#3a6080}
 .cell.observatory{background:#2a4060}
 .cell.rival{box-shadow:inset 0 0 0 1px #a85a48}
-#map.age-town .cell,#map.age-city .cell,#map.age-science .cell{width:20px;height:20px;font-size:9px}
+.cell.north{box-shadow:inset 0 0 0 1px #5a7a90}
+.cell.south{box-shadow:inset 0 0 0 1px #5a7a48}
+#map.age-town .cell,#map.age-city .cell,#map.age-science .cell,#map.age-industry .cell,#map.age-world .cell{width:20px;height:20px;font-size:9px}
 #map.age-town .cell.grass,#map.age-town .cell.grass-d,#map.age-town .cell.meadow{filter:saturate(1.15)}
 #map.age-city .cell.yard.west{background:#4a4e58}
 #map.age-city .cell.yard.east{background:#5a4044}
+#map.age-city .cell.yard.north{background:#3a4a58}
+#map.age-city .cell.yard.south{background:#3a4a38}
 #map.age-city .cell.grass{background:#2a4a38}
 #map.age-science .cell.library,#map.age-science .cell.lab,#map.age-science .cell.observatory{box-shadow:0 0 7px color-mix(in oklab,#6ab0d0 40%,transparent)}
 #map.age-science .cell.water{background:#163848}
+#map.age-industry .cell.rail,#map.age-industry .cell.street.rail{box-shadow:inset 0 0 0 1px #1a1814,0 0 5px color-mix(in oklab,#c4b080 25%,transparent)}
+#map.age-industry .cell.mill,#map.age-industry .cell.foundry{box-shadow:0 0 8px color-mix(in oklab,#c08040 45%,transparent)}
+.city{max-height:min(72vh,640px);overflow:auto}
 .city h2{font-family:var(--font-display);font-size:1.15rem;margin:0 0 4px}
 .city .lead{color:var(--fg-muted);margin:0 0 8px;font-size:.88rem}
 .city .folk{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border)}
@@ -172,6 +400,8 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .bar.low>i{background:var(--danger)}
 .bar.east>i{background:var(--them)}
 .bar.west>i{background:var(--you)}
+.bar.north>i{background:var(--north)}
+.bar.south>i{background:var(--south)}
 .meter{margin:8px 0}
 .meter label{display:flex;justify-content:space-between;font-size:.75rem;color:var(--fg-muted)}
 .meter .bar{margin:4px 0 0}
@@ -215,7 +445,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Two peoples. Same map. · v17</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v29</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -238,7 +468,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v17</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v29</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap" id="mapWrap">
         <div class="map-zoom">
@@ -249,17 +479,17 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><div id="map"></div></div>
       </div>
-      <div class="legend">2 gold kings + 2 pale villagers west · 2 silver kings + 2 clay villagers east · houses are the people · L library · R lab · V observatory</div>
+      <div class="legend">Four poles · world city · taxis on the square · buses hall ↔ warehouse ↔ field · ^ plane · B bus · c cab</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let timer=null,lastRaidTick=-1,lastDownTick=-1,lastTick=-1,lastOutcomeTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1;
-const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"C",walls:"#",temple:"T"};
-const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"]];
-const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city"};
+let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1;
+const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"C",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F"};
+const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"],["era5","Industry"],["era6","World"]];
+const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city",5:"industry",6:"world"};
 function esc(s){
   return String(s==null?"":s).replace(/[&<>"']/g,function(c){
     if(c==="&") return "&"+"amp;";
@@ -282,7 +512,10 @@ function logLine(tick,t){
   d.appendChild(document.createTextNode(t));
   $("log").prepend(d);
 }
-function splitTowns(world){const towns=(world&&world.settlements)||[];return{you:towns.filter(s=>(s.faction||"player")==="player"),them:towns.filter(s=>s.faction==="rival")};}
+const POLES=[["player","west","West"],["rival","east","East"],["north","north","North"],["south","south","South"]];
+function whoOf(f){const row=POLES.find(p=>p[0]===f);return row?row[2]:"West";}
+function townsOf(world,fac){return ((world&&world.settlements)||[]).filter(s=>(s.faction||"player")===fac);}
+function splitTowns(world){return{you:townsOf(world,"player"),them:townsOf(world,"rival")};}
 function foodDays(s){const need=Number(s.population||0)*0.22+Number(s.soldiers||0)*0.03;if(need<=0)return null;return Number(s.food_stock||0)/need;}
 function capital(towns){if(!towns.length)return null;return towns.slice().sort((a,b)=>Number(b.population||0)-Number(a.population||0))[0];}
 function ownStructs(world,fac){return ((world&&world.structures)||[]).filter(s=>factionOf(world,s)===fac);}
@@ -298,65 +531,115 @@ function factionOf(world,st){
   }
   return (best&&best.faction)||"player";
 }
-function facName(f){return f==="rival"?"east":"west";}
+function facName(f){const row=POLES.find(p=>p[0]===f);return row?row[1]:"west";}
 function sciBits(world,fac){
   const st=ownStructs(world,fac);
   const has=t=>st.some(s=>s.type===t);
-  const towns=fac==="player"?splitTowns(world).you:splitTowns(world).them;
+  const towns=townsOf(world,fac);
   const disc=sum(towns,"discoveries");
-  return {lib:has("library"),lab:has("lab"),obs:has("observatory"),disc,steps:(has("library")?1:0)+(has("lab")?1:0)+(has("observatory")?1:0)+disc};
+  const path=(has("library")?1:0)+(has("lab")?1:0)+(has("observatory")?1:0)+Math.min(2,disc);
+  return {lib:has("library"),lab:has("lab"),obs:has("observatory"),disc,steps:path};
 }
 function ageState(world,fac){
-  const towns=fac==="player"?splitTowns(world).you:splitTowns(world).them;
+  const towns=townsOf(world,fac);
   const sci=sciBits(world,fac);
   const era=towns.reduce((a,s)=>Math.max(a,Number(s.era||2)),0);
-  const on={camp:true,era2:towns.length>0,era3:era>=3,era4:era>=4,library:sci.lib,lab:sci.lab,observatory:sci.obs};
+  const on={camp:true,era2:towns.length>0,era3:era>=3,era4:era>=4,library:sci.lib,lab:sci.lab,observatory:sci.obs,era5:era>=5,era6:era>=6};
   let now="camp";for(const [id] of AGES) if(on[id]) now=id;
-  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),cap:capital(towns)};
+  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder")};
 }
-function sidesOf(world){return {west:ageState(world||{},"player"),east:ageState(world||{},"rival")};}
+function ranksOf(world,fac){
+  const hands=((world&&world.agents)||[]).filter(a=>(a.faction||"player")===fac);
+  const king=hands.find(a=>(a.role||"walker")==="king");
+  const knight=hands.find(a=>(a.role||"walker")==="knight");
+  const scribe=hands.find(a=>(a.role||"walker")==="scribe");
+  const builder=hands.find(a=>(a.role||"walker")==="builder");
+  const crew=hands.find(a=>(a.role||"walker")==="crew");
+  const hall=ownStructs(world,fac).some(s=>s.type==="hall");
+  const capCrown=(function(){
+    const towns=townsOf(world,fac);
+    const cap=capital(towns);
+    return cap&&cap.crown;
+  })();
+  return {
+    hands:hands.length,
+    crown:(king&&(king.agent_id||king.id))||capCrown||null,
+    knight:knight&&(knight.agent_id||knight.id)||null,
+    scribe:scribe&&(scribe.agent_id||scribe.id)||null,
+    builder:builder&&(builder.agent_id||builder.id)||null,
+    crew:crew&&(crew.agent_id||crew.id)||null,
+    hall
+  };
+}
+function sidesOf(world){
+  const out={};
+  for(const [fac,cls,label] of POLES){
+    const side=ageState(world||{},fac);
+    side.ranks=ranksOf(world||{},fac);
+    side.cls=cls;
+    side.label=label;
+    side.fac=fac;
+    out[fac]=side;
+    out[cls]=side;
+  }
+  return out;
+}
 function orderOf(id){return AGES.findIndex(([k])=>k===id);}
 function fmtRate(cur,key){if(!prevSample)return "";const dt=Number(cur.tick||0)-Number(prevSample.tick||0);if(dt<=0)return "";const r=(Number(cur[key]||0)-Number(prevSample[key]||0))/dt*100;if(!isFinite(r)||Math.abs(r)<0.05)return "";return `${r>=0?"+":""}${r.toFixed(1)}`;}
 function renderAges(world){
-  const {west,east}=sidesOf(world);
-  const row=(side,cls,label)=>`<div class="ages-row ${cls}"><div class="who">${label}</div><div class="ages">${AGES.map(([id,name])=>`<div class="age ${id===side.now?"now "+cls:(side.on[id]?"on":"")}">${name}</div>`).join("")}</div></div>`;
-  $("ages").innerHTML=row(west,"west","West")+row(east,"east","East");
+  const sides=sidesOf(world);
+  const row=(side)=>`<div class="ages-row ${side.cls}"><div class="who">${side.label}</div><div class="ages">${AGES.map(([id,name])=>`<div class="age ${id===side.now?"now "+side.cls:(side.on[id]?"on":"")}">${name}</div>`).join("")}</div></div>`;
+  $("ages").innerHTML=POLES.map(([fac])=>row(sides[fac])).join("");
   const map=$("map");
-  map.classList.remove("age-camp","age-settlement","age-town","age-city","age-science");
-  const lead=orderOf(west.now)>=orderOf(east.now)?west:east;
-  if(lead.on.library||lead.on.lab||lead.on.observatory) map.classList.add("age-science");
+  map.classList.remove("age-camp","age-settlement","age-town","age-city","age-science","age-industry","age-world");
+  const order=s=>orderOf(s.now);
+  const lead=POLES.map(([fac])=>sides[fac]).sort((a,b)=>order(b)-order(a))[0];
+  if(lead.on.era6) map.classList.add("age-world");
+  else if(lead.on.era5) map.classList.add("age-industry");
+  else if(lead.on.library||lead.on.lab||lead.on.observatory) map.classList.add("age-science");
   else if(lead.on.era4) map.classList.add("age-city");
   else if(lead.on.era3) map.classList.add("age-town");
   else if(lead.on.era2) map.classList.add("age-settlement");
   else map.classList.add("age-camp");
 }
 function sampleOf(world){
-  const {west,east}=sidesOf(world);
+  const s=sidesOf(world);
   const tot=(world&&world.totals)||{};
-  return {tick:world&&world.tick,wp:west.people,ep:east.people,ws:west.soldiers,es:east.soldiers,food:tot.food,wood:tot.wood,stone:tot.stone};
+  return {tick:world&&world.tick,wp:s.west.people,ep:s.east.people,np:s.north.people,sp:s.south.people,ws:s.west.soldiers,es:s.east.soldiers,ns:s.north.soldiers,ss:s.south.soldiers,food:tot.food,wood:tot.wood,stone:tot.stone};
 }
 function renderHud(world){
   const s=sampleOf(world||{});
   const cell=(k,v,r,cls)=>`<div class="stat ${cls||""}"><span>${k}</span><b>${v??"—"}${r?`<em class="${String(r).startsWith("-")?"down":""}">${r}/100t</em>`:""}</b></div>`;
   $("hud").innerHTML=[
-    cell("West people",s.wp,fmtRate(s,"wp"),"west"),
-    cell("East people",s.ep,fmtRate(s,"ep"),"east"),
-    cell("West soldiers",Number(s.ws||0).toFixed(1),"","west"),
-    cell("East soldiers",Number(s.es||0).toFixed(1),"","east"),
+    cell("West",s.wp,fmtRate(s,"wp"),"west"),
+    cell("East",s.ep,fmtRate(s,"ep"),"east"),
+    cell("North",s.np,fmtRate(s,"np"),"north"),
+    cell("South",s.sp,fmtRate(s,"sp"),"south"),
     cell("Land food",s.food??"—",fmtRate(s,"food"),""),
     cell("Year",s.tick??"—","","")
   ].join("");
+  if(window.__holdYear!=null && s.tick!=null && Number(s.tick)!==Number(window.__holdYear)){
+    const yearCell=$("hud").lastElementChild;
+    if(yearCell) yearCell.querySelector("b").innerHTML=`${s.tick}<em>held ${window.__holdYear}</em>`;
+  }
 }
 function renderRace(world){
-  const {west,east}=sidesOf(world);
-  const lane=(title,wv,ev,wmax,emax)=>{
-    const wt=Math.max(wmax,emax,1), wp=Math.max(0,wv)/wt*100, ep=Math.max(0,ev)/wt*100;
-    return `<div class="lane"><div class="pair"><span>${title}</span><b>${esc(wv)} · ${esc(ev)}</b></div><div class="dual"><i class="w" style="width:${wp.toFixed(1)}%"></i><i class="e" style="width:${ep.toFixed(1)}%"></i></div></div>`;
+  const s=sidesOf(world);
+  const sci=side=>(side.sci.steps>5?5+"+":side.sci.steps)+"/5";
+  const poles=POLES.map(([fac])=>s[fac]);
+  const lane=(title,vals,nums)=>{
+    const mx=Math.max(1,...nums);
+    const bars=poles.map((side,i)=>{
+      const pct=Math.max(0,Number(nums[i]||0))/mx*100;
+      const ch=side.cls[0];
+      return `<i class="${ch}" style="width:${pct.toFixed(1)}%"></i>`;
+    }).join("");
+    return `<div class="lane"><div class="pair"><span>${title}</span><b>${esc(vals)}</b></div><div class="dual">${bars}</div></div>`;
   };
   $("race").innerHTML=
-    lane("Science path",(west.sci.steps>5?5+"+":west.sci.steps)+"/5",(east.sci.steps>5?5+"+":east.sci.steps)+"/5",5,5)+
-    lane("People",west.people,east.people,west.people,east.people)+
-    lane("Soldiers",west.soldiers.toFixed(1),east.soldiers.toFixed(1),west.soldiers,east.soldiers);
+    lane("Science path",poles.map(sci).join(" · "),poles.map(p=>p.sci.steps))+
+    lane("People",poles.map(p=>p.people).join(" · "),poles.map(p=>p.people))+
+    lane("Soldiers",poles.map(p=>p.soldiers.toFixed(1)).join(" · "),poles.map(p=>p.soldiers));
 }
 function folkBlock(side,title,barCls){
   const cap=side.cap;
@@ -364,10 +647,33 @@ function folkBlock(side,title,barCls){
   const fill=days==null?0:Math.max(0,Math.min(100,(days/20)*100));
   const low=days!=null&&days<3;
   const eraWord=ERA_WORD[side.era]||"camp";
+  const rk=side.ranks||{hands:0,crown:null,hall:false,knight:null,scribe:null,builder:null};
   let lead="Still walking.";
   if(cap&&days!=null&&days<1) lead=`${side.people} souls. Granary empty — food is short.`;
   else if(cap&&days!=null&&days<3) lead=`${side.people} souls. Only ${Math.floor(days)} days of food.`;
   else if(cap) lead=`${side.people} souls. A ${eraWord}.`;
+  if(rk.crown&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"A king sits in the hall.";
+  else if(rk.crown) lead+=(lead.endsWith(".")?" ":"")+"A king is crowned.";
+  if(rk.scribe) lead+=(lead.endsWith(".")?" ":"")+"A scribe keeps the library.";
+  if(rk.builder) lead+=(lead.endsWith(".")?" ":"")+"A builder works the civic yard.";
+  if(rk.crew) lead+=(lead.endsWith(".")?" ":"")+"A rail crew walks the line.";
+  if(side.era>=5) lead+=(lead.endsWith(".")?" ":"")+"The roads are rail.";
+  if(side.live) lead+=(lead.endsWith(".")?" ":"")+"The mill turns.";
+  else if((side.era>=5)||(side.ranks&&side.ranks.crew)) lead+=(lead.endsWith(".")?" ":"")+"The mill is dry.";
+  const goods=Number((side.cap&&side.cap.goods_stock)||0);
+  if(goods>0) lead+=(lead.endsWith(".")?" ":"")+"Goods in the warehouse.";
+  if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A wonder stands.";
+  if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Planes leave the field.";
+  if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Cabs and buses work the streets.";
+  const bits=[];
+  if(rk.crown) bits.push("Crown "+rk.crown);
+  else if(rk.knight) bits.push("Knight "+rk.knight);
+  if(rk.crown) bits.push(rk.hall?"hall":"no hall yet");
+  if(rk.scribe) bits.push("scribe "+rk.scribe);
+  if(rk.builder) bits.push("builder "+rk.builder);
+  if(rk.crew) bits.push("crew "+rk.crew);
+  bits.push((rk.hands||0)+" hands");
+  const rankLine=bits.join(" · ");
   const disc=side.sci.disc;
   const discWord=disc===1?"1 discovery":(disc?disc+" discoveries":"no discoveries");
   const sci=`${discWord}${side.sci.obs?" · observatory":(side.sci.lab?" · lab":(side.sci.lib?" · library":""))}`;
@@ -375,33 +681,35 @@ function folkBlock(side,title,barCls){
   return `<div class="folk"><div class="kicker">${title}</div>
     <h2>${cap?esc(cap.id)+" · "+eraWord:"No town yet"}</h2>
     <p class="lead">${esc(lead)}</p>
+    <p class="lead">${esc(rankLine)}</p>
     <div class="meter"><label><span>Food days</span><span>${days==null?"—":(days<1?"short":Math.floor(days)+"d")}</span></label><div class="bar ${low?"low":""} ${barCls}"><i style="width:${fill.toFixed(0)}%"></i></div></div>
     <div class="meter"><label><span>Science</span><span>${esc(sci)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.sci.steps/5*100)}%"></i></div></div>
     <div class="meter"><label><span>Military</span><span>${side.soldiers.toFixed(1)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.soldiers*8)}%"></i></div></div>
+    <div class="meter"><label><span>Power</span><span>${side.live?"live":(side.era>=5?"dry":"—")}</span></label><div class="bar ${barCls}"><i style="width:${side.live?100:0}%"></i></div></div>
     ${chips}</div>`;
 }
 function renderCity(world){
-  const {west,east}=sidesOf(world);
-  lastSides={west,east};
-  $("city").innerHTML=folkBlock(west,"The west","west")+folkBlock(east,"The east","east");
+  const s=sidesOf(world);
+  lastSides=s;
+  $("city").innerHTML=POLES.map(([fac])=>folkBlock(s[fac],"The "+s[fac].label.toLowerCase(),s[fac].cls)).join("");
 }
 function hash(x,y){return Math.abs((x*19+y*37+(x*y*7))%256);}
 function n01(x,y){return hash(x,y)/255;}
 function elev(x,y){return n01(x,y)*0.5 + n01(x>>1,y>>1)*0.32 + n01((x+5)>>2,(y+3)>>2)*0.18;}
-function strokePath(set,x0,y0,x1,y1){
+function strokePath(set,x0,y0,x1,y1,rail){
   let x=x0,y=y0;
   while(x!==x1||y!==y1){
     if(x!==x1) x+=x1>x?1:-1;
     else if(y!==y1) y+=y1>y?1:-1;
-    set(x,y,"street","", "street", 2);
+    set(x,y,rail?"street rail":"street","", rail?"rail":"street", 2);
   }
 }
-function strokeHaul(set,x0,y0,x1,y1){
+function strokeHaul(set,x0,y0,x1,y1,rail){
   let x=x0,y=y0;
   while(x!==x1||y!==y1){
     if(x!==x1) x+=x1>x?1:-1;
     else if(y!==y1) y+=y1>y?1:-1;
-    set(x,y,"haul","","grain road",3);
+    set(x,y,rail?"haul rail":"haul","",rail?"rail haul":"grain road",3);
   }
 }
 function paintLand(w,h,set){
@@ -447,7 +755,7 @@ function paintLand(w,h,set){
 function renderMap(world){
   if(!world) return;
   const w=world.width||48,h=world.height||48,map=$("map");
-  const size=(map.classList.contains("age-town")||map.classList.contains("age-city")||map.classList.contains("age-science"))?20:18;
+  const size=(map.classList.contains("age-town")||map.classList.contains("age-city")||map.classList.contains("age-science")||map.classList.contains("age-industry")||map.classList.contains("age-world"))?20:18;
   map.style.gridTemplateColumns=`repeat(${w}, ${size}px)`;
   const occ={};
   function set(x,y,cls,mark,title,z){
@@ -503,8 +811,8 @@ function renderMap(world){
       }
     }
   }
-  const CIVIC={academy:1,library:1,lab:1,observatory:1,temple:1,hall:1,market:1};
-  const WORKS={workshop:1,foundry:1,mine:1};
+  const CIVIC={academy:1,library:1,lab:1,observatory:1,temple:1,hall:1,market:1,wonder:1};
+  const WORKS={workshop:1,foundry:1,mine:1,mill:1,warehouse:1};
   for(const st of world.structures||[]){
     const fn=facName(factionOf(world,st));
     if(st.type==="farm"||st.type==="irrigation"){
@@ -537,12 +845,16 @@ function renderMap(world){
     }
   }
   for(const st of world.structures||[]){
+    if(st.type==="farm"||st.type==="irrigation"||st.type==="hut"||st.type==="road") continue;
+    const KEEP={mill:1,foundry:1,hall:1,library:1,lab:1,observatory:1,academy:1,workshop:1,warehouse:1,airport:1,wonder:1};
+    if(!KEEP[st.type]) continue;
     let best=null,bd=1e9;
     for(const t of towns){
+      if((t.faction||"player")!==factionOf(world,st)) continue;
       const d=Math.abs(t.x-st.x)+Math.abs(t.y-st.y);
       if(d<bd){bd=d;best=t;}
     }
-    if(best&&bd>1&&bd<12) strokePath(set,best.x,best.y,st.x,st.y);
+    if(best&&bd>1&&bd<14) strokePath(set,best.x,best.y,st.x,st.y,false);
   }
   const granaries=(world.structures||[]).filter(s=>s.type==="granary");
   for(const st of world.structures||[]){
@@ -561,9 +873,51 @@ function renderMap(world){
         if(d<gd){gd=d;g=t;}
       }
     }
-    if(g&&gd>1&&gd<16) strokeHaul(set,st.x,st.y,g.x,g.y);
+    if(g&&gd>1&&gd<16) strokeHaul(set,st.x,st.y,g.x,g.y,false);
   }
-  const BIG={library:1,lab:1,observatory:1,academy:1,temple:1,barracks:1,hall:1,command:1,foundry:1,market:1};
+  function railStroke(x0,y0,x1,y1){
+    if(x0==null||y0==null||x1==null||y1==null) return;
+    if(x0===x1&&y0===y1) return;
+    strokePath(set,x0,y0,x1,y1,true);
+  }
+  for(const fac of ["player","rival","north","south"]){
+    const own=towns.filter(t=>(t.faction||"player")===fac);
+    const hot=own.filter(t=>Number(t.era||2)>=5);
+    if(!hot.length) continue;
+    const cap=hot.slice().sort((a,b)=>Number(b.population||0)-Number(a.population||0))[0];
+    for(let d=-4;d<=4;d++){
+      if(d===0) continue;
+      if(!wet(cap.x+d,cap.y)) set(cap.x+d,cap.y,"street rail","",cap.id+" rail",3);
+      if(!wet(cap.x,cap.y+d)) set(cap.x,cap.y+d,"street rail","",cap.id+" rail",3);
+    }
+    const mill=(world.structures||[]).find(s=>s.type==="mill"&&factionOf(world,s)===fac);
+    const foundry=(world.structures||[]).find(s=>s.type==="foundry"&&factionOf(world,s)===fac);
+    const warehouse=(world.structures||[]).find(s=>s.type==="warehouse"&&factionOf(world,s)===fac);
+    const airport=(world.structures||[]).find(s=>s.type==="airport"&&factionOf(world,s)===fac);
+    if(mill) railStroke(cap.x,cap.y,mill.x,mill.y);
+    if(foundry) railStroke(cap.x,cap.y,foundry.x,foundry.y);
+    if(warehouse) railStroke(cap.x,cap.y,warehouse.x,warehouse.y);
+    if(mill&&warehouse) railStroke(mill.x,mill.y,warehouse.x,warehouse.y);
+    if(airport) railStroke(cap.x,cap.y,airport.x,airport.y);
+    for(const t of hot){
+      if(t===cap) continue;
+      railStroke(cap.x,cap.y,t.x,t.y);
+    }
+  }
+  for(const t of towns){
+    const race=t.mill_race;
+    if(!race||race.length<4) continue;
+    let x=Number(race[0]), y=Number(race[1]);
+    const x1=Number(race[2]), y1=Number(race[3]);
+    while(x!==x1||y!==y1){
+      if(x!==x1) x+=x1>x?1:-1;
+      else if(y!==y1) y+=y1>y?1:-1;
+      const cell=occ[x+","+y];
+      if(cell&&cell.z>=6) continue;
+      set(x,y,"race","",t.id+" mill-race",3);
+    }
+  }
+  const BIG={library:1,lab:1,observatory:1,academy:1,temple:1,barracks:1,hall:1,command:1,foundry:1,market:1,mill:1,warehouse:1,airport:1};
   for(const st of world.structures||[]){
     const fac=factionOf(world,st);
     const fn=facName(fac);
@@ -578,29 +932,69 @@ function renderMap(world){
       const days=owner?townDays[owner.id]:null;
       extra=days==null?"":(days<1?" empty":(days<3?" low":" full"));
     }
-    const skin=(st.type||"")+" "+fn+extra+(fac==="rival"?" rival":"");
+    const liveTown=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
+    const skin=(st.type||"")+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"");
     set(st.x,st.y,skin,mark,(fn+" "+(st.type||"")),6);
     if(BIG[st.type]){
       set(st.x+1,st.y,skin,"",(fn+" "+(st.type||"")),6);
       set(st.x,st.y+1,skin,"",(fn+" "+(st.type||"")),6);
       set(st.x+1,st.y+1,skin,"",(fn+" "+(st.type||"")),6);
     }
+    if(st.type==="wonder"){
+      for(let dy=0;dy<=2;dy++) for(let dx=0;dx<=2;dx++){
+        set(st.x+dx,st.y+dy,skin,dx===1&&dy===0?mark:"",(fn+" wonder"),8);
+      }
+    }
+    if(st.type==="airport"){
+      for(let dx=1;dx<=4;dx++){
+        if(!wet(st.x+dx,st.y)) set(st.x+dx,st.y,"runway","",(fn+" runway"),5);
+      }
+    }
   }
   for(const town of towns){
-    set(town.x,town.y,(town.faction==="rival"?"settlement rival":"settlement"),"",town.id,7);
+    set(town.x,town.y,"settlement "+facName(town.faction||"player"),"",town.id,7);
   }
-  const byFac={player:[],rival:[]};
+  const byFac={player:[],rival:[],north:[],south:[]};
   for(const a of world.agents||[]){
-    const fac=a.faction==="rival"?"rival":"player";
-    byFac[fac].push(a);
+    const fac=a.faction||"player";
+    (byFac[fac]||byFac.player).push(a);
   }
-  for(const fac of ["player","rival"]){
-    const list=byFac[fac].slice().sort((a,b)=>String(a.agent_id||"").localeCompare(String(b.agent_id||"")));
-    list.forEach((a,i)=>{
-      const king=i<2;
-      const fn=fac==="rival"?"east":"west";
-      set(a.x,a.y,king?("king "+fn):("vil "+fn),"",king?(fn+" king"):(fn+" villager"),9);
+  for(const fac of ["player","rival","north","south"]){
+    const list=byFac[fac];
+    list.forEach(a=>{
+      const fn=facName(fac);
+      const role=a.role||"walker";
+      const skin=role==="king"?("king "+fn)
+        :(role==="knight"?("knight "+fn)
+        :(role==="scribe"?("scribe "+fn)
+        :(role==="builder"?("builder "+fn)
+        :(role==="crew"?("crew "+fn)
+        :("vil "+fn)))));
+      const title=role==="king"?(fn+" king")
+        :(role==="knight"?(fn+" knight")
+        :(role==="scribe"?(fn+" scribe")
+        :(role==="builder"?(fn+" builder")
+        :(role==="crew"?(fn+" rail crew")
+        :(fn+" walker")))));
+      set(a.x,a.y,skin,"",title,9);
     });
+  }
+  for(const tr of world.trains||[]){
+    const fn=facName(tr.faction||"player");
+    const cargo=Number(tr.cargo||0)?" loaded":"";
+    set(tr.x,tr.y,"train "+fn,"T",(fn+" train"+cargo),10);
+  }
+  for(const pl of world.planes||[]){
+    const fn=facName(pl.faction||"player");
+    set(pl.x,pl.y,"plane "+fn,"^",(fn+" plane"),11);
+  }
+  for(const cab of world.taxis||[]){
+    const fn=facName(cab.faction||"player");
+    set(cab.x,cab.y,"taxi "+fn,"c",(fn+" taxi"),10);
+  }
+  for(const bus of world.buses||[]){
+    const fn=facName(bus.faction||"player");
+    set(bus.x,bus.y,"bus "+fn,"B",(fn+" bus"),10);
   }
   let html="";
   for(let y=0;y<h;y++) for(let x=0;x<w;x++){
@@ -616,7 +1010,7 @@ function chronicleDiff(world){
   for(const s of prevWorld.settlements||[]) oldBy[s.id]=s;
   for(const s of world.settlements||[]){
     const o=oldBy[s.id];
-    const who=(s.faction==="rival"?"East":"West");
+    const who=whoOf(s.faction);
     if(!o){logLine(tick,`${who} founded ${s.id}.`);continue;}
     if(Number(s.era||2)>Number(o.era||2)) logLine(tick,`${who} ${s.id} became a ${ERA_WORD[s.era]||("era "+s.era)}.`);
     const had=new Set(o.subjects||[]);
@@ -624,45 +1018,50 @@ function chronicleDiff(world){
     if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`);
     if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`);
   }
-  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"An academy rose",farm:"Fields spread"};
+  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"An academy rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A wonder rose",airport:"An airport rose"};
   for(const [typ,line] of Object.entries(risen)){
     const n=(wld,fac)=>ownStructs(wld,fac).filter(s=>s.type===typ).length;
     if(n(world,"player")>n(prevWorld,"player")) logLine(tick,`${line} in the west.`);
     if(n(world,"rival")>n(prevWorld,"rival")) logLine(tick,`${line} in the east.`);
+    if(n(world,"north")>n(prevWorld,"north")) logLine(tick,`${line} in the north.`);
+    if(n(world,"south")>n(prevWorld,"south")) logLine(tick,`${line} in the south.`);
   }
   prevWorld=world;
 }
 function raceLine(world){
   if(!world) return "";
-  const {west,east}=sidesOf(world);
-  if(!west.cap && !east.cap) return "Both still walking.";
-  if(east.sci.steps>west.sci.steps) return `East leads the science path (${east.sci.steps} vs ${west.sci.steps}).`;
-  if(west.sci.steps>east.sci.steps) return `West leads the science path (${west.sci.steps} vs ${east.sci.steps}).`;
-  if(orderOf(east.now)>orderOf(west.now)) return `East leads the ages — ${AGES.find(a=>a[0]===east.now)[1]} vs ${AGES.find(a=>a[0]===west.now)[1]}.`;
-  if(orderOf(west.now)>orderOf(east.now)) return `West leads the ages — ${AGES.find(a=>a[0]===west.now)[1]} vs ${AGES.find(a=>a[0]===east.now)[1]}.`;
-  if(west.people>east.people) return `Even on the path. West has more people (${west.people} vs ${east.people}).`;
-  if(east.people>west.people) return `Even on the path. East has more people (${east.people} vs ${west.people}).`;
-  return `Even — ${AGES.find(a=>a[0]===west.now)[1]} · ${west.people} each side.`;
+  const s=sidesOf(world);
+  const poles=POLES.map(([fac])=>s[fac]);
+  if(poles.every(p=>!p.cap)) return "All still walking.";
+  const sciLead=[...poles].sort((a,b)=>b.sci.steps-a.sci.steps);
+  if(sciLead[0].sci.steps>sciLead[1].sci.steps) return `${sciLead[0].label} leads the science path (${sciLead[0].sci.steps} vs ${sciLead[1].sci.steps}).`;
+  const ageLead=[...poles].sort((a,b)=>orderOf(b.now)-orderOf(a.now));
+  if(orderOf(ageLead[0].now)>orderOf(ageLead[1].now)) return `${ageLead[0].label} leads the ages — ${AGES.find(a=>a[0]===ageLead[0].now)[1]}.`;
+  const popLead=[...poles].sort((a,b)=>b.people-a.people);
+  if(popLead[0].people>popLead[1].people) return `Even on the path. ${popLead[0].label} has more people (${popLead[0].people}).`;
+  return `Even — four poles on the same island.`;
 }
 function holdTitle(winner){
   if(winner==="player") return "The west holds";
   if(winner==="rival") return "The east holds";
+  if(winner==="north") return "The north holds";
+  if(winner==="south") return "The south holds";
   return "Even";
 }
 function renderEpilogue(state){
   const box=$("epilogue");
   const o=state.outcome;
   if(!o||!o.winner){box.className="epilogue";box.innerHTML="";return;}
-  const {west,east}=lastSides||sidesOf(state.world||{});
+  const s=lastSides||sidesOf(state.world||{});
   const live=state.status==="running"||state.status==="paused";
   const sideHtml=(side,name,held)=>`<div class="side${held?" held":""}"><div class="k">${name}${held?" · holds":""}</div>
     <h4>${side.cap?esc(side.cap.id):"No town"} · ${esc(ERA_WORD[side.era]||"camp")}</h4>
-    <p>${side.people} souls · science ${side.sci.steps}/5 · army ${side.soldiers.toFixed(1)}</p></div>`;
+    <p>${side.people} souls · science ${side.sci.steps}/5${side.sci.disc?(" · "+side.sci.disc+" discoveries"):""} · army ${side.soldiers.toFixed(1)}</p></div>`;
   box.className="epilogue show"+(live?" live":"");
   box.innerHTML=`<p class="eyebrow">${live?"They hold · the ages continue":"Chapter closed"} · ${esc(o.kind||"outcome")}</p>
     <h3>${esc(holdTitle(o.winner))}</h3>
     <p class="why">${esc(o.reason||"")}${live?" The land keeps growing.":""}</p>
-    <div class="sides">${sideHtml(west,"West",o.winner==="player")}${sideHtml(east,"East",o.winner==="rival")}</div>
+    <div class="sides">${POLES.map(([fac])=>sideHtml(s[fac],s[fac].label,o.winner===fac)).join("")}</div>
     <div class="score">Score ${esc(state.score??"—")} · ${esc(yearOf(o.tick??lastTick))}</div>`;
 }
 function renderBanner(state){
@@ -670,13 +1069,13 @@ function renderBanner(state){
   const o=state.outcome||{};
   if(state.status==="done"){
     const w=o.winner||"";
-    banner.className="banner "+(w==="player"?"win":(w==="rival"?"lose":""));
+    banner.className="banner "+(w&&w!=="draw"?"win":(w==="draw"?"":""));
     banner.textContent=w?`${holdTitle(w)} · ${o.kind||"outcome"}. Clock ended.`:(`Finished · Score ${state.score??"—"}.`);
   } else if(state.status==="error"){banner.className="banner lose";banner.textContent="Could not run. Hit Watch again.";$("begin").disabled=false;}
-  else if(o.winner){banner.className="banner "+(o.winner==="player"?"win":(o.winner==="rival"?"lose":""));banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
+  else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v17";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v29";}
   renderEpilogue(state);
 }
 async function poll(){
@@ -687,17 +1086,76 @@ async function poll(){
   if(world&&world.tick!==lastTick){
     lastTick=world.tick; renderAges(world); renderHud(world); renderRace(world); renderMap(world); renderCity(world); chronicleDiff(world); prevSample=sampleOf(world);
     const raid=(world.metrics||{}).last_raid;
-    if(raid&&raid.tick!==lastRaidTick){lastRaidTick=raid.tick;logLine(world.tick,`${raid.attacker_faction==="player"?"West raided":"East raided"} ${raid.target}.`);}
+    if(raid&&raid.tick!==lastRaidTick){lastRaidTick=raid.tick;logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`);}
     const down=(world.metrics||{}).last_stand_down;
     if(down&&down.tick!==lastDownTick){
       lastDownTick=down.tick;
-      const who=down.faction==="rival"?"East":"West";
+      const who=whoOf(down.faction);
       logLine(world.tick,`${who} stood the army down — the granary was short.`);
+    }
+    const born=(world.metrics||{}).last_breed;
+    if(born&&born.tick!==lastBreedTick){
+      lastBreedTick=born.tick;
+      const who=whoOf(born.faction);
+      logLine(world.tick,`${who} gained a walker (${born.agent_id}) · ${born.hands_after} hands.`);
+    }
+    const kn=(world.metrics||{}).last_knight;
+    if(kn&&kn.tick!==lastKnightTick){
+      lastKnightTick=kn.tick;
+      const who=whoOf(kn.faction);
+      logLine(world.tick,`${who} raised a knight · ${kn.agent_id}.`);
+    }
+    const kg=(world.metrics||{}).last_king;
+    if(kg&&kg.tick!==lastKingTick){
+      lastKingTick=kg.tick;
+      const who=whoOf(kg.faction);
+      logLine(world.tick,`${who} crowned ${kg.agent_id}.`);
+    }
+    const sc=(world.metrics||{}).last_scribe;
+    if(sc&&sc.tick!==lastScribeTick){
+      lastScribeTick=sc.tick;
+      const who=whoOf(sc.faction);
+      logLine(world.tick,`${who} named a scribe · ${sc.agent_id}.`);
+    }
+    const bd=(world.metrics||{}).last_builder;
+    if(bd&&bd.tick!==lastBuilderTick){
+      lastBuilderTick=bd.tick;
+      const who=whoOf(bd.faction);
+      logLine(world.tick,`${who} named a builder · ${bd.agent_id}.`);
+    }
+    const cr=(world.metrics||{}).last_crew;
+    if(cr&&cr.tick!==lastCrewTick){
+      lastCrewTick=cr.tick;
+      const who=whoOf(cr.faction);
+      logLine(world.tick,`${who} named a rail crew · ${cr.agent_id}.`);
+    }
+    const trn=(world.metrics||{}).last_train;
+    if(trn&&trn.tick!==lastTrainTick){
+      lastTrainTick=trn.tick;
+      const who=whoOf(trn.faction);
+      logLine(world.tick,`${who} rolled a train · ${trn.train_id}.`);
+    }
+    const pln=(world.metrics||{}).last_plane;
+    if(pln&&pln.tick!==lastPlaneTick){
+      lastPlaneTick=pln.tick;
+      const who=whoOf(pln.faction);
+      logLine(world.tick,`${who} launched a plane · ${pln.plane_id}.`);
+    }
+    const tx=(world.metrics||{}).last_taxi;
+    if(tx&&tx.tick!==lastTaxiTick){
+      lastTaxiTick=tx.tick;
+      logLine(world.tick,`${whoOf(tx.faction)} put a cab on the square · ${tx.taxi_id}.`);
+    }
+    const bs=(world.metrics||{}).last_bus;
+    if(bs&&bs.tick!==lastBusTick){
+      lastBusTick=bs.tick;
+      logLine(world.tick,`${whoOf(bs.faction)} ran a bus · ${bs.bus_id}.`);
     }
   }
   renderBanner(state);
   if(state.outcome&&state.outcome.winner&&lastOutcomeTick<0){
     lastOutcomeTick=state.outcome.tick!=null?state.outcome.tick:(lastTick>=0?lastTick:0);
+    window.__holdYear=lastOutcomeTick;
     const o=state.outcome;
     const {west,east}=lastSides||sidesOf(world||{});
     logLine(lastOutcomeTick,`${holdTitle(o.winner)} — ${o.kind||"outcome"}: ${o.reason||""} The ages continue.`);
@@ -711,7 +1169,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastOutcomeTick=-1;prevWorld=null;prevSample=null;paused=false;lastSides=null;
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
   syncWorldSum();

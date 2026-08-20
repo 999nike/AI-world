@@ -1,10 +1,24 @@
-"""Win / lose clock. Rival mode only. Never touches the world RNG."""
+"""Win / lose clock. Rival / poles mode. Never touches the world RNG."""
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Optional, Set
 
 
 SCIENCE_DISCOVERIES = 2
+
+SCIENCE_REASON = {
+    "player": "The west finished the science path first.",
+    "rival": "The east finished the science path first.",
+    "north": "The north finished the science path first.",
+    "south": "The south finished the science path first.",
+}
+
+DOMINATION_REASON = {
+    "player": "The last other people are gone. The west remains.",
+    "rival": "The last other people are gone. The east remains.",
+    "north": "The last other people are gone. The north remains.",
+    "south": "The last other people are gone. The south remains.",
+}
 
 
 def _towns(settlements: Iterable[Dict[str, Any]], faction: str) -> list:
@@ -44,47 +58,55 @@ def _pack(tick: int, winner: str, kind: str, reason: str) -> Dict[str, Any]:
 
 def detect_early(
     tick: int,
-    player: Dict[str, Any],
-    rival: Dict[str, Any],
+    sides: Dict[str, Dict[str, Any]],
     founded: Set[str],
 ) -> Optional[Dict[str, Any]]:
-    both = "player" in founded and "rival" in founded
-    if both:
-        yp, tp = int(player.get("pop") or 0), int(rival.get("pop") or 0)
-        if yp <= 0 and tp <= 0:
-            return _pack(tick, "draw", "domination", "Both tribes fell.")
-        if tp <= 0 and yp > 0:
-            return _pack(tick, "player", "domination", "Their last people are gone.")
-        if yp <= 0 and tp > 0:
-            return _pack(tick, "rival", "domination", "Your last people are gone.")
+    present = [f for f in sides if f in founded]
+    if len(present) >= 2:
+        alive = [f for f in present if int(sides[f].get("pop") or 0) > 0]
+        if not alive:
+            return _pack(tick, "draw", "domination", "The tribes fell.")
+        if len(alive) == 1:
+            f = alive[0]
+            return _pack(tick, f, "domination", DOMINATION_REASON.get(f, "The last other people are gone."))
 
-    you_sci = bool(player.get("observatory")) and int(player.get("discoveries") or 0) >= SCIENCE_DISCOVERIES
-    them_sci = bool(rival.get("observatory")) and int(rival.get("discoveries") or 0) >= SCIENCE_DISCOVERIES
-    if you_sci and them_sci:
-        yd, td = int(player.get("discoveries") or 0), int(rival.get("discoveries") or 0)
-        if yd > td:
-            return _pack(tick, "player", "science", "Observatory and two discoveries. You got there first.")
-        if td > yd:
-            return _pack(tick, "rival", "science", "They finished the science path first.")
-        return _pack(tick, "draw", "science", "Both finished the science path together.")
-    if you_sci:
-        return _pack(tick, "player", "science", "Observatory and two discoveries. You got there first.")
-    if them_sci:
-        return _pack(tick, "rival", "science", "They finished the science path first.")
-    return None
+    sci = []
+    for f, s in sides.items():
+        if bool(s.get("observatory")) and int(s.get("discoveries") or 0) >= SCIENCE_DISCOVERIES:
+            sci.append((f, int(s.get("discoveries") or 0)))
+    if not sci:
+        return None
+    best = max(d for _, d in sci)
+    top = [f for f, d in sci if d == best]
+    if len(top) == 1:
+        f = top[0]
+        return _pack(tick, f, "science", SCIENCE_REASON.get(f, "They finished the science path first."))
+    return _pack(tick, "draw", "science", "Several finished the science path together.")
 
 
 def detect_survival(
     tick: int,
-    player: Dict[str, Any],
-    rival: Dict[str, Any],
+    sides: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Any]:
-    yp, tp = int(player.get("pop") or 0), int(rival.get("pop") or 0)
-    ye, te = int(player.get("era") or 2), int(rival.get("era") or 2)
-    if ye >= 4 and yp > tp:
-        return _pack(tick, "player", "survival", "The clock ran out. Era 4, and more people.")
-    if tp > yp:
-        return _pack(tick, "rival", "survival", "The clock ran out. They outgrew you.")
-    if ye < 4:
-        return _pack(tick, "rival", "survival", "The clock ran out. You never reached era 4.")
-    return _pack(tick, "draw", "survival", "The clock ran out. Even on people.")
+    ranked = sorted(
+        sides.items(),
+        key=lambda kv: (
+            int(kv[1].get("era") or 2),
+            int(kv[1].get("pop") or 0),
+            int(kv[1].get("discoveries") or 0),
+        ),
+        reverse=True,
+    )
+    if not ranked:
+        return _pack(tick, "draw", "survival", "The clock ran out. Empty land.")
+    best_f, best = ranked[0]
+    if len(ranked) >= 2:
+        _, nxt = ranked[1]
+        if (
+            int(best.get("era") or 2) == int(nxt.get("era") or 2)
+            and int(best.get("pop") or 0) == int(nxt.get("pop") or 0)
+        ):
+            return _pack(tick, "draw", "survival", "The clock ran out. Even on people.")
+    if int(best.get("era") or 2) >= 4:
+        return _pack(tick, best_f, "survival", "The clock ran out. A city, and more people.")
+    return _pack(tick, best_f, "survival", "The clock ran out. They outgrew the others.")

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
 
@@ -21,7 +21,7 @@ class AgentState:
     inv_wood: int = 0
     inv_stone: int = 0
     faction: str = "player"
-    role: str = "walker"  # walker | knight | king
+    role: str = "walker"  # walker | knight | king | scribe | builder | crew
 
     def inv_dict(self) -> Dict[str, int]:
         return {"food": self.inv_food, "wood": self.inv_wood, "stone": self.inv_stone}
@@ -67,6 +67,10 @@ class WorldState:
     agents: List[AgentState]
     structures: List[Structure]
     settlements: List[Settlement]  # kept for compatibility; simloop also outputs settlements
+    trains: List[Dict[str, Any]] = field(default_factory=list)
+    planes: List[Dict[str, Any]] = field(default_factory=list)
+    taxis: List[Dict[str, Any]] = field(default_factory=list)
+    buses: List[Dict[str, Any]] = field(default_factory=list)
 
     def idx(self, x: int, y: int) -> int:
         return y * self.width + x
@@ -97,5 +101,9 @@ class WorldState:
             } for a in self.agents],
             "structures": [s.to_dict() for s in self.structures],
             "settlements": [s.to_dict() for s in self.settlements],
+            "trains": list(self.trains or []),
+            "planes": list(self.planes or []),
+            "taxis": list(self.taxis or []),
+            "buses": list(self.buses or []),
             "totals": {"food": total_food, "wood": total_wood, "stone": total_stone},
         }

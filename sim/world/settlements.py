@@ -1,7 +1,7 @@
 """Settlement management for AI-world."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from sim.world.land import nearest_water
 
 
 SETTLEMENT_RULES = {
@@ -68,6 +68,21 @@ SETTLEMENT_RULES = {
     "city_food_floor": 1.0,
     "city_food_hold_days": 3.0,
     "discovery_max": 8,
+    "walker_start": 4,
+    "walker_cap": 10,
+    "breed_pop_step": 4,
+    "knight_min_era": 3,
+    "king_min_era": 4,
+    "specialist_min_era": 4,
+    "industry_min_era": 5,
+    "age_up5_min_pop": 20,
+    "age_up5_food_bonus": 5.0,
+    "age_up6_min_pop": 20,
+    "age_up6_food_bonus": 5.0,
+    "mill_tools_per_tick": 0.25,
+    "mill_power_reach": 4,
+    "mill_power_on": 1.0,
+    "foundry_power_need": 0.15,
 }
 
 
@@ -91,6 +106,8 @@ class SettlementManager:
             "population": int(SETTLEMENT_RULES.get("starting_population", 1)),
             "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
             "tools_stock": 0.0, "soldiers": 0.0, "knowledge": 0.0,
+            "power": 0.0, "mill_live": False, "mill_race": None,
+            "goods_stock": 0,
             "discoveries": 0,
             "subjects": [], "era": 2, "starve_ticks": 0, "surplus_ticks": 0,
         }
@@ -200,6 +217,12 @@ class SettlementManager:
     def settlement_has_foundry(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "foundry", world) >= 1
 
+    def settlement_has_mill(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "mill", world) >= 1
+
+    def settlement_has_airport(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "airport", world) >= 1
+
     def settlement_has_hall(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "hall", world) >= 1
 
@@ -269,7 +292,8 @@ class SettlementManager:
             pop_before = int(s.get("population", 0))
             stock_at_start = float(s.get("food_stock", 0))
             farms = 0
-            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = has_command = has_lab = has_observatory = False
+            has_granary = has_mine = has_workshop = has_barracks = has_market = has_temple = has_academy = has_walls = has_irrigation = has_library = has_foundry = has_hall = has_command = has_lab = has_observatory = has_mill = False
+            mill_xy = None
             for stx in world.structures:
                 if self.structure_settlement_id(stx.x, stx.y) != sid:
                     continue
@@ -305,6 +329,23 @@ class SettlementManager:
                     has_lab = True
                 elif stx.type == "observatory":
                     has_observatory = True
+                elif stx.type == "mill":
+                    has_mill = True
+                    mill_xy = (int(stx.x), int(stx.y))
+
+            race = None
+            live = False
+            if has_mill and mill_xy:
+                src = nearest_water(
+                    mill_xy[0], mill_xy[1], world,
+                    reach=int(SETTLEMENT_RULES.get("mill_power_reach", 4)),
+                )
+                if src:
+                    live = True
+                    race = [mill_xy[0], mill_xy[1], int(src[0]), int(src[1])]
+            s["mill_live"] = live
+            s["mill_race"] = race
+            s["power"] = float(SETTLEMENT_RULES.get("mill_power_on", 1.0)) if live else 0.0
 
             subjects = list(s.get("subjects") or [])
             era = int(s.get("era", 2))
@@ -336,14 +377,16 @@ class SettlementManager:
                 stone_add = mine_stone + (workshop_mine_bonus if has_workshop else 0.0)
                 s["stone_stock"] = float(s.get("stone_stock", 0)) + stone_add
                 self.metrics["mine_stone_total"] = self.metrics.get("mine_stone_total", 0) + stone_add
-            if has_workshop or has_foundry:
+            if has_workshop or has_foundry or has_mill:
                 tools_add = 0.0
                 if has_workshop:
                     tools_add += workshop_tools
                     if "craft" in subjects:
                         tools_add += float(SETTLEMENT_RULES.get("craft_tools_bonus", 0.1))
-                if has_foundry:
+                if has_foundry and live:
                     tools_add += float(SETTLEMENT_RULES.get("foundry_tools_bonus", 0.15))
+                if has_mill and live:
+                    tools_add += float(SETTLEMENT_RULES.get("mill_tools_per_tick", 0.25))
                 s["tools_stock"] = float(s.get("tools_stock", 0.0)) + tools_add
                 self.metrics["workshop_tools_total"] = self.metrics.get("workshop_tools_total", 0) + tools_add
 
@@ -517,13 +560,16 @@ class SettlementManager:
                     "has_barracks": has_barracks, "has_academy": has_academy, "has_walls": has_walls,
                     "has_irrigation": has_irrigation, "has_library": has_library,
                     "has_foundry": has_foundry, "has_hall": has_hall, "has_command": has_command,
-                    "has_lab": has_lab, "has_observatory": has_observatory,
+                    "has_lab": has_lab, "has_observatory": has_observatory, "has_mill": has_mill,
+                    "mill_live": live, "power": s.get("power", 0.0),
                     "subjects": subjects, "era": era,
                 })
 
         self._try_raids(world, tick)
         self._try_age_up(world, tick)
         self._try_age_up4(world, tick)
+        self._try_age_up5(world, tick)
+        self._try_age_up6(world, tick)
 
     def _try_discovery(self, sid: str, s: Dict[str, Any], tick: int) -> None:
         """Spend knowledge for permanent farm bonus (Observatory sink)."""
@@ -679,6 +725,63 @@ class SettlementManager:
             self.logger.event({
                 "type": "age_transition", "tick": tick, "settlement_id": sid,
                 "from_era": 3, "to_era": 4, "population": s.get("population"),
+                "food_bonus": food_bonus,
+            })
+
+    def _try_age_up5(self, world, tick: int) -> None:
+        min_pop = int(SETTLEMENT_RULES.get("age_up5_min_pop", 20))
+        food_bonus = float(SETTLEMENT_RULES.get("age_up5_food_bonus", 5.0))
+        for sid, s in self.settlements.items():
+            if int(s.get("era", 2)) != 4:
+                continue
+            if int(s.get("population", 0)) < min_pop:
+                continue
+            fac = s.get("faction", "player")
+            own = [ss for ss in self.settlements.values() if ss.get("faction", "player") == fac]
+            has_obs = False
+            for ss in own:
+                osid = ss.get("id")
+                if osid and self.settlement_has_observatory(osid, world):
+                    has_obs = True
+                    break
+            if not has_obs:
+                continue
+            if not self.settlement_has_mill(sid, world):
+                continue
+            s["era"] = 5
+            s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
+            self.metrics["age_up5_events"] = self.metrics.get("age_up5_events", 0) + 1
+            self.logger.event({
+                "type": "age_transition", "tick": tick, "settlement_id": sid,
+                "from_era": 4, "to_era": 5, "population": s.get("population"),
+                "food_bonus": food_bonus,
+            })
+
+    def _try_age_up6(self, world, tick: int) -> None:
+        min_pop = int(SETTLEMENT_RULES.get("age_up6_min_pop", 20))
+        food_bonus = float(SETTLEMENT_RULES.get("age_up6_food_bonus", 5.0))
+        for sid, s in self.settlements.items():
+            if int(s.get("era", 2)) != 5:
+                continue
+            if int(s.get("population", 0)) < min_pop:
+                continue
+            fac = s.get("faction", "player")
+            has_air = False
+            for ss in self.settlements.values():
+                if ss.get("faction", "player") != fac:
+                    continue
+                osid = ss.get("id")
+                if osid and self.settlement_has_airport(osid, world):
+                    has_air = True
+                    break
+            if not has_air:
+                continue
+            s["era"] = 6
+            s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
+            self.metrics["age_up6_events"] = self.metrics.get("age_up6_events", 0) + 1
+            self.logger.event({
+                "type": "age_transition", "tick": tick, "settlement_id": sid,
+                "from_era": 5, "to_era": 6, "population": s.get("population"),
                 "food_bonus": food_bonus,
             })
 

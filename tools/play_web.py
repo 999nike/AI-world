@@ -121,7 +121,9 @@ class Game:
                     playable=False,
                     on_tick=on_tick,
                     on_tick_every=4,
-                    rival_agents=4,
+                    num_agents=10,
+                    rival_agents=10,
+                    pole_agents=10,
                     soft_outcome=True,
                 )
             except Cancelled:

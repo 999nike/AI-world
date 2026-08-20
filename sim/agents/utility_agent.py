@@ -20,6 +20,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     "w_build_irrigation": 3.5, "w_build_library": 4.8, "w_build_foundry": 3.5,
     "w_build_hall": 3.4, "w_build_command": 4.0,
     "w_build_lab": 3.8, "w_build_observatory": 3.9,
+    "w_build_mill": 4.6, "w_build_warehouse": 4.4, "w_build_wonder": 5.2, "w_build_airport": 5.0,
     "w_move": 0.1, "w_explore": 0.2, "epsilon": 0.05,
     "w_food_pressure": 4.0, "w_avoid_build_when_hungry": 6.0,
 }
@@ -84,10 +85,26 @@ class UtilityAgent:
                 target = "lab"
             elif "observatory" not in types:
                 target = "observatory"
+            elif "mill" not in types:
+                target = "mill"
             if target:
                 if structure is None:
                     return Action(type="build", building=target)
                 return self._random_action(obs, rng)
+
+        disc = sum(int((s or {}).get("discoveries", 0) or 0) for s in settlements)
+        if "mill" in types and "warehouse" not in types and disc >= 2:
+            if structure is None:
+                return Action(type="build", building="warehouse")
+            return self._random_action(obs, rng)
+        if "warehouse" in types and "wonder" not in types and disc >= 3:
+            if structure is None:
+                return Action(type="build", building="wonder")
+            return self._random_action(obs, rng)
+        if "wonder" in types and "airport" not in types:
+            if structure is None:
+                return Action(type="build", building="airport")
+            return self._random_action(obs, rng)
 
         eps = float(self.weights.get("epsilon", DEFAULT_WEIGHTS["epsilon"]))
         if rng.random() < eps:
@@ -119,7 +136,7 @@ class UtilityAgent:
             for b in ("farm", "storage", "hut", "granary", "mine", "road",
                       "workshop", "barracks", "market", "temple", "academy",
                       "walls", "irrigation", "library", "foundry", "hall", "command",
-                      "lab", "observatory"):
+                      "lab", "observatory", "mill", "warehouse", "wonder", "airport"):
                 c.append(Action(type="build", building=b))
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             c.append(Action(type="move", dx=dx, dy=dy))
@@ -300,6 +317,36 @@ class UtilityAgent:
                     return -3.0 if has_observatory else -1.5
                 can = _can_afford(inv, 5, 4, obs)
                 return w["w_build_observatory"] * can + 4.2 + inv_term - hunger * 0.05
+            if b == "mill":
+                has_mill = "mill" in types
+                has_observatory = "observatory" in types
+                if not has_observatory or has_mill:
+                    return -3.0 if has_mill else -1.5
+                can = _can_afford(inv, 4, 4, obs)
+                return w.get("w_build_mill", 4.6) * can + 5.0 + inv_term - hunger * 0.04
+            if b == "warehouse":
+                has_wh = "warehouse" in types
+                has_mill = "mill" in types
+                disc = int((nearest or {}).get("discoveries", 0) or 0)
+                if not has_mill or disc < 2 or has_wh:
+                    return -3.0 if has_wh else -1.5
+                can = _can_afford(inv, 4, 3, obs)
+                return w.get("w_build_warehouse", 4.4) * can + 4.6 + inv_term - hunger * 0.04
+            if b == "wonder":
+                has_wonder = "wonder" in types
+                has_wh = "warehouse" in types
+                disc = int((nearest or {}).get("discoveries", 0) or 0)
+                if not has_wh or disc < 3 or has_wonder:
+                    return -3.0 if has_wonder else -1.5
+                can = _can_afford(inv, 6, 6, obs)
+                return w.get("w_build_wonder", 5.2) * can + 6.0 + inv_term - hunger * 0.02
+            if b == "airport":
+                has_air = "airport" in types
+                has_wonder = "wonder" in types
+                if not has_wonder or has_air:
+                    return -3.0 if has_air else -1.5
+                can = _can_afford(inv, 6, 5, obs)
+                return w.get("w_build_airport", 5.0) * can + 5.4 + inv_term - hunger * 0.02
             return -5.0
 
         if a.type == "move":

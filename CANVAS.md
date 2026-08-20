@@ -17,13 +17,16 @@ That **is** the canvas. There is no second UI. Do not start Vite. Do not iframe 
 ## New Grok chat (same project)
 
 1. User must be in **Build**, not Expert.
-2. Checkout `e5-lib-global` (later than `4c3c541`). Not `main`.
-3. Copy `/workspace/artifacts/ai-world` → `/workspace/ai-world` if the kernel is missing or `play_web.py` / `play_ui.html` is PLACEHOLDER / <1KB.
-4. `/workspace/startup.sh` must start play_web, not `npm run dev`.
-5. `sh /workspace/startup.sh` and leave it running.
-6. Prove: `curl -sf http://127.0.0.1:8080/` contains `id="begin"` and `· v10`.
-7. Tell the user to click **Watch** in the right preview.
+2. Restore **v29-safe**. Not `v19-safe`. Not `main`.
+3. Canvas live stamp is **· v29**.
+4. Copy `/workspace/artifacts/ai-world` → `/workspace/ai-world` if the kernel is missing or `play_web.py` / `play_ui.html` is PLACEHOLDER / <1KB.
+5. `/workspace/startup.sh` must start play_web, not `npm run dev`.
+6. `sh /workspace/startup.sh` and leave it running.
+7. Prove: `curl -sf http://127.0.0.1:8080/` contains `id="begin"` and `· v29`.
+8. Tell the user to click **Watch** in the right preview.
 
-Never `pkill -f`.
+Never `pkill -f`. Kill only the `python3 tools/play_web.py` PID (SIGTERM), then `sh /workspace/startup.sh`.
 
-Live stamp: subtitle **Watch the ages. Two peoples. Same map. · v10**
+Live stamp: subtitle **Watch the ages. Four peoples. Same map. · v29**
+
+If the right pane is blank HUD / empty World / no map at idle, the UI script crashed. Revert the last HTML edit; do not debug ports.

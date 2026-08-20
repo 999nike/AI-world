@@ -1,8 +1,8 @@
 # AI-world Design Notes (Internal)
 
-**Last updated:** 2026-08-19  
-**Content ceiling (built):** Era 4 + science line + discoveries  
-**Content ceiling (vision):** Era 6 world city
+**Last updated:** 2026-08-20  
+**Content ceiling (built):** Era 6 world city (airports, taxis, buses)  
+**Content ceiling (vision):** sit + optional learning agents on the same rules
 
 ---
 
@@ -16,7 +16,7 @@
 
 **Research lab** underneath: fully deterministic, seed-controlled, every decision logged. Logs become the animation / god-view pipeline. Humans watch or steer; later agents learn.
 
-**Current product (2026-08-19):** watch-first. Two peoples (west / east). Human edicts are **hidden**, not deleted. Default web run is `playable=False`, rival on, paced god-view. We are heading at the long-watch city picture. More peoples, and memory-app agents, come **after** the island can carry a real city.
+**Current product (2026-08-20):** watch-first. **Four peoples** (west / east / north / south), 10 hands a pole. Human edicts are **hidden**, not deleted. Default web run is `playable=False`, paced god-view. World city is on the canvas (**· v29**). Memory-app agents tried as v30 and **reverted**.
 
 Not pure spreadsheet. Not pure action game.  
 **Lab engine first → watchable city → industry → world city → optional learning agents on the same rules.**
@@ -34,8 +34,8 @@ Each era must **last**. It is a finished sit that *leads into* the next — not 
 | Town (3) | Workshop + barracks, 15 souls | yes | Streets starting, a camp |
 | City (4) | Academy + inquiry, 20 souls | yes | Districts, houses, fields, food chain |
 | Science | Library → lab → observatory | yes | Knowledge buildings, discoveries, *hold* |
-| **5 Industry** | Rail, mills, power, warehouses | **later** | **Trains.** Goods move on lines. Foundries smoke. The town is a machine. |
-| **6 World city** | Airports, highways, ports, skyline | **later** | **Planes, taxis, buses.** Real-world vision towns. A map you could mistake for a place. |
+| **5 Industry** | Rail, mills | **yes** | **Trains.** Goods move on lines. Mills and foundries work. Roads become rail. |
+| **6 World city** | Airports, taxis, buses | **yes** | **Planes.** Cabs on the square. Buses on the spine. |
 
 ### What belongs in those later eras (not now)
 
@@ -259,30 +259,26 @@ Four bots cannot run a major city, trains, or an airport. Today the eight walker
 
 ### For now (gameplay solid)
 
-- **Two tribes only.** East vs west. Same 48×48 island.
-- Start **4 walkers a side.** They are labour, not kings.
+- **Four tribes.** West, east, north, south. Same 48×48 island.
+- Start **10 walkers a side.** They are labour, not kings.
 - The **people** still age: camp → settlement → town → city → science.
 - The **walkers evolve** on that same path:
-  - Settlement — they **breed**. Extra villagers appear as souls grow. Hands are no longer stuck at 4.
+  - Settlement — they **breed** up to the cap when a side starts smaller. Watch starts at the cap.
   - Town — one walker can be raised to **knight** (raids, guard). The others stay labour.
   - City — that knight (or one child) can be raised to **king**. **Government** starts (hall, one crown).
   - Science — specialists (scribe, builder). Same people, new jobs.
-- Grow toward **8–10 hands a side by city.** Not 4 dots on a carpet.
+- Grow toward **8–10 hands a side by city.** Watch now **starts at 10.**
 - v17 gold/silver “kings” are **paint only**. Undo that lie when rank is real. One crown a side, when earned.
 
 ### Later (not this next patch)
 
-- Start **10 a side** if the island can carry it.
-- **North / south** as the other two poles — four peoples, four corners — only after two tribes feel true.
-- **Era 5 Industry** — trains, rail crews, mills. Many hands.
-- **Era 6 World city** — airports, taxis, buses. Crowds. You will *see* a station crew.
-- Memory-app agents (smarter walkers, same rules) after the city can carry this.
-- Playable governor / edicts still exist in the kernel; UI stays watch-first until we open them.
+- Uni / bars as real buildings (academy / market still stand in)
+- Memory-app agents (smarter walkers, same rules) — **v30 reverted**, watch must stay solid first
+- Playable governor / edicts still exist in the kernel; UI stays watch-first until we open them
 
 ### What this is not
 
 - Not 2×2 fake kings + villagers (v17 paint).
-- Not four kingdoms yet.
 - Not 4 walkers forever.
 - Not airports before rail. Not clever agents before hands.
 
@@ -294,16 +290,65 @@ Hands breed with population (cap 10). One knight a side at town + barracks. Fake
 
 City era crowns one king a side (the knight if they exist). Capital tagged government. Hall is the seat when it rises. Event log is wired to last_breed / last_knight / last_king.
 
-### Safe pin (do not lose this)
+### Shipped v20 — science specialists
 
-**Name:** `v19-safe` · alias **1.9**  
-**Repo:** `999nike/AI-world` · branch `e5-lib-global`  
-**Commit:** see PATCH_LEDGER.md  
-**Date:** 2026-08-19  
+Library names one **scribe** and one **builder** a side from existing walkers. Scribe walks to library / lab / observatory. Builder walks to hall / foundry / workshop. Same 10-hand cap. Paint and city panel follow `role`. Seed 42 east science is **Year 382** (specialists pull two hands toward their seats).
 
-Next chat: restore this pin if the canvas dies. Stamp must show · v19.
+### Shipped v21 — north / south poles
+
+Four peoples, four corners, same 48×48 island. West / east / north / south. Each starts 4 walkers, breeds to 10, same ranks (knight, king, scribe, builder). Watch stamp **· v21**. `pole_agents=0` keeps the two-tribe kernel. Seed 42 east science is **Year 354**.
+
+### Shipped v22 — 10 a side
+
+Watch starts **10 walkers a pole** (40 hands on the island). Cap stays 10. Two-tribe `num_agents=4` still breeds up. Stamp **· v22**. Seed 42 east science is **Year 342**.
+
+### Shipped v23 — industry trains
+
+After observatory a **mill** can rise. Mill + city → era 5. Streets become rail. One **rail crew** and one **train** a pole. Train walks the towns and mill, hauls a little wood. No RNG. Stamp **· v23**.
+
+### Shipped v24 — rail spine
+
+Industry sit. Rail is only the avenue and the line city ↔ mill ↔ other industry towns. Streets stay streets. Grain roads stay dirt. Trains already walk that spine. Stamp **· v24**.
+
+### Shipped v25 — mill power
+
+Mill on water (or irrigation, reach 4) is **live**. Power on the city. Foundry and mill tools only when live. Train loads only at a live mill. Mill-race painted to the water. Dry mill sits dark. Stamp **· v25**. Seed 42 hold stays **Year 342**.
+
+### Shipped v26 — warehouse
+
+After mill + 2 discoveries a **warehouse** can rise. Train loads at a live mill and drops at **W**. Goods sit on the spine. Stamp **· v26**. Seed 42 hold stays **Year 342**.
+
+### Shipped v27 — wonder
+
+One **wonder** a pole after warehouse + 3 discoveries. Fat landmark (3×3 pyramid). Stamp **· v27**. Seed 42 hold stays **Year 342**.
+
+Industry sit is finished: mill, power, rail, warehouse, wonder.
+
+### Shipped v28 — airports
+
+After a wonder, one **airport** a pole. Planes fly the island (2 tiles a tick, no RNG). Runway painted. Era 6 **world**. Stamp **· v28**. Seed 42 hold stays **Year 342**.
+
+### Shipped v29 — taxis / buses
+
+After the airport, one **taxi** loops the square and one **bus** runs hall → warehouse → field. No RNG. Stamp **· v29**. Seed 42 hold stays **Year 342**.
+
+World city sit: planes, cabs, buses.
+
+### Reverted v30 — memory walkers
+
+Labour walkers remembering resource tiles. JS syntax error in map paint blanked the watch (HUD, seed, map never ran). **Fully reverted.** Live stamp back to **· v29**. Do not re-land until script-checked.
+
+### Restore pin (do not lose this)
+
+**Name:** `v29-safe` · alias **2.9**  
+**Repo:** `999nike/AI-world` · branch `v29-safe`  
+**Stamp:** **· v29**  
+**Date:** 2026-08-20  
+
+Next chat: restore **v29-safe**, not v19-safe, not main.
+
+Old pin `v19-safe` / `5ce0355` is king+hall only. Keep it as archaeology, not as the restore.
 
 ### Next patch (when a new chat picks it up)
 
-**Science: specialists (scribe, builder). Same people, new jobs.**  
-One axis. Determinism sacred. Re-check seed 42 after role changes.
+Sit with the world city. Memory-app agents broke the watch (v30 reverted). Uni / bars if the sit still needs them. Not a new era.

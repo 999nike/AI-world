@@ -25,6 +25,9 @@ BUILD_ALIASES = {
     "hq": "command", "warroom": "command", "strategy_hq": "command", "cmd": "command",
     "science": "lab", "science_lab": "lab", "research": "lab", "laboratory": "lab",
     "obs": "observatory", "observe": "observatory", "telescope": "observatory",
+    "warehouse": "warehouse", "depot": "warehouse", "goods_yard": "warehouse",
+    "wonder": "wonder", "pyramid": "wonder", "landmark": "wonder", "monument": "wonder",
+    "airport": "airport", "airfield": "airport", "runway": "airport",
 }
 
 FARM_SOFT_CAP = 3
@@ -233,6 +236,64 @@ def resolve_building(requested, agent_x, agent_y, sm, world) -> Tuple[str, str]:
             return "hut", "observatory_capped_to_hut"
         if not any_lab:
             return "lab", "observatory_needs_lab"
+
+    if b == "mill":
+        any_mill = any(
+            sm.count_structures_of_type(sid, "mill", world) >= 1
+            for sid in sm.own()
+        )
+        if any_mill:
+            return "hut", "mill_capped_to_hut"
+        if not any_observatory:
+            return "observatory", "mill_needs_observatory"
+
+    if b == "warehouse":
+        any_warehouse = any(
+            sm.count_structures_of_type(sid, "warehouse", world) >= 1
+            for sid in sm.own()
+        )
+        any_mill = any(
+            sm.count_structures_of_type(sid, "mill", world) >= 1
+            for sid in sm.own()
+        )
+        disc = sum(int(ss.get("discoveries", 0) or 0) for ss in sm.own().values())
+        if any_warehouse:
+            return "hut", "warehouse_capped_to_hut"
+        if not any_mill:
+            return "mill", "warehouse_needs_mill"
+        if disc < 2:
+            return "hut", "warehouse_needs_discoveries"
+
+    if b == "wonder":
+        any_wonder = any(
+            sm.count_structures_of_type(sid, "wonder", world) >= 1
+            for sid in sm.own()
+        )
+        any_warehouse = any(
+            sm.count_structures_of_type(sid, "warehouse", world) >= 1
+            for sid in sm.own()
+        )
+        disc = sum(int(ss.get("discoveries", 0) or 0) for ss in sm.own().values())
+        if any_wonder:
+            return "hut", "wonder_capped_to_hut"
+        if not any_warehouse:
+            return "warehouse", "wonder_needs_warehouse"
+        if disc < 3:
+            return "hut", "wonder_needs_discoveries"
+
+    if b == "airport":
+        any_air = any(
+            sm.count_structures_of_type(sid, "airport", world) >= 1
+            for sid in sm.own()
+        )
+        any_wonder = any(
+            sm.count_structures_of_type(sid, "wonder", world) >= 1
+            for sid in sm.own()
+        )
+        if any_air:
+            return "hut", "airport_capped_to_hut"
+        if not any_wonder:
+            return "wonder", "airport_needs_wonder"
 
     return b, note
 
@@ -502,4 +563,80 @@ def can_build_observatory(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
         return False, "observatory_needs_lab"
     if any_obs:
         return False, "observatory_already_exists"
+    return True, ""
+
+
+def can_build_mill(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "mill_needs_settlement"
+    any_obs = False
+    any_mill = False
+    for sid in sm.own():
+        if sm.count_structures_of_type(sid, "observatory", world) >= 1:
+            any_obs = True
+        if sm.count_structures_of_type(sid, "mill", world) >= 1:
+            any_mill = True
+    if not any_obs:
+        return False, "mill_needs_observatory"
+    if any_mill:
+        return False, "mill_already_exists"
+    return True, ""
+
+
+def can_build_warehouse(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "warehouse_needs_settlement"
+    any_mill = False
+    any_wh = False
+    disc = 0
+    for sid, s in sm.own().items():
+        disc += int(s.get("discoveries", 0) or 0)
+        if sm.count_structures_of_type(sid, "mill", world) >= 1:
+            any_mill = True
+        if sm.count_structures_of_type(sid, "warehouse", world) >= 1:
+            any_wh = True
+    if not any_mill:
+        return False, "warehouse_needs_mill"
+    if disc < 2:
+        return False, "warehouse_needs_discoveries"
+    if any_wh:
+        return False, "warehouse_already_exists"
+    return True, ""
+
+
+def can_build_wonder(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "wonder_needs_settlement"
+    any_wh = False
+    any_wonder = False
+    disc = 0
+    for sid, s in sm.own().items():
+        disc += int(s.get("discoveries", 0) or 0)
+        if sm.count_structures_of_type(sid, "warehouse", world) >= 1:
+            any_wh = True
+        if sm.count_structures_of_type(sid, "wonder", world) >= 1:
+            any_wonder = True
+    if not any_wh:
+        return False, "wonder_needs_warehouse"
+    if disc < 3:
+        return False, "wonder_needs_discoveries"
+    if any_wonder:
+        return False, "wonder_already_exists"
+    return True, ""
+
+
+def can_build_airport(agent_x, agent_y, sm, world) -> Tuple[bool, str]:
+    if sm.count() == 0:
+        return False, "airport_needs_settlement"
+    any_wonder = False
+    any_air = False
+    for sid in sm.own():
+        if sm.count_structures_of_type(sid, "wonder", world) >= 1:
+            any_wonder = True
+        if sm.count_structures_of_type(sid, "airport", world) >= 1:
+            any_air = True
+    if not any_wonder:
+        return False, "airport_needs_wonder"
+    if any_air:
+        return False, "airport_already_exists"
     return True, ""
