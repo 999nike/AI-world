@@ -272,9 +272,20 @@ Four bots cannot run a major city, trains, or an airport. Today the eight walker
 
 ### Later (not this next patch)
 
-- Uni / bars as real buildings (academy / market still stand in)
 - Memory-app agents (smarter walkers, same rules) — **v30 reverted**, watch must stay solid first
 - Playable governor / edicts still exist in the kernel; UI stays watch-first until we open them
+
+### Sit (canvas, still · v29 — not a new era)
+
+Uni / bars painted as buildings. Housing / civic / industry / military / fields. Corner poles fill inward. Camera W/E/N/S.
+
+### Art pass (canvas, still · v29)
+
+Same 48×48 kernel. CSS tiles: grass, water, roofs, mill-wheel, warehouse, runway. Building letters off. Walkers stay dots.
+
+### Sprites (canvas, still · v29)
+
+Train / cab / bus / plane are shapes that face the move. Live mill spins. No new rules. Walkers still dots.
 
 ### What this is not
 
@@ -342,11 +353,13 @@ Labour walkers remembering resource tiles. JS syntax error in map paint blanked 
 
 **Name:** `v29-safe` · alias **2.9**  
 **Repo:** `999nike/AI-world` · branch `v29-safe`  
-**Commit:** `5ab70ae6c88738346f4d44e3d7e7208afcefe30c`  
+**Commit:** `467b3e1ab02f1bf699e676d3142fa30ac06e8667`  
 **Stamp:** **· v29**  
 **Date:** 2026-08-20  
 
-Next chat: restore **v29-safe**, not v19-safe, not main.
+Sit + art pass + painted sprites are on this pin (canvas). Kernel land is still the world-city pin.
+
+Next chat: restore **v29-safe**, not v19-safe, not main. **Start the game (Layer 2)** — see PATCH_LEDGER locked next. Pause, 3 edict buttons, resume. Not memory. Not a new era.
 
 Old pin `v19-safe` / `5ce0355` is king+hall only. Keep it as archaeology, not as the restore.
 

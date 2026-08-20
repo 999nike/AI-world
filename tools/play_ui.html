@@ -75,20 +75,21 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .log .ev{border-top:1px solid var(--border);padding:8px 0}
 .log .ev b{display:block;color:var(--fg-subtle);font-size:.68rem;font-weight:600;letter-spacing:.06em}
 .map-wrap{overflow:auto;background:#071018;border-radius:10px;padding:8px;position:relative;touch-action:none;-webkit-overflow-scrolling:touch}
-.map-zoom{position:absolute;top:10px;left:10px;z-index:3;display:flex;align-items:center;gap:4px;background:color-mix(in oklab,var(--bg-elevated) 88%,transparent);border:1px solid var(--border);border-radius:8px;padding:3px}
+.map-zoom{position:absolute;top:10px;left:10px;z-index:3;display:flex;align-items:center;gap:4px;background:color-mix(in oklab,var(--bg-elevated) 88%,transparent);border:1px solid var(--border);border-radius:8px;padding:3px;flex-wrap:wrap;max-width:calc(100% - 24px)}
+.map-zoom .look{height:32px;min-width:28px;padding:0 8px;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase}
 .map-zoom .btn{height:32px;min-width:32px;padding:0 9px}
 .map-zoom .zlabel{font-family:var(--font-mono);font-size:.72rem;color:var(--fg-muted);min-width:2.8em;text-align:center}
 .map-sizer{position:relative}
 #map{display:grid;gap:0;width:max-content;margin:0 auto}
-.cell{width:18px;height:18px;background:#2a4a28;display:flex;align-items:center;justify-content:center;font:8px/1 var(--font-mono);color:color-mix(in oklab,var(--fg) 62%,transparent);user-select:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
-.cell.water{background:#1a4a62}
-.cell.shore{background:#3d6a52}
-.cell.grass-d{background:#234a28}
-.cell.grass{background:#2f5a30}
-.cell.meadow{background:#3d6a34}
-.cell.wood{background:#1e3a24}
-.cell.tree{background:#16301c}
-.cell.rock{background:#3a423c}
+.cell{width:18px;height:18px;background:#2a4a28;display:flex;align-items:center;justify-content:center;font-size:0;line-height:0;color:transparent;user-select:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.cell.water{background:linear-gradient(180deg,#246a88 0%,#154a62 42%,#0e3a52 100%);box-shadow:inset 0 1px 0 #4a90a8, inset 0 -2px 0 #0a2838}
+.cell.shore{background:linear-gradient(180deg,#4a7a62,#2a5a48);box-shadow:inset 0 1px 0 #6a9a78}
+.cell.grass-d{background:repeating-linear-gradient(90deg,#1e3e22 0 3px,#234a28 3px 6px)}
+.cell.grass{background:repeating-linear-gradient(-70deg,#2a522c 0 2px,#326434 2px 4px,#2f5a30 4px 7px)}
+.cell.meadow{background:repeating-linear-gradient(80deg,#3a6a32 0 3px,#4a7a3c 3px 5px)}
+.cell.wood{background:radial-gradient(circle at 40% 40%,#2a4a30 0 40%,#16301c 70%)}
+.cell.tree{background:radial-gradient(circle at 50% 55%,#245a30 0 38%,#14301c 68%,#0c2014 100%);border-radius:42% 42% 28% 28%}
+.cell.rock{background:linear-gradient(135deg,#5a6258,#3a423c 55%,#2a302c);box-shadow:inset 1px 1px 0 #7a8278}
 .cell.yard.west{background:#5a4e3a}
 .cell.yard.east{background:#5a3e36}
 .cell.yard.north{background:#3e4e5a}
@@ -119,8 +120,27 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .cell.house.east{background:#b47858}
 .cell.house.north{background:#8aa4b8}
 .cell.house.south{background:#8ab06a}
-.cell.house.fed{box-shadow:inset 0 -2px 0 #c4b060}
+.cell.housing.west{background:#b89468}
+.cell.housing.east{background:#a86a52}
+.cell.housing.north{background:#7a98a8}
+.cell.housing.south{background:#7aa060}
+.cell.uni{background:#2e4a5c;color:#d8e8f0;font-weight:700;box-shadow:inset 0 0 0 1px #8ab0c4}
+.cell.uni.west{background:#3a4a40}
+.cell.uni.east{background:#4a3840}
+.cell.uni.north{background:#2e4a5c}
+.cell.uni.south{background:#2e4a34}
+.cell.bar{background:#6a3a38;color:#f0d0a8;font-weight:700;box-shadow:inset 0 -3px 0 #c47840}
+.cell.bar.west{background:#7a4a38}
+.cell.bar.east{background:#7a3834}
+.cell.bar.north{background:#5a3e48}
+.cell.bar.south{background:#4a4a30}
+.cell.military{background:#5a3c36}
+.cell.military.west{background:#6a4c38}
+.cell.military.east{background:#6a3c36}
+.cell.military.north{background:#3a4450}
+.cell.military.south{background:#3a4a30}
 .cell.house.hungry{filter:saturate(.45) brightness(.72)}
+.cell.house.fed{box-shadow:inset 0 -2px 0 #c4b060}
 .cell.granary{background:#6a5430}
 .cell.granary.full{background:#c4a050}
 .cell.granary.low{background:#8a6a30}
@@ -379,7 +399,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .cell.rival{box-shadow:inset 0 0 0 1px #a85a48}
 .cell.north{box-shadow:inset 0 0 0 1px #5a7a90}
 .cell.south{box-shadow:inset 0 0 0 1px #5a7a48}
-#map.age-town .cell,#map.age-city .cell,#map.age-science .cell,#map.age-industry .cell,#map.age-world .cell{width:20px;height:20px;font-size:9px}
+#map.age-town .cell,#map.age-city .cell,#map.age-science .cell,#map.age-industry .cell,#map.age-world .cell{width:20px;height:20px}
 #map.age-town .cell.grass,#map.age-town .cell.grass-d,#map.age-town .cell.meadow{filter:saturate(1.15)}
 #map.age-city .cell.yard.west{background:#4a4e58}
 #map.age-city .cell.yard.east{background:#5a4044}
@@ -407,6 +427,147 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .meter .bar{margin:4px 0 0}
 .chip{display:inline-block;font-size:.65rem;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-subtle);border:1px solid var(--border);border-radius:99px;padding:2px 7px;margin:3px 4px 0 0}
 .legend{color:var(--fg-subtle);font-size:.7rem;line-height:1.45;margin-top:8px}
+#map.age-city .cell,#map.age-science .cell,#map.age-industry .cell,#map.age-world .cell{width:22px;height:22px}
+.cell.plaza.west{background:repeating-linear-gradient(45deg,#9a8870 0 3px,#7a6850 3px 6px)}
+.cell.plaza.east{background:repeating-linear-gradient(45deg,#9a6a58 0 3px,#7a4a40 3px 6px)}
+.cell.plaza.north{background:repeating-linear-gradient(45deg,#7a8a98 0 3px,#5a6a78 3px 6px)}
+.cell.plaza.south{background:repeating-linear-gradient(45deg,#7a9a68 0 3px,#5a7a48 3px 6px)}
+.cell.street{background:#3a342c;background-image:linear-gradient(#0000 40%,#2a241c 41% 59%,#0000 60%),linear-gradient(90deg,#0000 40%,#2a241c 41% 59%,#0000 60%)}
+.cell.house.west,.cell.housing.west,.cell.hut.west{
+  background:linear-gradient(180deg,#f0d0a0 0 28%,#c47840 28% 72%,#6a3a18 72%);
+  box-shadow:inset 0 1px 0 #f8e8c0, inset 0 -2px 0 #4a2810;
+}
+.cell.house.east,.cell.housing.east,.cell.hut.east{
+  background:linear-gradient(180deg,#e8b8a8 0 28%,#b05848 28% 72%,#5a2818 72%);
+  box-shadow:inset 0 1px 0 #f0d0c8, inset 0 -2px 0 #3a1810;
+}
+.cell.house.north,.cell.housing.north,.cell.hut.north{
+  background:linear-gradient(180deg,#d0dce8 0 28%,#6a8498 28% 72%,#2a3848 72%);
+  box-shadow:inset 0 1px 0 #e8f0f8, inset 0 -2px 0 #1a2830;
+}
+.cell.house.south,.cell.housing.south,.cell.hut.south{
+  background:linear-gradient(180deg,#d8e8b0 0 28%,#6a8a48 28% 72%,#2a4018 72%);
+  box-shadow:inset 0 1px 0 #eef6d0, inset 0 -2px 0 #1a280c;
+}
+.cell.uni,.cell.uni.west,.cell.uni.east,.cell.uni.north,.cell.uni.south{
+  background:linear-gradient(180deg,#c8d8e4 0 22%,#3a5870 22% 78%,#1a3040 78%);
+  box-shadow:inset 0 1px 0 #e0eef4, 0 0 0 1px #8ab0c4;
+}
+.cell.bar,.cell.bar.west,.cell.bar.east,.cell.bar.north,.cell.bar.south{
+  background:repeating-linear-gradient(90deg,#c47840 0 4px,#6a3030 4px 8px);
+  box-shadow:inset 0 4px 0 #8a2020, inset 0 -2px 0 #3a1818;
+}
+.cell.mill{
+  background:
+    radial-gradient(circle at 50% 50%,#d8c8a0 0 16%,transparent 17%),
+    conic-gradient(#5a4a30 0 12%,#c4b090 0 18%,#5a4a30 0 37%,#c4b090 0 43%,#5a4a30 0 62%,#c4b090 0 68%,#5a4a30 0 87%,#c4b090 0 93%,#5a4a30 0);
+  border-radius:50%;
+  box-shadow:inset 0 0 0 2px #3a3020, 0 0 0 1px #1a1410;
+}
+.cell.mill.live{box-shadow:inset 0 0 0 2px #e8d080, 0 0 10px #c8a050}
+.cell.warehouse{
+  background:linear-gradient(180deg,#b8a888 0 30%,#5a4a34 30% 80%,#3a3020 80%);
+  box-shadow:inset 0 1px 0 #d8ccb0;
+}
+.cell.airport{
+  background:linear-gradient(180deg,#6a6a74,#3a3a42);
+  box-shadow:inset 0 0 0 1px #8a8a94;
+}
+.cell.runway{
+  background:
+    linear-gradient(#0000 42%,#d8d8c8 42% 58%,#0000 58%),
+    repeating-linear-gradient(90deg,#2a2a32 0 8px,#3a3a44 8px 10px,#2a2a32 10px 18px);
+}
+.cell.wonder{
+  background:
+    linear-gradient(180deg,#0000 55%,#6a5020 55%),
+    linear-gradient(90deg,#0000 22%,#e8d090 22% 78%,#0000 78%),
+    linear-gradient(180deg,#f0dc98,#8a6818);
+  clip-path:polygon(50% 8%,92% 92%,8% 92%);
+}
+.cell.hall{background:linear-gradient(180deg,#c8c4b8 0 25%,#5a5850 25% 100%);box-shadow:inset 0 2px 0 #e8e4d8}
+.cell.library{background:linear-gradient(180deg,#8ab0c4 0 22%,#3a6080 22%);box-shadow:inset 0 1px 0 #c8dce8}
+.cell.lab{background:linear-gradient(180deg,#6aa0c0 0 22%,#2a5070 22%)}
+.cell.observatory{background:radial-gradient(circle at 50% 30%,#8ab0d0 0 28%,#2a4060 50%);border-radius:50% 50% 8px 8px}
+.cell.foundry{background:linear-gradient(180deg,#c06040 0 18%,#704840 18%);box-shadow:0 0 8px #a04020}
+.cell.crop-a{background:repeating-linear-gradient(90deg,#5a8a3c 0 2px,#4a7a30 2px 4px)}
+.cell.crop-b{background:repeating-linear-gradient(90deg,#3d6a30 0 2px,#4a7a38 2px 4px)}
+#map{overflow:visible}
+.cell.train,.cell.plane,.cell.taxi,.cell.bus{
+  position:relative;
+  background-color:transparent !important;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  clip-path:none !important;
+  width:100% !important;
+  height:100% !important;
+  margin:0 !important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));
+  z-index:8;
+}
+.cell.train{background-image:url("/sprites/train.png");transform:scale(1.9)}
+.cell.taxi{background-image:url("/sprites/taxi.png");transform:scale(1.55)}
+.cell.bus{background-image:url("/sprites/bus.png");transform:scale(1.75)}
+.cell.plane{background-image:url("/sprites/plane.png");transform:scale(1.85) translateY(-6px)}
+.cell.train.face-w{transform:scale(1.9) scaleX(-1)}
+.cell.train.face-n{transform:scale(1.9) rotate(-90deg)}
+.cell.train.face-s{transform:scale(1.9) rotate(90deg)}
+.cell.taxi.face-w{transform:scale(1.55) scaleX(-1)}
+.cell.taxi.face-n{transform:scale(1.55) rotate(-90deg)}
+.cell.taxi.face-s{transform:scale(1.55) rotate(90deg)}
+.cell.bus.face-w{transform:scale(1.75) scaleX(-1)}
+.cell.bus.face-n{transform:scale(1.75) rotate(-90deg)}
+.cell.bus.face-s{transform:scale(1.75) rotate(90deg)}
+.cell.plane.face-w{transform:scale(1.85) scaleX(-1) translateY(-6px)}
+.cell.plane.face-n{transform:scale(1.85) rotate(-90deg)}
+.cell.plane.face-s{transform:scale(1.85) rotate(90deg)}
+@keyframes millsheet{
+  0%{background-position:0 0}
+  25%{background-position:100% 0}
+  50%{background-position:0 100%}
+  75%{background-position:100% 100%}
+  100%{background-position:0 0}
+}
+.cell.mill,.cell.mill.west,.cell.mill.east,.cell.mill.north,.cell.mill.south{
+  background-color:transparent !important;
+  background-image:url("/sprites/mill.png");
+  background-size:200% 200%;
+  background-position:0 0;
+  background-repeat:no-repeat;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  animation:none;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));
+}
+.cell.mill.live{animation:millsheet .9s steps(1) infinite}
+.cell.mill.dry{animation:none;filter:grayscale(.45) brightness(.85) drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.cell.water{
+  background:
+    repeating-linear-gradient(110deg,#1a5a78 0 6px,#154a68 6px 12px),
+    linear-gradient(180deg,#2a7a98,#0e3a52);
+}
+.cell.tree{
+  background:
+    radial-gradient(circle at 50% 42%,#3a7a40 0 28%,#1a4824 58%,#0c2414 100%);
+  border-radius:46% 46% 30% 30%;
+  box-shadow:inset 0 3px 0 #6a9a58;
+}
+.cell.street{
+  background:
+    repeating-linear-gradient(90deg,#3a342c 0 5px,#2e2822 5px 6px),
+    #3a342c;
+}
+.cell.rail,.cell.street.rail{
+  background:
+    repeating-linear-gradient(90deg,#2a2824 0 4px,#9a9aa4 4px 6px,#2a2824 6px 10px);
+  box-shadow:inset 0 7px 0 #1a1814, inset 0 -7px 0 #1a1814;
+}
+.cell.plaza.west,.cell.plaza.east,.cell.plaza.north,.cell.plaza.south{
+  background-image:repeating-radial-gradient(circle at 2px 2px,#0000 0 2px, rgba(0,0,0,.18) 2.2px 2.6px);
+}
 .banner{padding:8px 10px;border-radius:8px;background:var(--bg-subtle);margin-bottom:10px;font-size:.85rem}
 .banner.win{border:1px solid color-mix(in oklab,var(--ok) 50%,transparent);font-weight:600}
 .banner.lose{border:1px solid color-mix(in oklab,var(--danger) 50%,transparent);font-weight:600}
@@ -475,19 +636,23 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
           <button class="btn ghost" id="zoomOut" type="button" aria-label="Zoom out">−</button>
           <span class="zlabel" id="zoomLabel">1×</span>
           <button class="btn ghost" id="zoomIn" type="button" aria-label="Zoom in">+</button>
-          <button class="btn ghost" id="zoomReset" type="button">Fit</button>
+          <button class="btn ghost" id="zoomReset" type="button">Island</button>
+          <button class="btn ghost look" data-look="west" type="button">W</button>
+          <button class="btn ghost look" data-look="east" type="button">E</button>
+          <button class="btn ghost look" data-look="north" type="button">N</button>
+          <button class="btn ghost look" data-look="south" type="button">S</button>
         </div>
         <div class="map-sizer" id="mapSizer"><div id="map"></div></div>
       </div>
-      <div class="legend">Four poles · world city · taxis on the square · buses hall ↔ warehouse ↔ field · ^ plane · B bus · c cab</div>
+      <div class="legend">Painted sprites · mill wheel · train / cab / bus / plane · walkers still dots · park W · · v29</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1;
-const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"C",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F"};
+let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island";
+const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"U",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F",market:"b"};
 const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"],["era5","Industry"],["era6","World"]];
 const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city",5:"industry",6:"world"};
 function esc(s){
@@ -546,7 +711,7 @@ function ageState(world,fac){
   const era=towns.reduce((a,s)=>Math.max(a,Number(s.era||2)),0);
   const on={camp:true,era2:towns.length>0,era3:era>=3,era4:era>=4,library:sci.lib,lab:sci.lab,observatory:sci.obs,era5:era>=5,era6:era>=6};
   let now="camp";for(const [id] of AGES) if(on[id]) now=id;
-  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder")};
+  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder"),uni:ownStructs(world,fac).some(s=>s.type==="academy"),bar:ownStructs(world,fac).some(s=>s.type==="market")};
 }
 function ranksOf(world,fac){
   const hands=((world&&world.agents)||[]).filter(a=>(a.faction||"player")===fac);
@@ -663,6 +828,8 @@ function folkBlock(side,title,barCls){
   const goods=Number((side.cap&&side.cap.goods_stock)||0);
   if(goods>0) lead+=(lead.endsWith(".")?" ":"")+"Goods in the warehouse.";
   if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A wonder stands.";
+  if(side.uni) lead+=(lead.endsWith(".")?" ":"")+"A university stands.";
+  if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"A bar sits on the street.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Planes leave the field.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Cabs and buses work the streets.";
   const bits=[];
@@ -752,10 +919,25 @@ function paintLand(w,h,set){
     set(x,y,kind[y][x],"","",0);
   }
 }
+function faceClass(kind,id,x,y){
+  const key=kind+":"+id;
+  const store=window.__vehFace||(window.__vehFace={});
+  const prev=store[key];
+  let face="face-e";
+  if(prev){
+    if(x>prev.x) face="face-e";
+    else if(x<prev.x) face="face-w";
+    else if(y>prev.y) face="face-s";
+    else if(y<prev.y) face="face-n";
+    else face=prev.face||"face-e";
+  }
+  store[key]={x:x,y:y,face:face};
+  return face;
+}
 function renderMap(world){
   if(!world) return;
   const w=world.width||48,h=world.height||48,map=$("map");
-  const size=(map.classList.contains("age-town")||map.classList.contains("age-city")||map.classList.contains("age-science")||map.classList.contains("age-industry")||map.classList.contains("age-world"))?20:18;
+  const size=(map.classList.contains("age-town")||map.classList.contains("age-city")||map.classList.contains("age-science")||map.classList.contains("age-industry")||map.classList.contains("age-world"))?22:18;
   map.style.gridTemplateColumns=`repeat(${w}, ${size}px)`;
   const occ={};
   function set(x,y,cls,mark,title,z){
@@ -774,7 +956,7 @@ function renderMap(world){
   for(const town of towns){
     const era=Number(town.era||2);
     const pop=Number(town.population||0);
-    const r=Math.min(10, 2+(era>=4?2:era>=3?1:0)+Math.floor(pop/16));
+    const r=Math.min(11, 2+(era>=6?5:era>=5?4:era>=4?3:era>=3?1:0)+Math.floor(pop/14));
     const fn=facName(town.faction);
     const days=townDays[town.id];
     const hungry=days!=null&&days<1;
@@ -783,31 +965,56 @@ function renderMap(world){
       if(Math.abs(dx)+Math.abs(dy)>r) continue;
       const tx=town.x+dx, ty=town.y+dy;
       if(wet(tx,ty)) continue;
+      const ring=Math.abs(dx)+Math.abs(dy);
       const street=(dx%3===0||dy%3===0)&&!(dx===0&&dy===0);
-      set(tx,ty,street?"street":("yard "+fn),"",town.id+(street?" street":" district"),street?2:1);
+      let cls;
+      if(street) cls="street";
+      else if(ring<=2) cls="plaza "+fn;
+      else if(era>=4 && ring<=6) cls="housing "+fn;
+      else cls="yard "+fn;
+      const z=street?2:(ring<=2?3:1);
+      set(tx,ty,cls,"",town.id+(street?" street":(ring<=2?" square":(era>=4&&ring<=6?" housing":" district"))),z);
     }
     for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
       if(!wet(town.x+dx,town.y+dy)) set(town.x+dx,town.y+dy,"plaza "+fn,"",town.id+" square",4);
     }
-    const homes=Math.min(36, Math.floor(pop/5));
-    for(let i=0;i<homes;i++){
-      const ang=(hash(town.x+i*3,town.y+i*7)/255)*Math.PI*2;
-      const rad=2+(i%8);
-      const hx=town.x+Math.round(Math.cos(ang)*rad);
-      const hy=town.y+Math.round(Math.sin(ang)*rad);
-      const cell=occ[hx+","+hy];
-      if(cell && (cell.cls==="water"||cell.z>=5)) continue;
-      set(hx,hy,"house "+fn+(hungry?" hungry":(fed?" fed":"")),"",town.id+(hungry?" hungry":" house"),5);
+    const homes=era>=4?Math.min(56, Math.max(14, Math.floor(pop/2.4))):Math.min(36, Math.floor(pop/5));
+    const mx=(w-1)/2, my=(h-1)/2;
+    const slots=[];
+    for(let ring=2;ring<=10;ring++){
+      for(let dy=-ring;dy<=ring;dy++) for(let dx=-ring;dx<=ring;dx++){
+        if(Math.abs(dx)<=1 && Math.abs(dy)<=1) continue;
+        if(Math.abs(dx)+Math.abs(dy)>ring+1) continue;
+        const hx=town.x+dx, hy=town.y+dy;
+        if(hx<0||hy<0||hx>=w||hy>=h) continue;
+        if(wet(hx,hy)) continue;
+        slots.push({x:hx,y:hy, inward:Math.abs(hx-mx)+Math.abs(hy-my), ring:Math.abs(dx)+Math.abs(dy)});
+      }
     }
-    const tents=Math.min(20, Math.floor(Number(town.soldiers||0)/7));
-    if(tents){
-      const camps=(world.structures||[]).filter(s=>s.type==="barracks"&&factionOf(world,s)===(town.faction||"player"));
-      const bx=camps[0]?camps[0].x:town.x+2, by=camps[0]?camps[0].y:town.y-2;
-      for(let i=0;i<tents;i++){
-        const hx=bx+(i%5)-2, hy=by+Math.floor(i/5)-1;
-        const cell=occ[hx+","+hy];
-        if(cell && (cell.cls==="water"||cell.z>=6)) continue;
-        set(hx,hy,"camp "+fn,"",fn+" camp",5);
+    slots.sort((a,b)=>a.inward-b.inward || a.ring-b.ring);
+    const used={};
+    let placed=0;
+    for(const s of slots){
+      if(placed>=homes) break;
+      const k=s.x+","+s.y;
+      if(used[k]) continue;
+      const cell=occ[k];
+      if(cell && (cell.cls==="water"||cell.z>=6)) continue;
+      used[k]=1;
+      set(s.x,s.y,"house "+fn+(hungry?" hungry":(fed?" fed":"")),"",town.id+(hungry?" hungry":" house"),5);
+      placed++;
+    }
+    if(era<4){
+      const tents=Math.min(20, Math.floor(Number(town.soldiers||0)/7));
+      if(tents){
+        const camps=(world.structures||[]).filter(s=>s.type==="barracks"&&factionOf(world,s)===(town.faction||"player"));
+        const bx=camps[0]?camps[0].x:town.x+2, by=camps[0]?camps[0].y:town.y-2;
+        for(let i=0;i<tents;i++){
+          const hx=bx+(i%5)-2, hy=by+Math.floor(i/5)-1;
+          const cell=occ[hx+","+hy];
+          if(cell && (cell.cls==="water"||cell.z>=6)) continue;
+          set(hx,hy,"camp "+fn,"",fn+" camp",5);
+        }
       }
     }
   }
@@ -921,7 +1128,8 @@ function renderMap(world){
   for(const st of world.structures||[]){
     const fac=factionOf(world,st);
     const fn=facName(fac);
-    const mark=GLYPH[st.type]||"";
+    const skinType=st.type==="academy"?"uni":(st.type==="market"?"bar":(st.type||""));
+    const mark="";
     let extra="";
     if(st.type==="granary"){
       let owner=null,bd=1e9;
@@ -933,12 +1141,28 @@ function renderMap(world){
       extra=days==null?"":(days<1?" empty":(days<3?" low":" full"));
     }
     const liveTown=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
-    const skin=(st.type||"")+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"");
-    set(st.x,st.y,skin,mark,(fn+" "+(st.type||"")),6);
+    const skin=skinType+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"");
+    const label=st.type==="academy"?"university":(st.type==="market"?"bar":(st.type||""));
+    set(st.x,st.y,skin,mark,(fn+" "+label),6);
     if(BIG[st.type]){
-      set(st.x+1,st.y,skin,"",(fn+" "+(st.type||"")),6);
-      set(st.x,st.y+1,skin,"",(fn+" "+(st.type||"")),6);
-      set(st.x+1,st.y+1,skin,"",(fn+" "+(st.type||"")),6);
+      set(st.x+1,st.y,skin,"",(fn+" "+label),6);
+      set(st.x,st.y+1,skin,"",(fn+" "+label),6);
+      set(st.x+1,st.y+1,skin,"",(fn+" "+label),6);
+    }
+    if(st.type==="academy"){
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0) continue;
+        if(wet(st.x+dx,st.y+dy)) continue;
+        set(st.x+dx,st.y+dy,"uni "+fn,"",(fn+" university"),6);
+      }
+    }
+    if(st.type==="barracks"){
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        if(wet(st.x+dx,st.y+dy)) continue;
+        const cell=occ[(st.x+dx)+","+(st.y+dy)];
+        if(cell&&cell.z>=6) continue;
+        set(st.x+dx,st.y+dy,"military "+fn,"",(fn+" military"),4);
+      }
     }
     if(st.type==="wonder"){
       for(let dy=0;dy<=2;dy++) for(let dx=0;dx<=2;dx++){
@@ -982,19 +1206,19 @@ function renderMap(world){
   for(const tr of world.trains||[]){
     const fn=facName(tr.faction||"player");
     const cargo=Number(tr.cargo||0)?" loaded":"";
-    set(tr.x,tr.y,"train "+fn,"T",(fn+" train"+cargo),10);
+    set(tr.x,tr.y,"train "+fn+" "+faceClass("train",tr.id||fn,tr.x,tr.y),"",(fn+" train"+cargo),10);
   }
   for(const pl of world.planes||[]){
     const fn=facName(pl.faction||"player");
-    set(pl.x,pl.y,"plane "+fn,"^",(fn+" plane"),11);
+    set(pl.x,pl.y,"plane "+fn+" "+faceClass("plane",pl.id||fn,pl.x,pl.y),"",(fn+" plane"),11);
   }
   for(const cab of world.taxis||[]){
     const fn=facName(cab.faction||"player");
-    set(cab.x,cab.y,"taxi "+fn,"c",(fn+" taxi"),10);
+    set(cab.x,cab.y,"taxi "+fn+" "+faceClass("taxi",cab.id||fn,cab.x,cab.y),"",(fn+" taxi"),10);
   }
   for(const bus of world.buses||[]){
     const fn=facName(bus.faction||"player");
-    set(bus.x,bus.y,"bus "+fn,"B",(fn+" bus"),10);
+    set(bus.x,bus.y,"bus "+fn+" "+faceClass("bus",bus.id||fn,bus.x,bus.y),"",(fn+" bus"),10);
   }
   let html="";
   for(let y=0;y<h;y++) for(let x=0;x<w;x++){
@@ -1018,7 +1242,7 @@ function chronicleDiff(world){
     if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`);
     if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`);
   }
-  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"An academy rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A wonder rose",airport:"An airport rose"};
+  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A wonder rose",airport:"An airport rose",market:"A bar opened on the street"};
   for(const [typ,line] of Object.entries(risen)){
     const n=(wld,fac)=>ownStructs(wld,fac).filter(s=>s.type===typ).length;
     if(n(world,"player")>n(prevWorld,"player")) logLine(tick,`${line} in the west.`);
@@ -1084,7 +1308,7 @@ async function poll(){
   const world=state.world;
   if(world&&world.outcome&&!state.outcome) state.outcome=world.outcome;
   if(world&&world.tick!==lastTick){
-    lastTick=world.tick; renderAges(world); renderHud(world); renderRace(world); renderMap(world); renderCity(world); chronicleDiff(world); prevSample=sampleOf(world);
+    lastTick=world.tick; renderAges(world); renderHud(world); renderRace(world); renderMap(world); renderCity(world); chronicleDiff(world); prevSample=sampleOf(world); parkCamera(world);
     const raid=(world.metrics||{}).last_raid;
     if(raid&&raid.tick!==lastRaidTick){lastRaidTick=raid.tick;logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`);}
     const down=(world.metrics||{}).last_stand_down;
@@ -1162,7 +1386,7 @@ async function poll(){
     logLine(lastOutcomeTick,`West ${west.people} souls · ${ERA_WORD[west.era]||"camp"} · science ${west.sci.steps}/5. East ${east.people} souls · ${ERA_WORD[east.era]||"camp"} · science ${east.sci.steps}/5.`);
   }
   if(state.status==="done"){
-    if(world){renderAges(world);renderHud(world);renderRace(world);renderMap(world);renderCity(world);}
+    if(world){renderAges(world);renderHud(world);renderRace(world);renderMap(world);renderCity(world);parkCamera(world);}
     logLine(lastTick>=0?lastTick:null,`Clock ended. Score ${state.score??"—"}`);
     clearInterval(timer);timer=null;$("begin").disabled=false;$("pauseBtn").disabled=true;
   }
@@ -1187,6 +1411,34 @@ function applyZoom(){
   sizer.style.width=Math.max(1,Math.round(w*zoom))+"px";
   sizer.style.height=Math.max(1,Math.round(h*zoom))+"px";
   if(lab) lab.textContent=(Math.round(zoom*10)/10)+"×";
+  markLook();
+}
+function markLook(){
+  document.querySelectorAll("[data-look]").forEach(b=>b.classList.toggle("on", b.dataset.look===lookAt));
+  const island=$("zoomReset");
+  if(island) island.classList.toggle("on", lookAt==="island");
+}
+function parkCamera(world){
+  const wrap=$("mapWrap"), map=$("map");
+  if(!wrap||!map||lookAt==="island") return;
+  const s=sidesOf(world||{});
+  const side=s[lookAt];
+  const cap=side&&side.cap;
+  if(!cap||cap.x==null) return;
+  const cell=map.querySelector(".cell");
+  const cw=(cell&&cell.offsetWidth)||20;
+  const ch=(cell&&cell.offsetHeight)||20;
+  const x=Number(cap.x)*cw*zoom - wrap.clientWidth*0.45;
+  const y=Number(cap.y)*ch*zoom - wrap.clientHeight*0.45;
+  wrap.scrollLeft=Math.max(0,x);
+  wrap.scrollTop=Math.max(0,y);
+}
+function lookPole(name){
+  lookAt=name;
+  if(name==="island"){ fitMap(); markLook(); return; }
+  setZoom(2.2);
+  parkCamera(prevWorld||{});
+  markLook();
 }
 function fitMap(){
   const wrap=$("mapWrap"), map=$("map");
@@ -1204,7 +1456,10 @@ $("pauseBtn").onclick=()=>setControl({paused:!paused});
 $("seed").addEventListener("input",syncWorldSum);
 $("zoomIn").onclick=()=>setZoom(zoom+0.25);
 $("zoomOut").onclick=()=>setZoom(zoom-0.25);
-$("zoomReset").onclick=()=>fitMap();
+$("zoomReset").onclick=()=>lookPole("island");
+document.querySelectorAll("[data-look]").forEach(btn=>{
+  btn.onclick=()=>lookPole(btn.dataset.look);
+});
 (function(){
   const wrap=$("mapWrap");
   if(!wrap) return;

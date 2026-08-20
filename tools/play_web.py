@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
 from sim.core.simloop import run_sim  # noqa: E402
 
 HTML_PATH = Path(__file__).with_name("play_ui.html")
+SPRITE_DIR = Path(__file__).with_name("sprites")
 def load_html() -> str:
     return HTML_PATH.read_text(encoding="utf-8")
 
@@ -214,11 +215,29 @@ class Handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def _bytes(self, data: bytes, mime: str, cache: str = "no-store"):
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", cache)
+        self._cors()
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
         if path in ("/", "/index.html"):
             self._html(load_html())
+            return
+        if path.startswith("/sprites/"):
+            name = path.rsplit("/", 1)[-1]
+            if name in {"train.png", "taxi.png", "bus.png", "plane.png", "mill.png"}:
+                fp = SPRITE_DIR / name
+                if fp.is_file():
+                    self._bytes(fp.read_bytes(), "image/png", "public, max-age=3600")
+                    return
+            self._json({"error": "not_found"}, 404)
             return
         if path == "/api/state":
             self._json(GAME.snapshot())
