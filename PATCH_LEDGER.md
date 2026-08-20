@@ -23,7 +23,7 @@ Never `pkill -f`. If you must restart: SIGTERM the `python3 tools/play_web.py` P
 | **Name** | `v29-safe` (alias **2.9**) |
 | **Repo** | `999nike/AI-world` |
 | **Branch** | `v29-safe` |
-| **Commit** | *(filled after push — see git log on v29-safe)* |
+| **Commit** | `5ab70ae6c88738346f4d44e3d7e7208afcefe30c` |
 | **Stamp** | · v29 |
 | **Date** | 2026-08-20 |
 

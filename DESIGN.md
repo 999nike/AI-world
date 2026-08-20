@@ -342,6 +342,7 @@ Labour walkers remembering resource tiles. JS syntax error in map paint blanked 
 
 **Name:** `v29-safe` · alias **2.9**  
 **Repo:** `999nike/AI-world` · branch `v29-safe`  
+**Commit:** `5ab70ae6c88738346f4d44e3d7e7208afcefe30c`  
 **Stamp:** **· v29**  
 **Date:** 2026-08-20  
 
