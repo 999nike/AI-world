@@ -40,11 +40,16 @@ def make_world(
     poles = split and int(pole_agents) > 0
 
     if poles:
-        # Four corners. Mid-coast boxes so the poles do not sit on each other.
-        _spawn(rng, agents, n, "A", "player", 5, 13, 17, 31)
-        _spawn(rng, agents, rival_agents, "R", "rival", 34, 42, 17, 31)
-        _spawn(rng, agents, pole_agents, "N", "north", 17, 31, 5, 13)
-        _spawn(rng, agents, pole_agents, "S", "south", 17, 31, 34, 42)
+        # Four corners, scaled to the map. Mid-coast boxes so poles do not sit on each other.
+        w, h = int(cfg.width), int(cfg.height)
+        m = max(4, w // 10)
+        b = max(6, w // 6)
+        y0, y1 = h // 3, (2 * h) // 3
+        x0, x1 = w // 3, (2 * w) // 3
+        _spawn(rng, agents, n, "A", "player", m, m + b, y0, y1)
+        _spawn(rng, agents, rival_agents, "R", "rival", w - m - b, w - m - 1, y0, y1)
+        _spawn(rng, agents, pole_agents, "N", "north", x0, x1, m, m + b)
+        _spawn(rng, agents, pole_agents, "S", "south", x0, x1, h - m - b, h - m - 1)
     elif split:
         for i in range(n):
             x = rng.randint(6, 16)

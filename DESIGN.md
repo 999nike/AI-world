@@ -347,7 +347,31 @@ World city sit: planes, cabs, buses.
 
 ### Reverted v30 — memory walkers
 
-Labour walkers remembering resource tiles. JS syntax error in map paint blanked the watch (HUD, seed, map never ran). **Fully reverted.** Live stamp back to **· v29**. Do not re-land until script-checked.
+Labour walkers remembering resource tiles. JS syntax error in map paint blanked the watch (HUD, seed, map never ran). **Fully reverted.** Do not re-land until script-checked.
+
+### Shipped v31 — harbour sit
+
+Toward the concept painting. Quay and boats on the water at a mill. No new kernel. Edicts stay hidden. Stamp **· v31**. Seed 42 hold stays Year 342.
+
+### Shipped v32 — Settlers camera
+
+Isometric cubes of the same snapshot. Flat grid kept as **Grid**. Kernel frozen. Edicts hidden. Stamp **· v32**. Seed 42 hold stays Year 342.
+
+### Shipped v33 — terrain kit
+
+Iso water is a lake (flat), shore sand, grass has lift, fields stripe, roads sit low, trees have canopy. Buildings still cubes. Stamp **· v33**. Seed 42 hold stays Year 342.
+
+### Shipped v34 — buildings
+
+Iso mill (tower + wheel), hall with roof, houses with pitched roofs, barn, warehouse shed. Terrain from v33. Stamp **· v34**. Seed 42 hold stays Year 342.
+
+### Shipped v35 — walkers
+
+Iso labour / knight / king / scribe / builder / crew as figures. Train/cab/bus as wagons. Stamp **· v35**. Seed 42 hold stays Year 342. Option A camera queue (v32–v35) is in.
+
+### Shipped v37 — 96×96
+
+Option B land. Four poles scaled to the bigger island. Seed 42 east science hold is **Year 343** (was 342 on 48×48). Stamp **· v37**. Edicts hidden.
 
 ### Restore pin (do not lose this)
 
@@ -359,10 +383,10 @@ Labour walkers remembering resource tiles. JS syntax error in map paint blanked 
 
 Sit + art pass + painted sprites are on this pin (canvas). Kernel land is still the world-city pin.
 
-Next chat: restore **v29-safe**, not v19-safe, not main. **Start the game (Layer 2)** — see PATCH_LEDGER locked next. Pause, 3 edict buttons, resume. Not memory. Not a new era.
+Next chat: restore live **· v37**, 96×96, hold **Year 343**. Not v19-safe. **Edicts stay hidden.**
 
 Old pin `v19-safe` / `5ce0355` is king+hall only. Keep it as archaeology, not as the restore.
 
-### Next patch (when a new chat picks it up)
+### Next patch (locked — see ledger)
 
-Sit with the world city. Memory-app agents broke the watch (v30 reverted). Uni / bars if the sit still needs them. Not a new era.
+**Settlers camera (Option A).** Tile = a block. Same kernel, same 48×48 rules, new isometric view. Queue: v32 camera → v33 terrain kit → v34 buildings → v35 walkers. Edicts stay hidden. Do not grow the map (Option B) and do not clip-cinematics (Option C) until the owner says. Concept painting = what belongs on the island, not a sprite target.
