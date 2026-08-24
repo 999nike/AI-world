@@ -74,6 +74,11 @@ SETTLEMENT_RULES = {
     "knight_min_era": 3,
     "king_min_era": 4,
     "specialist_min_era": 4,
+    "island_crown_surplus_cut": 1,
+    "island_crown_deposit_bonus": 1,
+    "island_crown_raid_extra": 2,
+    "island_crown_head_cost": 2.0,
+    "science_steal_cost": 4.0,
     "industry_min_era": 5,
     "age_up5_min_pop": 20,
     "age_up5_food_bonus": 5.0,
@@ -97,6 +102,22 @@ class SettlementManager:
         self.metrics = metrics
         self.logger = logger
         self.active_faction = None
+
+    def _cross_faction(self) -> bool:
+        facs = {s.get("faction", "player") for s in self.settlements.values()}
+        return len(facs) > 1
+
+    def island_crown_faction(self):
+        ic = self.metrics.get("island_crown")
+        if not ic or ic.get("vacant"):
+            return None
+        return ic.get("faction")
+
+    def _faction_king_id(self, world, fac):
+        for a in getattr(world, "agents", []) or []:
+            if getattr(a, "faction", "player") == fac and getattr(a, "role", "walker") == "king":
+                return a.agent_id
+        return None
 
     def create(self, x, y, owner_id, world, tick, faction=None) -> str:
         sid = f"s{len(self.settlements) + 1}"
@@ -241,12 +262,14 @@ class SettlementManager:
         nearest_sid = self.nearest(agent.x, agent.y)
         if nearest_sid is None:
             return
+        s = self.settlements[nearest_sid]
         dep_range = int(SETTLEMENT_RULES.get("deposit_range_default", 2))
         if world is not None and self.settlement_has_road(nearest_sid, world):
             dep_range = int(SETTLEMENT_RULES.get("deposit_range_with_road", 3))
+        if self._cross_faction() and s.get("faction", "player") == self.island_crown_faction():
+            dep_range += int(SETTLEMENT_RULES.get("island_crown_deposit_bonus", 1))
         if self.distance_to(nearest_sid, agent.x, agent.y) > dep_range:
             return
-        s = self.settlements[nearest_sid]
         if agent.inv_food > 0:
             deposited = agent.inv_food
             s["food_stock"] += deposited
@@ -496,6 +519,8 @@ class SettlementManager:
                 local_surplus_needed = max(1, local_surplus_needed - int(SETTLEMENT_RULES.get("organisation_surplus_reduction", 1)))
             if has_hall:
                 local_surplus_needed = max(1, local_surplus_needed - 1)
+            if self._cross_faction() and s.get("faction", "player") == self.island_crown_faction():
+                local_surplus_needed = max(1, local_surplus_needed - int(SETTLEMENT_RULES.get("island_crown_surplus_cut", 1)))
 
             if "surplus_ticks" not in s:
                 s["surplus_ticks"] = 0
@@ -630,12 +655,17 @@ class SettlementManager:
         cross = len(factions) > 1
         ranked = sorted(all_s, key=lambda x: float(x[1].get("soldiers", 0)), reverse=True)
         atk_sid, atk = ranked[0]
+        atk_fac = atk.get("faction", "player")
         atk_soldiers = float(atk.get("soldiers", 0))
         if atk_soldiers < min_soldiers:
             return
         if cross:
-            atk_fac = atk.get("faction", "player")
             others = [(sid, s) for sid, s in all_s if s.get("faction", "player") != atk_fac]
+            crown_fac = self.island_crown_faction()
+            if crown_fac and atk_fac != crown_fac:
+                hunted = [(sid, s) for sid, s in others if s.get("faction", "player") == crown_fac]
+                if hunted:
+                    others = hunted
         else:
             others = [(sid, s) for sid, s in all_s if sid != atk_sid]
         if not others:
@@ -648,6 +678,8 @@ class SettlementManager:
             return
         # Scaled loot from attacker strength
         extra = min(cap, int(atk_soldiers / scale))
+        if cross and atk_fac == self.island_crown_faction():
+            extra += int(SETTLEMENT_RULES.get("island_crown_raid_extra", 2))
         loot_w = base_w + extra
         loot_s = base_s + max(0, extra // 2)
         loot_f = base_f + max(0, extra // 2)
@@ -660,7 +692,17 @@ class SettlementManager:
         take_w = min(loot_w, int(tgt.get("wood_stock", 0)))
         take_s = min(loot_s, int(tgt.get("stone_stock", 0)))
         take_f = min(loot_f, int(float(tgt.get("food_stock", 0))))
-        if take_w + take_s + take_f == 0:
+        steal_cost = float(SETTLEMENT_RULES.get("science_steal_cost", 4.0))
+        head_cost = float(SETTLEMENT_RULES.get("island_crown_head_cost", 2.0))
+        crown_fac = self.island_crown_faction()
+        can_steal = cross and int(tgt.get("discoveries", 0) or 0) > 0 and (atk_soldiers - cost) >= steal_cost
+        can_head = (
+            cross and crown_fac
+            and tgt.get("faction", "player") == crown_fac
+            and atk_fac != crown_fac
+            and (atk_soldiers - cost) >= head_cost
+        )
+        if take_w + take_s + take_f == 0 and not can_steal and not can_head:
             return
         atk["soldiers"] = atk_soldiers - cost
         tgt["wood_stock"] = int(tgt.get("wood_stock", 0)) - take_w
@@ -671,6 +713,74 @@ class SettlementManager:
         atk["food_stock"] = float(atk.get("food_stock", 0)) + take_f
         self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + 1
         self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
+        stolen = 0
+        crown_taken = False
+        vacant = False
+        if cross:
+            steal_cost = float(SETTLEMENT_RULES.get("science_steal_cost", 4.0))
+            if int(tgt.get("discoveries", 0) or 0) > 0 and float(atk.get("soldiers", 0)) >= steal_cost:
+                atk["soldiers"] = float(atk["soldiers"]) - steal_cost
+                tgt["discoveries"] = int(tgt.get("discoveries", 0)) - 1
+                atk["discoveries"] = int(atk.get("discoveries", 0) or 0) + 1
+                stolen = 1
+                self.metrics["science_stolen_events"] = self.metrics.get("science_stolen_events", 0) + 1
+                self.metrics["last_science_stolen"] = {
+                    "tick": tick, "attacker": atk_sid, "target": tgt_sid,
+                    "attacker_faction": atk_fac, "target_faction": tgt.get("faction", "player"),
+                    "cost_soldiers": steal_cost,
+                    "target_discoveries_after": int(tgt["discoveries"]),
+                    "attacker_discoveries_after": int(atk["discoveries"]),
+                }
+                self.logger.event({
+                    "type": "science_stolen", "tick": tick,
+                    "attacker": atk_sid, "target": tgt_sid,
+                    "attacker_faction": atk_fac,
+                    "target_faction": tgt.get("faction", "player"),
+                    "cost_soldiers": steal_cost,
+                    "target_discoveries_after": int(tgt["discoveries"]),
+                    "attacker_discoveries_after": int(atk["discoveries"]),
+                })
+            crown_fac = self.island_crown_faction()
+            head_cost = float(SETTLEMENT_RULES.get("island_crown_head_cost", 2.0))
+            if (
+                crown_fac
+                and tgt.get("faction", "player") == crown_fac
+                and atk_fac != crown_fac
+                and float(atk.get("soldiers", 0)) >= head_cost
+            ):
+                atk["soldiers"] = float(atk["soldiers"]) - head_cost
+                atk_king = self._faction_king_id(world, atk_fac)
+                if atk_king:
+                    new_crown = {
+                        "faction": atk_fac, "agent_id": atk_king,
+                        "settlement_id": atk_sid, "tick": tick,
+                    }
+                    vacant = False
+                else:
+                    new_crown = {
+                        "vacant": True, "faction": None, "tick": tick,
+                        "from_faction": crown_fac,
+                    }
+                    vacant = True
+                self.metrics["island_crown"] = new_crown
+                self.metrics["crown_taken_events"] = self.metrics.get("crown_taken_events", 0) + 1
+                self.metrics["last_crown_taken"] = {
+                    "tick": tick, "from_faction": crown_fac,
+                    "to_faction": atk_fac if atk_king else None,
+                    "attacker": atk_sid, "target": tgt_sid,
+                    "vacant": vacant, "cost_soldiers": head_cost,
+                }
+                if new_crown and not vacant:
+                    self.metrics["last_island_crown"] = dict(new_crown)
+                crown_taken = True
+                self.logger.event({
+                    "type": "crown_taken", "tick": tick,
+                    "from_faction": crown_fac,
+                    "to_faction": atk_fac if atk_king else None,
+                    "attacker": atk_sid, "target": tgt_sid,
+                    "vacant": vacant, "cost_soldiers": head_cost,
+                    "agent_id": atk_king,
+                })
         self.logger.event({
             "type": "raid", "tick": tick, "attacker": atk_sid, "target": tgt_sid,
             "attacker_faction": atk.get("faction", "player"),
@@ -680,12 +790,15 @@ class SettlementManager:
             "target_had_walls": self.settlement_has_walls(tgt_sid, world),
             "target_had_strategy": "strategy" in tgt_subjects,
             "scaled_extra": extra,
+            "science_stolen": stolen,
+            "crown_taken": crown_taken,
         })
         self.metrics["last_raid"] = {
             "tick": tick, "attacker": atk_sid, "target": tgt_sid,
             "attacker_faction": atk.get("faction", "player"),
             "target_faction": tgt.get("faction", "player"),
             "loot": {"wood": take_w, "stone": take_s, "food": take_f},
+            "science_stolen": stolen, "crown_taken": crown_taken, "vacant": vacant,
         }
 
     def _try_age_up(self, world, tick: int) -> None:

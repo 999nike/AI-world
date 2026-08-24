@@ -8,6 +8,7 @@ KEY_TYPES: Set[str] = {
     "settlement_created", "age_transition", "subject_unlocked",
     "discovery",
     "raid", "soldier_defend",
+    "king_crowned", "island_crown", "science_stolen", "crown_taken",
     "scenario_event", "scenario_loaded", "scenario_start_inventory",
     "governor_command", "agent_controlled", "rival_governor",
     "decision_offered", "decision_taken",

@@ -221,6 +221,9 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
   color:transparent;
   box-shadow:0 0 0 2px #243818, 0 0 10px #8ab060;
 }
+.cell.king.true-crown{
+  box-shadow:0 0 0 3px #d4a018, 0 0 16px #f0d060;
+}
 .cell.knight.north{
   background:#7a98ac;
   border-radius:3px;
@@ -675,7 +678,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
+let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,lastIslandCrownTick=-1,lastCrownTakenTick=-1,lastScienceStolenTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
 const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"U",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F",market:"b"};
 const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"],["era5","Industry"],["era6","World"]];
 const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city",5:"industry",6:"world"};
@@ -750,6 +753,9 @@ function ranksOf(world,fac){
     const cap=capital(towns);
     return cap&&cap.crown;
   })();
+  const ic=(world&&world.metrics)||{};
+  const worn=ic.island_crown;
+  const island=!!(worn && worn.faction===fac && !worn.vacant);
   return {
     hands:hands.length,
     crown:(king&&(king.agent_id||king.id))||capCrown||null,
@@ -757,7 +763,8 @@ function ranksOf(world,fac){
     scribe:scribe&&(scribe.agent_id||scribe.id)||null,
     builder:builder&&(builder.agent_id||builder.id)||null,
     crew:crew&&(crew.agent_id||crew.id)||null,
-    hall
+    hall,
+    island
   };
 }
 function sidesOf(world){
@@ -841,7 +848,9 @@ function folkBlock(side,title,barCls){
   if(cap&&days!=null&&days<1) lead=`${side.people} souls. Granary empty — food is short.`;
   else if(cap&&days!=null&&days<3) lead=`${side.people} souls. Only ${Math.floor(days)} days of food.`;
   else if(cap) lead=`${side.people} souls. A ${eraWord}.`;
-  if(rk.crown&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"A king sits in the hall.";
+  if(rk.island&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"The island crown sits in the hall.";
+  else if(rk.island) lead+=(lead.endsWith(".")?" ":"")+"They wear the island crown.";
+  else if(rk.crown&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"A king sits in the hall.";
   else if(rk.crown) lead+=(lead.endsWith(".")?" ":"")+"A king is crowned.";
   if(rk.scribe) lead+=(lead.endsWith(".")?" ":"")+"A scribe keeps the library.";
   if(rk.builder) lead+=(lead.endsWith(".")?" ":"")+"A builder works the civic yard.";
@@ -858,6 +867,7 @@ function folkBlock(side,title,barCls){
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Planes leave the field.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Cabs and buses work the streets.";
   const bits=[];
+  if(rk.island) bits.push("island crown");
   if(rk.crown) bits.push("Crown "+rk.crown);
   else if(rk.knight) bits.push("Knight "+rk.knight);
   if(rk.crown) bits.push(rk.hall?"hall":"no hall yet");
@@ -1288,7 +1298,13 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls){
   ctx.beginPath();
   ctx.arc(cx, cy-18, 3.2, 0, 6.28);
   ctx.fill();
-  if(c.indexOf("king")>=0){
+  if(c.indexOf("true-crown")>=0){
+    ctx.fillStyle="#f0d060";
+    ctx.fillRect(cx-4, cy-23, 8, 3);
+    ctx.fillRect(cx-1, cy-26, 2, 3);
+    ctx.fillStyle="#e8c040";
+    ctx.fillRect(cx-0.5, cy-27, 1, 1);
+  } else if(c.indexOf("king")>=0){
     ctx.fillStyle="#f0d060";
     ctx.fillRect(cx-3, cy-22, 6, 2);
   }
@@ -1639,16 +1655,18 @@ function renderMap(world){
   }
   for(const fac of ["player","rival","north","south"]){
     const list=byFac[fac];
+    const ic=(world.metrics||{}).island_crown;
+    const wears=!!(ic && !ic.vacant && ic.faction===fac);
     list.forEach(a=>{
       const fn=facName(fac);
       const role=a.role||"walker";
-      const skin=role==="king"?("king "+fn)
+      const skin=role==="king"?("king "+fn+(wears?" true-crown":""))
         :(role==="knight"?("knight "+fn)
         :(role==="scribe"?("scribe "+fn)
         :(role==="builder"?("builder "+fn)
         :(role==="crew"?("crew "+fn)
         :("vil "+fn)))));
-      const title=role==="king"?(fn+" king")
+      const title=role==="king"?(wears?(fn+" island king"):(fn+" king"))
         :(role==="knight"?(fn+" knight")
         :(role==="scribe"?(fn+" scribe")
         :(role==="builder"?(fn+" builder")
@@ -1767,7 +1785,28 @@ async function poll(){
   if(world&&world.tick!==lastTick){
     lastTick=world.tick; renderAges(world); renderHud(world); renderRace(world); renderMap(world); renderCity(world); chronicleDiff(world); prevSample=sampleOf(world); parkCamera(world);
     const raid=(world.metrics||{}).last_raid;
-    if(raid&&raid.tick!==lastRaidTick){lastRaidTick=raid.tick;logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`);}
+    if(raid&&raid.tick!==lastRaidTick){
+      lastRaidTick=raid.tick;
+      logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`);
+    }
+    const taken=(world.metrics||{}).last_crown_taken;
+    if(taken&&taken.tick!==lastCrownTakenTick){
+      lastCrownTakenTick=taken.tick;
+      if(taken.vacant) logLine(world.tick,`The island crown sits vacant — ${whoOf(taken.from_faction)} lost the head.`);
+      else logLine(world.tick,`${whoOf(taken.to_faction)} took the island crown from ${whoOf(taken.from_faction)}.`);
+    }
+    const icrown=(world.metrics||{}).last_island_crown;
+    if(icrown&&icrown.tick!==lastIslandCrownTick){
+      lastIslandCrownTick=icrown.tick;
+      if(icrown.tick!==lastCrownTakenTick){
+        logLine(world.tick,`${whoOf(icrown.faction)} wears the island crown · ${icrown.agent_id}.`);
+      }
+    }
+    const stolen=(world.metrics||{}).last_science_stolen;
+    if(stolen&&stolen.tick!==lastScienceStolenTick){
+      lastScienceStolenTick=stolen.tick;
+      logLine(world.tick,`${whoOf(stolen.attacker_faction)} stole a discovery from ${whoOf(stolen.target_faction)}. Came home thinner.`);
+    }
     const down=(world.metrics||{}).last_stand_down;
     if(down&&down.tick!==lastDownTick){
       lastDownTick=down.tick;
@@ -1850,7 +1889,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
   syncWorldSum();

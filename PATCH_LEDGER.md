@@ -11,11 +11,11 @@ Seed 42, 10 a pole, east science hold **Year 343**.
 
 ## Jobs (cross off)
 
-- [ ] **One true king** — one crown on the island. That people get order / haul / raid. Everyone else wants the head. Lose the king, lose the bonus. (Four local kings stay as rank; one island crown is what matters.)
-- [ ] **Stolen science** — a raid can rip a discovery off the next city. Soldiers pay. Snatch the lab, come home thinner.
+- [x] **One true king** — one crown on the island. That people get order / haul / raid. Everyone else wants the head. Lose the king, lose the bonus. (Four local kings stay as rank; one island crown is what matters.)
+- [x] **Stolen science** — a raid can rip a discovery off the next city. Soldiers pay. Snatch the lab, come home thinner.
 
 Later (not this pin): gold (a purse — food still kills) · temples / hidden pyramids (late, buried) · sit that feels like physics.
 
-**Next axis:** one true king. Owner says go.
+**Next axis:** later — gold. Owner says wait.
 
 **Next chat:** restore **`v39`**. Prove `id="begin"` and `· v39`. Hold **Year 343**. Never Vite. Do not turn edicts on.

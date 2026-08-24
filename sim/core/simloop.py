@@ -249,6 +249,19 @@ def try_breed_and_knight(world, sm, brains, t, metrics, logger, rival_agents, ag
                     "agent_id": chosen.agent_id, "faction": fac,
                     "settlement_id": cap.get("id"), "era": max_era,
                 })
+                ic = metrics.get("island_crown")
+                if (not ic) or ic.get("vacant"):
+                    crown = {
+                        "faction": fac, "agent_id": chosen.agent_id,
+                        "settlement_id": cap.get("id"), "tick": t,
+                    }
+                    metrics["island_crown"] = crown
+                    metrics["last_island_crown"] = dict(crown)
+                    logger.event({
+                        "type": "island_crown", "tick": t,
+                        "agent_id": chosen.agent_id, "faction": fac,
+                        "settlement_id": cap.get("id"),
+                    })
         elif has_king:
             king = next(a for a in hands if getattr(a, "role", "walker") == "king")
             cap["government"] = True
@@ -738,6 +751,8 @@ def run_sim(
         "walker_born": 0, "knight_events": 0, "king_events": 0,
         "scribe_events": 0, "builder_events": 0,
         "crew_events": 0, "train_events": 0, "plane_events": 0, "taxi_events": 0, "bus_events": 0, "age_up5_events": 0, "age_up6_events": 0,
+        "science_stolen_events": 0, "crown_taken_events": 0,
+        "island_crown": None,
     }
     sm = SettlementManager(metrics=metrics, logger=logger)
     drought_active = False
