@@ -74,6 +74,15 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .log{max-height:min(72vh,640px);overflow:auto;font-size:.82rem;line-height:1.4;color:var(--fg-muted)}
 .log .ev{border-top:1px solid var(--border);padding:8px 0}
 .log .ev b{display:block;color:var(--fg-subtle);font-size:.68rem;font-weight:600;letter-spacing:.06em}
+.log .ev.jump{cursor:pointer;padding-left:10px}
+.log .ev.jump:hover{color:var(--fg);background:color-mix(in oklab,var(--fg) 6%,transparent)}
+.log .ev-raid{box-shadow:inset 3px 0 0 var(--danger)}
+.log .ev-steal{box-shadow:inset 3px 0 0 #7ec8e0}
+.log .ev-crown,.log .ev-king{box-shadow:inset 3px 0 0 #e8c040}
+.log .ev-discover{box-shadow:inset 3px 0 0 #c8d0a8}
+.log .ev-starve{box-shadow:inset 3px 0 0 #8a3a38}
+.log .ev-age{box-shadow:inset 3px 0 0 #c4b090}
+.log .ev-found{box-shadow:inset 3px 0 0 var(--you)}
 .map-wrap{overflow:auto;background:#071018;border-radius:10px;padding:8px;position:relative;touch-action:none;-webkit-overflow-scrolling:touch;min-height:min(68vh,520px);max-height:min(72vh,640px)}
 .map-zoom{position:absolute;top:10px;left:10px;z-index:3;display:flex;align-items:center;gap:4px;background:color-mix(in oklab,var(--bg-elevated) 88%,transparent);border:1px solid var(--border);border-radius:8px;padding:3px;flex-wrap:wrap;max-width:calc(100% - 24px)}
 .map-zoom .look{height:32px;min-width:28px;padding:0 8px;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase}
@@ -83,8 +92,10 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 #map{display:grid;gap:0;width:max-content;margin:0 auto}
 
 #iso{display:block;margin:0 auto;background:#0c141c;border-radius:4px}
+#isoFx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .map-wrap.mode-iso #map{display:none}
 .map-wrap.mode-grid #iso{display:none}
+.map-wrap.mode-grid #isoFx{display:none}
 .cell{width:18px;height:18px;background:#2a4a28;display:flex;align-items:center;justify-content:center;font-size:0;line-height:0;color:transparent;user-select:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .cell.water{background:linear-gradient(180deg,#246a88 0%,#154a62 42%,#0e3a52 100%);box-shadow:inset 0 1px 0 #4a90a8, inset 0 -2px 0 #0a2838}
 .cell.shore{background:linear-gradient(180deg,#4a7a62,#2a5a48);box-shadow:inset 0 1px 0 #6a9a78}
@@ -669,9 +680,9 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
           <button class="btn ghost on" id="viewIso" type="button">Iso</button>
           <button class="btn ghost" id="viewGrid" type="button">Grid</button>
         </div>
-        <div class="map-sizer" id="mapSizer"><div id="map"></div><canvas id="iso" width="1200" height="700"></canvas></div>
+        <div class="map-sizer" id="mapSizer"><div id="map"></div><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Painted sprites · mill wheel · train / cab / bus / plane · walkers still dots · 96×96 · Island fits · · v39</div>
+      <div class="legend">Events sit on the map — raid, crown, discovery, starve. Click a log line to park there. · v39</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -696,14 +707,190 @@ function syncWorldSum(){
   const n=Number($("seed").value)||42;
   $("worldSum").textContent="World "+n;
 }
-function logLine(tick,t){
+function logLine(tick,t,meta){
   t=String(t||"").trim();
   if(!t) return;
-  const d=document.createElement("div");d.className="ev";
+  const d=document.createElement("div");
+  d.className="ev"+(meta&&meta.kind?(" jump ev-"+meta.kind):"");
   if(tick!=null){const b=document.createElement("b");b.textContent=yearOf(tick);d.appendChild(b);}
   d.appendChild(document.createTextNode(t));
+  if(meta&&meta.x!=null){
+    d.onclick=function(){ jumpTo(meta.x, meta.y); };
+    pushPing(meta);
+  }
   $("log").prepend(d);
 }
+let mapPings=[];
+const PING_LIFE=3200;
+function pushPing(p){
+  if(p==null||p.x==null||p.y==null) return;
+  mapPings.push({
+    x:Number(p.x), y:Number(p.y),
+    fromX:p.fromX!=null?Number(p.fromX):null,
+    fromY:p.fromY!=null?Number(p.fromY):null,
+    kind:p.kind||"found",
+    fac:p.fac||"player",
+    born:performance.now()
+  });
+  if(mapPings.length>28) mapPings.shift();
+}
+function townXY(world,id){
+  const t=((world&&world.settlements)||[]).find(s=>s&&s.id===id);
+  if(!t||t.x==null) return null;
+  return {x:Number(t.x), y:Number(t.y), fac:t.faction||"player"};
+}
+function pingAt(world,sid,kind,extra){
+  const xy=townXY(world,sid);
+  if(!xy) return extra||null;
+  return Object.assign({x:xy.x,y:xy.y,fac:xy.fac,kind:kind}, extra||{});
+}
+function jumpTo(x,y){
+  lookAt="event";
+  markLook();
+  const wrap=$("mapWrap");
+  if(!wrap||x==null||y==null) return;
+  if(viewMode==="iso"){
+    const orig=window.__isoOrig||isoOrigin(96,96);
+    const p=isoScreen(Number(x),Number(y),orig.ox,orig.oy);
+    wrap.scrollLeft=Math.max(0, p.sx*zoom - wrap.clientWidth*0.45);
+    wrap.scrollTop=Math.max(0, p.sy*zoom - wrap.clientHeight*0.42);
+    return;
+  }
+  const map=$("map"), cell=map&&map.querySelector(".cell");
+  const cw=(cell&&cell.offsetWidth)||20, ch=(cell&&cell.offsetHeight)||20;
+  wrap.scrollLeft=Math.max(0, Number(x)*cw*zoom - wrap.clientWidth*0.45);
+  wrap.scrollTop=Math.max(0, Number(y)*ch*zoom - wrap.clientHeight*0.45);
+}
+function pingColor(kind){
+  if(kind==="raid") return "#e07068";
+  if(kind==="steal") return "#8fd4ea";
+  if(kind==="crown"||kind==="king") return "#f0d060";
+  if(kind==="vacant") return "#8a7a48";
+  if(kind==="discover") return "#e8e0b0";
+  if(kind==="starve") return "#c45b55";
+  if(kind==="age") return "#c4b090";
+  return "#d8d2c6";
+}
+function pingWord(kind){
+  if(kind==="raid") return "RAID";
+  if(kind==="steal") return "STOLEN";
+  if(kind==="crown") return "CROWN";
+  if(kind==="king") return "KING";
+  if(kind==="vacant") return "VACANT";
+  if(kind==="discover") return "SCIENCE";
+  if(kind==="starve") return "STARVE";
+  if(kind==="age") return "AGE";
+  if(kind==="found") return "CAMP";
+  return "";
+}
+function drawPingGlyph(ctx,kind,col){
+  ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.lineJoin="round"; ctx.lineCap="round";
+  if(kind==="raid"){
+    ctx.beginPath(); ctx.moveTo(-6,-5); ctx.lineTo(0,5); ctx.lineTo(6,-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6,1); ctx.lineTo(0,11); ctx.lineTo(6,1); ctx.stroke();
+    return;
+  }
+  if(kind==="steal"){
+    ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(5.5,0); ctx.lineTo(0,8); ctx.lineTo(-5.5,0); ctx.closePath(); ctx.fill();
+    return;
+  }
+  if(kind==="crown"||kind==="king"){
+    ctx.beginPath(); ctx.moveTo(-7,5); ctx.lineTo(-7,-1); ctx.lineTo(-3,3); ctx.lineTo(0,-7); ctx.lineTo(3,3); ctx.lineTo(7,-1); ctx.lineTo(7,5); ctx.closePath(); ctx.fill();
+    return;
+  }
+  if(kind==="vacant"){
+    ctx.beginPath(); ctx.arc(0,2,7,0,6.28); ctx.stroke();
+    return;
+  }
+  if(kind==="discover"){
+    ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(1.5,-1.5); ctx.lineTo(8,0); ctx.lineTo(1.5,1.5); ctx.lineTo(0,8); ctx.lineTo(-1.5,1.5); ctx.lineTo(-8,0); ctx.lineTo(-1.5,-1.5); ctx.closePath(); ctx.fill();
+    return;
+  }
+  if(kind==="starve"){
+    ctx.beginPath(); ctx.moveTo(-6,-4); ctx.lineTo(6,-4); ctx.lineTo(0,8); ctx.closePath(); ctx.fill();
+    return;
+  }
+  if(kind==="age"){
+    ctx.beginPath(); ctx.moveTo(-2,-8); ctx.lineTo(-2,8); ctx.moveTo(-2,-8); ctx.lineTo(8,-4); ctx.lineTo(-2,0); ctx.stroke();
+    return;
+  }
+  ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(2,8); ctx.lineTo(-6,2); ctx.closePath(); ctx.fill();
+}
+function drawIsoFx(now){
+  const fx=$("isoFx"), iso=$("iso");
+  if(!fx||!fx.getContext||viewMode!=="iso") return;
+  if(iso&&(fx.width!==iso.width||fx.height!==iso.height)){
+    fx.width=iso.width||fx.width;
+    fx.height=iso.height||fx.height;
+  }
+  const ctx=fx.getContext("2d");
+  ctx.clearRect(0,0,fx.width,fx.height);
+  const orig=window.__isoOrig;
+  if(!orig) return;
+  const z=Math.max(0.08, zoom||1);
+  const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const world=prevWorld;
+  const ic=world&&world.metrics&&world.metrics.island_crown;
+  if(ic&&!ic.vacant&&world.agents){
+    const king=(world.agents||[]).find(a=>(a.faction||"player")===ic.faction && (a.role||"")==="king");
+    const x=king?Number(king.x):null, y=king?Number(king.y):null;
+    if(x!=null){
+      const p=isoScreen(x,y,orig.ox,orig.oy);
+      const s=16/(12*z);
+      ctx.save();
+      ctx.translate(p.sx, p.sy-22);
+      ctx.scale(s,s);
+      ctx.strokeStyle="rgba(240,208,96,.85)";
+      ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.arc(0,8,10,0,6.28); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  const keep=[];
+  for(let i=0;i<mapPings.length;i++){
+    const ping=mapPings[i];
+    const age=now-ping.born;
+    if(age>PING_LIFE) continue;
+    keep.push(ping);
+    const t=age/PING_LIFE;
+    const a=t<0.15?t/0.15:1-Math.pow((t-0.15)/0.85,1.4);
+    const rise=reduce?10:(1-Math.pow(1-Math.min(1,t*1.4),2))*18;
+    const p=isoScreen(ping.x,ping.y,orig.ox,orig.oy);
+    const col=pingColor(ping.kind);
+    if(ping.fromX!=null&&ping.fromY!=null){
+      const q=isoScreen(ping.fromX,ping.fromY,orig.ox,orig.oy);
+      ctx.save();
+      ctx.globalAlpha=Math.max(0,a*0.7);
+      ctx.strokeStyle=col;
+      ctx.lineWidth=Math.max(1.2, 1.6/z);
+      ctx.setLineDash([5/z, 4/z]);
+      ctx.beginPath(); ctx.moveTo(q.sx,q.sy-8); ctx.lineTo(p.sx,p.sy-8); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    const s=16/(12*z);
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,a);
+    ctx.translate(p.sx, p.sy-18-rise);
+    ctx.scale(s,s);
+    ctx.strokeStyle=col;
+    ctx.globalAlpha=Math.max(0,a*0.45);
+    ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.arc(0,4,11+t*4,0,6.28); ctx.stroke();
+    ctx.globalAlpha=Math.max(0,a);
+    drawPingGlyph(ctx, ping.kind, col);
+    const word=pingWord(ping.kind);
+    if(word){
+      ctx.font="bold 7px ui-monospace, Menlo, sans-serif";
+      ctx.textAlign="center";
+      ctx.fillStyle=col;
+      ctx.fillText(word, 0, 16);
+    }
+    ctx.restore();
+  }
+  mapPings=keep;
+}
+(function tickFx(now){ drawIsoFx(now||performance.now()); requestAnimationFrame(tickFx); })();
 const POLES=[["player","west","West"],["rival","east","East"],["north","north","North"],["south","south","South"]];
 function whoOf(f){const row=POLES.find(p=>p[0]===f);return row?row[2]:"West";}
 function townsOf(world,fac){return ((world&&world.settlements)||[]).filter(s=>(s.faction||"player")===fac);}
@@ -1376,6 +1563,11 @@ function drawIso(occ,w,h){
   window.__isoOcc=occ;
   window.__isoWH=[w,h];
   window.__isoOrig=orig;
+  const fx=$("isoFx");
+  if(fx&&(fx.width!==canvas.width||fx.height!==canvas.height)){
+    fx.width=canvas.width;
+    fx.height=canvas.height;
+  }
 }
 function setViewMode(mode){
   viewMode=mode==="grid"?"grid":"iso";
@@ -1710,12 +1902,12 @@ function chronicleDiff(world){
   for(const s of world.settlements||[]){
     const o=oldBy[s.id];
     const who=whoOf(s.faction);
-    if(!o){logLine(tick,`${who} founded ${s.id}.`);continue;}
-    if(Number(s.era||2)>Number(o.era||2)) logLine(tick,`${who} ${s.id} became a ${ERA_WORD[s.era]||("era "+s.era)}.`);
+    if(!o){logLine(tick,`${who} founded ${s.id}.`,{x:s.x,y:s.y,fac:s.faction,kind:"found"});continue;}
+    if(Number(s.era||2)>Number(o.era||2)) logLine(tick,`${who} ${s.id} became a ${ERA_WORD[s.era]||("era "+s.era)}.`,{x:s.x,y:s.y,fac:s.faction,kind:"age"});
     const had=new Set(o.subjects||[]);
     for(const sub of (s.subjects||[])) if(sub&&!had.has(sub)) logLine(tick,`${who} ${s.id} unlocked ${sub}.`);
-    if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`);
-    if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`);
+    if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`,{x:s.x,y:s.y,fac:s.faction,kind:"discover"});
+    if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`,{x:s.x,y:s.y,fac:s.faction,kind:"starve"});
   }
   const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A wonder rose",airport:"An airport rose",market:"A bar opened on the street"};
   for(const [typ,line] of Object.entries(risen)){
@@ -1787,31 +1979,39 @@ async function poll(){
     const raid=(world.metrics||{}).last_raid;
     if(raid&&raid.tick!==lastRaidTick){
       lastRaidTick=raid.tick;
-      logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`);
+      const tgt=townXY(world, raid.target);
+      const atk=townXY(world, raid.attacker);
+      const meta=tgt?{x:tgt.x,y:tgt.y,fac:raid.attacker_faction,kind:"raid",fromX:atk&&atk.x,fromY:atk&&atk.y}:null;
+      logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`, meta);
     }
     const taken=(world.metrics||{}).last_crown_taken;
     if(taken&&taken.tick!==lastCrownTakenTick){
       lastCrownTakenTick=taken.tick;
-      if(taken.vacant) logLine(world.tick,`The island crown sits vacant — ${whoOf(taken.from_faction)} lost the head.`);
-      else logLine(world.tick,`${whoOf(taken.to_faction)} took the island crown from ${whoOf(taken.from_faction)}.`);
+      const xy=townXY(world, taken.target)||townXY(world, taken.attacker);
+      if(taken.vacant) logLine(world.tick,`The island crown sits vacant — ${whoOf(taken.from_faction)} lost the head.`, xy&&{x:xy.x,y:xy.y,fac:taken.from_faction,kind:"vacant"});
+      else logLine(world.tick,`${whoOf(taken.to_faction)} took the island crown from ${whoOf(taken.from_faction)}.`, xy&&{x:xy.x,y:xy.y,fac:taken.to_faction,kind:"crown"});
     }
     const icrown=(world.metrics||{}).last_island_crown;
     if(icrown&&icrown.tick!==lastIslandCrownTick){
       lastIslandCrownTick=icrown.tick;
       if(icrown.tick!==lastCrownTakenTick){
-        logLine(world.tick,`${whoOf(icrown.faction)} wears the island crown · ${icrown.agent_id}.`);
+        const xy=townXY(world, icrown.settlement_id);
+        logLine(world.tick,`${whoOf(icrown.faction)} wears the island crown · ${icrown.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:icrown.faction,kind:"crown"});
       }
     }
     const stolen=(world.metrics||{}).last_science_stolen;
     if(stolen&&stolen.tick!==lastScienceStolenTick){
       lastScienceStolenTick=stolen.tick;
-      logLine(world.tick,`${whoOf(stolen.attacker_faction)} stole a discovery from ${whoOf(stolen.target_faction)}. Came home thinner.`);
+      const tgt=townXY(world, stolen.target);
+      const atk=townXY(world, stolen.attacker);
+      logLine(world.tick,`${whoOf(stolen.attacker_faction)} stole a discovery from ${whoOf(stolen.target_faction)}. Came home thinner.`, tgt&&{x:tgt.x,y:tgt.y,fac:stolen.attacker_faction,kind:"steal",fromX:atk&&atk.x,fromY:atk&&atk.y});
     }
     const down=(world.metrics||{}).last_stand_down;
     if(down&&down.tick!==lastDownTick){
       lastDownTick=down.tick;
       const who=whoOf(down.faction);
-      logLine(world.tick,`${who} stood the army down — the granary was short.`);
+      const xy=townXY(world, down.settlement_id);
+      logLine(world.tick,`${who} stood the army down — the granary was short.`, xy&&{x:xy.x,y:xy.y,fac:down.faction,kind:"starve"});
     }
     const born=(world.metrics||{}).last_breed;
     if(born&&born.tick!==lastBreedTick){
@@ -1829,7 +2029,8 @@ async function poll(){
     if(kg&&kg.tick!==lastKingTick){
       lastKingTick=kg.tick;
       const who=whoOf(kg.faction);
-      logLine(world.tick,`${who} crowned ${kg.agent_id}.`);
+      const xy=townXY(world, kg.settlement_id);
+      logLine(world.tick,`${who} crowned ${kg.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:kg.faction,kind:"king"});
     }
     const sc=(world.metrics||{}).last_scribe;
     if(sc&&sc.tick!==lastScribeTick){
@@ -1889,7 +2090,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
   syncWorldSum();
@@ -1928,7 +2129,7 @@ function markLook(){
 function parkCamera(world){
   const wrap=$("mapWrap"), map=$("map");
   if(!wrap) return;
-  if(lookAt==="island") return;
+  if(lookAt==="island"||lookAt==="event") return;
   const s=sidesOf(world||{});
   const side=s[lookAt];
   const cap=side&&side.cap;
