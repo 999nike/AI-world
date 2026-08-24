@@ -302,8 +302,8 @@ Do not invent a different one.
 - People age: camp → settlement → town → city → science → industry → world.
 - Walkers evolve on that same path (breed, knight, king, scribe, builder).
 - Grow toward **8–10 hands a side by city.** Watch starts at the cap.
-- One **local** crown a side when earned (rank). Destination: **one true king** on the island — bonus on that people, head worth taking.
+- One **local** crown a side when earned (rank). Destination: **one true king** on the island — bonus on that people, head worth taking. This is the hook: one head that matters. Later: make that crown clearer on the map (taller, a banner, a name) without turning it into a cheat.
 - **Iso** is the sit. Grid is backup.
 - Edicts stay in the kernel, hidden, until Layer 2 opens.
 
-Next axis: **one true king.** Jobs on the ledger.
+Later sit (not this pin): little **event popups** on iso — look at other games when we pick that hop. Glyphs stay; popups are the next read. Gold, temples / hidden pyramids, sit that feels like physics — still parked.
