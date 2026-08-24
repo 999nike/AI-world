@@ -1,7 +1,7 @@
 # AI-world Design Notes (Internal)
 
-**Last updated:** 2026-08-24  
-**This file is vision.** Status, restore, stamps → [PATCH_LEDGER.md](PATCH_LEDGER.md).
+**Last updated:** 2026-08-25  
+**This file is vision.** Status, restore, jobs → [PATCH_LEDGER.md](PATCH_LEDGER.md).
 
 ---
 
@@ -35,7 +35,7 @@ Four peoples on one island — west / east / north / south, inland camps, poles 
 
 - Settlement — breed toward the cap
 - Town — one walker raised to **knight** (raids, guard)
-- City — that knight (or one child) raised to **king**. One crown. Hall is the seat
+- City — that knight (or one child) raised to **king**. Local crown. Hall is the seat
 - Science — **scribe** walks library / lab / observatory; **builder** walks hall / foundry / workshop
 
 Paint is not rank. One walker is knighted, then crowned.
@@ -47,6 +47,26 @@ Paint is not rank. One walker is knighted, then crowned.
 **Camera.** Iso is the sit (Settlers cubes of the same snapshot). Grid is the old map, kept as backup. Park W / E / N / S / Island. Island fits; scrollbar stays.
 
 **Watch, not cheat.** Edicts exist in the kernel and stay hidden until the map is a place worth deciding on.
+
+---
+
+## Civ, not a pile of cheats
+
+Snapshot 2026-08-25. This is the game. Not more buildings. Not more buttons.
+
+**Every new rule should hurt as well as help.** If it only buffs, it is a cheat. Do not ship it.
+
+**One true king.** Four peoples, four local crowns as rank — but **one island crown**. That people get a bonus: order, haul, raid. Everyone else wants that head. Kill the king, the bonus dies with him. A crown you cannot lose is paint.
+
+**Stolen science.** A raid can rip a discovery off the next city. Soldiers pay. You can snatch the lab and come home thinner. The race gets nasty. Science is not a private high score.
+
+**Then (later, not now):**
+
+- **Gold** — a purse. Trade, tribute, a reason to raid besides food. Food still kills. Do not replace starvation with coin.
+- **Temples / hidden pyramids** — late, buried, found. Not a camp hut with a new letter. Mystery on the island, not another early build.
+- **Sit that feels like physics** — the lab end. Experiments, weight, the world pushing back. Same kernel. After the civ race is real.
+
+Not all at once. One axis. Ledger jobs are the queue.
 
 ---
 
@@ -75,9 +95,13 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 
 ### After the city can carry it
 
-1. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first. Do not drop clever agents onto a camp with letters.
-2. **Playable governor** — pause, 3 fat choices, no typing `focus food`. Human biases the next goal. Same seed, same agents, same rules.
-3. **More peoples** — only after four tribes look like cities.
+1. **One true king** — one island crown that can be taken
+2. **Stolen science** — raids that rip discoveries. Soldiers pay
+3. **Playable governor** — pause, 3 fat choices, no typing `focus food`
+4. **Gold / buried temples / physics sit** — later
+5. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
+
+Do not drop clever agents onto a camp with letters. Do not open edicts to paper over a missing race.
 
 ---
 
@@ -89,6 +113,7 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 - Food chain you can see: farm → granary → souls
 - Streets as a network (they become rail in industry)
 - The iso sit holds: terrain, roofs, figures, houses off the rail
+- One island crown that matters. Science that can be stolen.
 
 ### Mid (industry depth)
 
@@ -97,20 +122,23 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 
 ### Longer (world city + agents)
 
+- Gold as a purse (food still kills)
+- Buried temples / hidden pyramids
+- Sit that feels like physics
 - Traffic that reads as a living city
 - Learning / memory-app agents inside the same deterministic rules
 - Playable layer on the kernel — do not fork the sim to make a game
-- More peoples on the same island
 
 ### Non-goals (for now)
 
 - Perfect balance for human multiplayer
 - Replacing the utility agent with RL immediately
-- DESIGN.md as a patch checklist (ledger owns status)
+- DESIGN.md as a patch checklist (ledger owns jobs)
 - Cloning Civ 6/7 systems (religion, tourism, great people, hex unit combat, 20 unique civs)
 - Airports before rail
 - Clever agents before hands
 - Fake kings painted as 2×2 blocks
+- Buff-only rules (cheats)
 
 ---
 
@@ -123,6 +151,7 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 - City: irrigation, library, foundry, hall, command
 - Science: Lab → Observatory → discoveries (knowledge sink → permanent farm bonus)
 - Later: rail, wonders, harbour, airports, traffic
+- The race: one island crown, stolen science, then gold / buried temples / physics
 
 Guns-vs-butter remains core: soldiers help raids/defend but always cost food; soft-cap vs population.
 
@@ -142,6 +171,8 @@ Civ 6/7 are not “more buildings.” They are: a human makes a few costly choic
 | Guns vs butter | Soldiers cost food every tick |
 | Production | Agents + settlement stocks + build gates |
 | Replay / seed | Deterministic logs, seed-controlled runs |
+| Hegemony | One true king — bonus on that people, head worth taking |
+| Espionage / war | Stolen science — raid rips a discovery, army comes home thinner |
 
 A broken science path is not a game. Multi-seed reachability (era 4 + Library + Lab + Observatory) is the floor the playable layer stands on.
 
@@ -164,6 +195,8 @@ A human cannot yet:
 
 The first three exist in the kernel. The map now carries districts, houses, a food chain, iso terrain, and a chronicle in sentences. Still not a painting. Good enough to watch. Edicts stay hidden until the sit is worth deciding on.
 
+Four local kings is not a civ. One island crown is.
+
 ---
 
 ## Playable path (Settlers × Civ, not a Civ clone)
@@ -182,6 +215,8 @@ Closer to Civ 7’s ages + crises than to Civ 6’s 400-click city screens. The 
 - **Army:** raise soldiers (food tax goes up) or disband.
 - **Discovery:** take the farm bonus *or* bank knowledge for the next one.
 - **Crisis:** drought — ration, or keep growing and risk starve.
+- **Crown:** hold the island king, or hunt him. Bonus vs a target on your back.
+- **Raid:** steal a discovery and bleed, or come home empty.
 
 Every choice must be able to hurt.
 
@@ -195,7 +230,7 @@ Steal only this:
 
 - Ages change the rules
 - One visible rival (own governor, cross-faction raids)
-- A victory you can point at (science, wipe, or hold)
+- A victory you can point at (science, wipe, hold, or the island crown)
 - Presentation that makes stocks feel like a city
 
 ---
@@ -224,6 +259,7 @@ Second civ on the same map, far side, own governor. `rival_agents=0` is the defa
 - **Science:** your Observatory + 2 discoveries, first
 - **Domination:** the other civ’s pop hits 0 after both have founded
 - **Survival:** clock ends — era 4 and more people, or they outgrew you / you never reached era 4
+- **Crown (heading):** hold the island king when the clock ends — or take his head
 
 Early stop on science or wipe only when a rival is on the map.  
 Validate still runs the full tick count.
@@ -247,12 +283,12 @@ God-view is the watchable layer. It is not the playable layer until it can pause
 2. One axis at a time
 3. Logs first
 4. Min tokens while usage high
-5. Choices must be able to hurt
-6. Ledger = status; DESIGN = vision
+5. Choices must be able to hurt. Every new rule hurts as well as helps. Buff-only is a cheat.
+6. Ledger = jobs + pin; DESIGN = vision
 7. Utility agent stays the hands; human is the brain
 8. Playable layer sits on the kernel — do not fork the sim to make a game
 9. Each era is a finished sit that leads into the next (DLC / upgrade workflow)
-10. Rail before airports. City before clever agents. Hands before world city.
+10. Rail before airports. City before clever agents. Hands before world city. Crown before gold.
 11. Paint is not rank. Four walkers cannot run a world city. Hands grow.
 
 ---
@@ -266,8 +302,8 @@ Do not invent a different one.
 - People age: camp → settlement → town → city → science → industry → world.
 - Walkers evolve on that same path (breed, knight, king, scribe, builder).
 - Grow toward **8–10 hands a side by city.** Watch starts at the cap.
-- One crown a side, when earned.
+- One **local** crown a side when earned (rank). Destination: **one true king** on the island — bonus on that people, head worth taking.
 - **Iso** is the sit. Grid is backup.
 - Edicts stay in the kernel, hidden, until Layer 2 opens.
 
-Next axis: owner picks. Ledger holds the stamp.
+Next axis: **one true king.** Jobs on the ledger.
