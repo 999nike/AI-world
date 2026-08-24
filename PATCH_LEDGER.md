@@ -11,7 +11,7 @@ Seed 42, 10 a pole, east science hold **Year 343**.
 
 **Heading:** a civ, not a pile of cheats. Every new rule hurts as well as helps.
 
-**Versioning:** each patch hop moves the stamp (v40 → v41 → …). Next chat restores the live branch.
+**Versioning:** stamp bumps only when the owner confirms the patches are good. Between confirms: work the axis, follow the commits. Do not bump on every hop. Next chat restores the live branch.
 
 ## Jobs (cross off)
 
