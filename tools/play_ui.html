@@ -642,7 +642,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v39</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v40</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -665,7 +665,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v39</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v40</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap" id="mapWrap">
         <div class="map-zoom">
@@ -682,7 +682,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><div id="map"></div><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Events sit on the map — raid, crown, discovery, starve. Click a log line to park there. · v39</div>
+      <div class="legend">Events sit on the map — raid, crown, discovery, starve. Click a log line to park there. · v40</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -1966,7 +1966,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v39";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v40";}
   renderEpilogue(state);
 }
 async function poll(){

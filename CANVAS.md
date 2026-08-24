@@ -18,20 +18,20 @@ Sprites live in `tools/sprites/` (`/sprites/train.png` etc). If those 404, the m
 ## New Grok chat (same project)
 
 1. User must be in **Build**, not Expert.
-2. Restore branch **v39**. Stamp **· v39**.
-3. Canvas live stamp is **· v39**.
+2. Restore branch **v40**. Stamp **· v40**.
+3. Canvas live stamp is **· v40**.
 4. Copy `/workspace/artifacts/ai-world` → `/workspace/ai-world` if the kernel is missing or `play_web.py` / `play_ui.html` is PLACEHOLDER / <1KB.
 5. `/workspace/startup.sh` must start play_web, not `npm run dev`.
 6. `sh /workspace/startup.sh` and leave it running.
-7. Prove: page contains `id="begin"` and `· v39`. Prove `/sprites/train.png` is 200.
+7. Prove: page contains `id="begin"` and `· v40`. Prove `/sprites/train.png` is 200.
 8. Tell the user to click **Watch**. Default view is **Iso**. **Grid** is the old map. Park **W**.
 
 Never `pkill -f`. Kill only the `python3 tools/play_web.py` PID (SIGTERM), then `sh /workspace/startup.sh`.
 
-Live stamp: subtitle **Watch the ages. Four peoples. Same map. · v39**
+Live stamp: subtitle **Watch the ages. Four peoples. Same map. · v40**
 
 If the right pane is blank HUD / empty World / no map at idle, the UI script crashed. Revert the last HTML edit; do not debug ports.
 
 ## Next chat
 
-See [PATCH_LEDGER.md](PATCH_LEDGER.md). Live **· v39**. Edicts hidden. Never Vite.
+See [PATCH_LEDGER.md](PATCH_LEDGER.md). Live **· v40**. Edicts hidden. Never Vite.
