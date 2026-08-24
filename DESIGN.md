@@ -373,20 +373,11 @@ Iso labour / knight / king / scribe / builder / crew as figures. Train/cab/bus a
 
 Option B land. Four poles scaled to the bigger island. Seed 42 east science hold is **Year 343** (was 342 on 48×48). Stamp **· v37**. Edicts hidden.
 
-### Restore pin (do not lose this)
+### Restore
 
-**Name:** `v29-safe` · alias **2.9**  
-**Repo:** `999nike/AI-world` · branch `v29-safe`  
-**Commit:** `7e3cbfdd66dd69cdd296f5d00528c28d74afd7e5`  
-**Stamp:** **· v29**  
-**Date:** 2026-08-20  
+Live **· v39** on branch **`v39`**. 96×96. Hold **Year 343**. Edicts hidden. See [PATCH_LEDGER.md](PATCH_LEDGER.md).
 
-Sit + art pass + painted sprites are on this pin (canvas). Kernel land is still the world-city pin.
+### Next patch
 
-Next chat: restore live **· v37**, 96×96, hold **Year 343**. Not v19-safe. **Edicts stay hidden.**
+See the ledger. Owner picks the axis.
 
-Old pin `v19-safe` / `5ce0355` is king+hall only. Keep it as archaeology, not as the restore.
-
-### Next patch (locked — see ledger)
-
-**Settlers camera (Option A).** Tile = a block. Same kernel, same 48×48 rules, new isometric view. Queue: v32 camera → v33 terrain kit → v34 buildings → v35 walkers. Edicts stay hidden. Do not grow the map (Option B) and do not clip-cinematics (Option C) until the owner says. Concept painting = what belongs on the island, not a sprite target.
