@@ -1,14 +1,13 @@
 # AI-world Design Notes (Internal)
 
-**Last updated:** 2026-08-20  
-**Content ceiling (built):** Era 6 world city (airports, taxis, buses)  
-**Content ceiling (vision):** sit + optional learning agents on the same rules
+**Last updated:** 2026-08-24  
+**This file is vision.** Status, restore, stamps → [PATCH_LEDGER.md](PATCH_LEDGER.md).
 
 ---
 
 ## Vision (look & feel)
 
-**The Settlers** for human play: top-down, resource chains, haul labour, buildings that feel alive, watching a settlement grow.
+**The Settlers** for human play: top-down (iso camera), resource chains, haul labour, buildings that feel alive, watching a settlement grow.
 
 **Civilization** for structure: ages, subjects/tech, long-horizon choices, guns-vs-butter tension.
 
@@ -16,83 +15,102 @@
 
 **Research lab** underneath: fully deterministic, seed-controlled, every decision logged. Logs become the animation / god-view pipeline. Humans watch or steer; later agents learn.
 
-**Current product (2026-08-20):** watch-first. **Four peoples** (west / east / north / south), 10 hands a pole. Human edicts are **hidden**, not deleted. Default web run is `playable=False`, paced god-view. World city is on the canvas (**· v29**). Memory-app agents tried as v30 and **reverted**.
-
 Not pure spreadsheet. Not pure action game.  
 **Lab engine first → watchable city → industry → world city → optional learning agents on the same rules.**
+
+The utility agent is the **hands**. The human (later) is the **brain**.  
+Do not micro villagers. Do not replace the kernel to “feel more like Firaxis.”
+
+---
+
+## The picture (what you should see)
+
+Four peoples on one island — west / east / north / south, inland camps, poles filling toward the middle.
+
+**Land.** A 96×96 island you can sit with. Water is a lake (flat), shore is sand, grass has lift, fields stripe, roads sit low, trees have canopy. Grain stays dirt. Streets stay streets. **Rail is the spine** — avenue plus the line city ↔ mill ↔ warehouse — not a carpet.
+
+**City.** Districts you can read: housing, civic, industry, fields, military. Houses pitched off the rail. Hall with a roof. Barn. Warehouse shed. Mill tower + wheel; mill-race to the water; a dry mill sits dark. One wonder a pole (fat landmark). Harbour: quay and boats on the water at a mill.
+
+**Hands.** Ten walkers a pole. They are labour, not kings.
+
+- Settlement — breed toward the cap
+- Town — one walker raised to **knight** (raids, guard)
+- City — that knight (or one child) raised to **king**. One crown. Hall is the seat
+- Science — **scribe** walks library / lab / observatory; **builder** walks hall / foundry / workshop
+
+Paint is not rank. One walker is knighted, then crowned.
+
+**Industry.** After science: mill on water is live power. Train + rail crew haul wood mill → warehouse. Foundry and mill tools only when the mill is live.
+
+**World city.** After the wonder: airport + runway. Planes cross the island. Taxi loops the square. Bus runs hall → warehouse → field.
+
+**Camera.** Iso is the sit (Settlers cubes of the same snapshot). Grid is the old map, kept as backup. Park W / E / N / S / Island. Island fits; scrollbar stays.
+
+**Watch, not cheat.** Edicts exist in the kernel and stay hidden until the map is a place worth deciding on.
 
 ---
 
 ## The route (eras)
 
-Each era must **last**. It is a finished sit that *leads into* the next — not a skip. That is the upgrade / DLC workflow: ship an era as a complete picture, then unlock the next.
+Each era must **last**. It is a finished sit that *leads into* the next — not a skip. Ship an era as a complete picture, then unlock the next.
 
-| Era | Name | Built? | What you should see |
-|---|---|---|---|
-| Camp | Walkers, no hearth | yes | Four hands, empty land |
-| Settlement | First hut, shared stock | yes | A hearth, a yard |
-| Town (3) | Workshop + barracks, 15 souls | yes | Streets starting, a camp |
-| City (4) | Academy + inquiry, 20 souls | yes | Districts, houses, fields, food chain |
-| Science | Library → lab → observatory | yes | Knowledge buildings, discoveries, *hold* |
-| **5 Industry** | Rail, mills | **yes** | **Trains.** Goods move on lines. Mills and foundries work. Roads become rail. |
-| **6 World city** | Airports, taxis, buses | **yes** | **Planes.** Cabs on the square. Buses on the spine. |
-
-### What belongs in those later eras (not now)
-
-- **Streets, bars, unis** — academy stands in for the uni until 5; market is the bar on the street
-- **Pyramids / wonders** — one fat landmark per people, era 5+
-- **Trains** — era 5 spine. Roads we paint now *become* rail
-- **Planes / airports** — era 6, sit on the rail spine
-- **Taxis, buses** — era 6 traffic, the city feels busy as fek
-- **Housing / civic / industry / green districts** — started in the city picture, finished in 5–6
+| Era | Name | What you should see |
+|---|---|---|
+| Camp | Walkers, no hearth | Hands, empty land |
+| Settlement | First hut, shared stock | A hearth, a yard |
+| Town | Workshop + barracks | Streets starting, a camp |
+| City | Academy + inquiry | Districts, houses, fields, food chain |
+| Science | Library → lab → observatory | Knowledge buildings, discoveries, a *hold* |
+| Industry | Rail, mills, warehouse, wonder | Trains. Goods on the spine. Live mill. One landmark |
+| World city | Airports, taxis, buses | Planes. Cabs on the square. Buses on the spine |
 
 You do not jump to airports. Rail is the spine. Airports sit on the spine.
 
-### What comes after the city can carry this
+### Still to finish in that picture
 
-1. Memory-app agents — walkers get clever, same rules
-2. More peoples — four tribes or four houses, after two tribes look like cities
+- **Uni / bars as real buildings** — academy stands in for the uni; market stands in for the bar
+- **Housing / civic / industry / green** — started; keep reading as districts, not letters
+- Empty granary should read on the map
+- Late sits that don’t silently starve and stall
 
-Do not drop clever agents or extra players onto a camp with letters.
+### After the city can carry it
+
+1. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first. Do not drop clever agents onto a camp with letters.
+2. **Playable governor** — pause, 3 fat choices, no typing `focus food`. Human biases the next goal. Same seed, same agents, same rules.
+3. **More peoples** — only after four tribes look like cities.
 
 ---
 
-## Goals (hand-off)
+## Goals
 
-### Near-term (city that plays like a city)
-- Districts you can read (housing / civic / industry / fields / military)
-- Food chain you can see: farm → granary → souls. Empty granary reads on the map
-- Streets as a network (they become rail in era 5)
-- Late sits that don’t silently starve and stall
+### Near (city that plays like a city)
 
-### Mid-term (era 5)
-- Industry: rail, mills, power
-- One wonder slot (pyramid / landmark)
+- Districts you can read
+- Food chain you can see: farm → granary → souls
+- Streets as a network (they become rail in industry)
+- The iso sit holds: terrain, roofs, figures, houses off the rail
+
+### Mid (industry depth)
+
 - Uni / bars as real buildings, not stand-ins
+- Power / mill-race / warehouse still feel like work, not stickers
 
-### Longer (era 6 + agents)
-- Airports, highways, taxis, buses
+### Longer (world city + agents)
+
+- Traffic that reads as a living city
 - Learning / memory-app agents inside the same deterministic rules
+- Playable layer on the kernel — do not fork the sim to make a game
 - More peoples on the same island
-- Playable governor layer (edicts still exist in the kernel)
 
 ### Non-goals (for now)
+
 - Perfect balance for human multiplayer
 - Replacing the utility agent with RL immediately
 - DESIGN.md as a patch checklist (ledger owns status)
 - Cloning Civ 6/7 systems (religion, tourism, great people, hex unit combat, 20 unique civs)
 - Airports before rail
-
----
-
-## Intent
-
-Deterministic multi-agent civilisation lab → watchable Settlers × Civ × SimCity hybrid.  
-Logs = animation pipeline. Ages progression. Learning agents later.  
-One simulation kernel; lab and human UI are layers on top.
-
-The utility agent is the **hands**. The human (later) is the **brain**.  
-Do not micro villagers. Do not replace the kernel to “feel more like Firaxis.”
+- Clever agents before hands
+- Fake kings painted as 2×2 blocks
 
 ---
 
@@ -102,9 +120,9 @@ Do not micro villagers. Do not replace the kernel to “feel more like Firaxis.�
 
 - Early: farms, storage, food pressure
 - Mid: workshop → barracks → civic chain → academy / subjects
-- Era 4: subject buildings (irrigation, library, foundry, hall, command)
+- City: irrigation, library, foundry, hall, command
 - Science: Lab → Observatory → discoveries (knowledge sink → permanent farm bonus)
-- Later: rail, wonders, airports, traffic
+- Later: rail, wonders, harbour, airports, traffic
 
 Guns-vs-butter remains core: soldiers help raids/defend but always cost food; soft-cap vs population.
 
@@ -114,12 +132,10 @@ Guns-vs-butter remains core: soldiers help raids/defend but always cost food; so
 
 Civ 6/7 are not “more buildings.” They are: a human makes a few costly choices, time moves, the world pushes back, and you can see it.
 
-This project already has the spine those games sit on:
-
 | Civ feeling | AI-world equivalent |
 |---|---|
 | Found / grow a city | Settlements, pop, food pressure, starve |
-| Ages | Era 2 → 4, then science; 5–6 later |
+| Ages | Camp → city → science → industry → world |
 | Tech / civics | Subjects: agriculture, craft, organisation, strategy, inquiry |
 | Districts / chains | Farm → granary → souls. Workshop → foundry. Civic square |
 | Science victory line | Library → Lab → Observatory → discoveries |
@@ -131,7 +147,7 @@ A broken science path is not a game. Multi-seed reachability (era 4 + Library + 
 
 We are roughly **70% of a Civ-shaped engine** and **15% of a game**.  
 The remaining game is not more buildings. It is decisions, a watchable city, one rival, and win/lose.  
-Buildings that *arrive later* (trains, planes, wonders) are eras, shipped as upgrades, each one a finished sit.
+Buildings that *arrive later* are eras, shipped as upgrades, each one a finished sit.
 
 ---
 
@@ -146,13 +162,11 @@ A human cannot yet:
 3. **See a rival** doing the same
 4. **Read the map** as a place, not a table
 
-The first three exist. The map now carries districts, houses, a food chain, and a chronicle in sentences. Still not a painting. Good enough to watch.
+The first three exist in the kernel. The map now carries districts, houses, a food chain, iso terrain, and a chronicle in sentences. Still not a painting. Good enough to watch. Edicts stay hidden until the sit is worth deciding on.
 
 ---
 
 ## Playable path (Settlers × Civ, not a Civ clone)
-
-### The product
 
 The human is the **spirit of the settlement**. Villagers keep walking. You do not micro A0.
 
@@ -169,60 +183,52 @@ Closer to Civ 7’s ages + crises than to Civ 6’s 400-click city screens. The 
 - **Discovery:** take the farm bonus *or* bank knowledge for the next one.
 - **Crisis:** drought — ration, or keep growing and risk starve.
 
-Every choice must be able to hurt (rule 5).
+Every choice must be able to hurt.
 
 ### What not to steal from Civ 6/7
 
 Do **not** add religion, tourism, great people, diplomatic quarter, 20 unique civs, hex combat with 8 unit classes.
 
-Those games are huge because they sell 100 hours. This is a 48×48 deterministic lab. Their surface would break the kernel.
+Those games are huge because they sell 100 hours. This is a deterministic island lab. Their surface would break the kernel.
 
 Steal only this:
 
-- Ages change the rules (we have this)
-- One visible rival (Layer 3 — west / east, own governor, cross-faction raids)
-- A victory you can point at (win / lose clock: science, wipe, or hold)
-- Presentation that makes stocks feel like a city (watchable map + chronicle)
+- Ages change the rules
+- One visible rival (own governor, cross-faction raids)
+- A victory you can point at (science, wipe, or hold)
+- Presentation that makes stocks feel like a city
 
 ---
 
-## Three layers. Ship in this order.
+## Three layers
 
 ```
-Now (lab)          Playable              Civ-shaped
-─────────          ────────              ──────────
-kernel             pause on decision     rival civ on same map   ← shipped
-utility agents     governor choices      raids become someone    ← shipped
-logs/snapshots     watchable map         win / lose clock        ← shipped
+Lab                 Playable              Civ-shaped
+─────────           ────────              ──────────
+kernel              pause on decision     rival civ on same map
+utility agents      governor choices      raids become someone
+logs/snapshots      watchable map         win / lose clock
 ```
 
-**Layer 1 — Watchable (shipped)**  
-Paced god-view: one screen, events as sentences. Districts, food chain, chronicle. The web map is this layer.
+**Layer 1 — Watchable**  
+Paced god-view: one screen, events as sentences. Districts, food chain, chronicle, iso sit.
 
 **Layer 2 — Steerable (this is the game)**  
-Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules.
+Pause. 3 buttons. No typing `focus food`. Human only biases the next goal. Same seeds, same agents, same rules. Not open while the sit is the work.
 
-**Layer 3 — Contested (shipped)**  
-Second civ on the same map, far side, own governor. `rival_agents=0` is the default so validate RNG is untouched. Edicts only move your people. Science gates and deposits are own-faction. When two factions exist, raids are strongest-of-one vs weakest-of-the-other — not weather.
+**Layer 3 — Contested**  
+Second civ on the same map, far side, own governor. `rival_agents=0` is the default so validate RNG is untouched. Edicts only move your people. When two factions exist, raids are strongest-of-one vs weakest-of-the-other — not weather.
 
-Do not pile civic / hunger / age-up on top of this. One axis at a time.
-
-### Win / lose (shipped)
+### Win / lose
 
 - **Science:** your Observatory + 2 discoveries, first
 - **Domination:** the other civ’s pop hits 0 after both have founded
 - **Survival:** clock ends — era 4 and more people, or they outgrew you / you never reached era 4
 
 Early stop on science or wipe only when a rival is on the map.  
-`rival_agents=0` still runs the full tick count. Validate is untouched.
+Validate still runs the full tick count.
 
 That is a short Civ. That is enough. Do not add more buildings to make it feel finished. **Do** add later *eras* as upgrades when the city picture can carry them.
-
-
-### First playable patch (done)
-
-Pause the sim → show 3 choices → apply one governor bias → resume.  
-Same seeds. Same multi-seed validate. Then it started being a game.
 
 ---
 
@@ -237,147 +243,31 @@ God-view is the watchable layer. It is not the playable layer until it can pause
 
 ## Dev rules
 
-1. Determinism sacred  
-2. One axis at a time  
-3. Logs first  
-4. Min tokens while usage high  
-5. Choices must be able to hurt  
-6. Ledger = status; DESIGN = vision  
-7. Utility agent stays the hands; human is the brain  
-8. Playable layer sits on the kernel — do not fork the sim to make a game  
-9. Each era is a finished sit that leads into the next (DLC / upgrade workflow)  
-10. Rail before airports. City before clever agents. Two tribes before more peoples.  
-11. Four walkers cannot run a world city. Hands grow. One walker is knighted, then crowned. Paint is not rank.
+1. Determinism sacred
+2. One axis at a time
+3. Logs first
+4. Min tokens while usage high
+5. Choices must be able to hurt
+6. Ledger = status; DESIGN = vision
+7. Utility agent stays the hands; human is the brain
+8. Playable layer sits on the kernel — do not fork the sim to make a game
+9. Each era is a finished sit that leads into the next (DLC / upgrade workflow)
+10. Rail before airports. City before clever agents. Hands before world city.
+11. Paint is not rank. Four walkers cannot run a world city. Hands grow.
 
 ---
 
-## Locked plan (2026-08-19) — do not invent a different one
+## Locked spine
 
-**Confirmed with the owner. This is the spine. Next chat starts here.**
+Do not invent a different one.
 
-Four bots cannot run a major city, trains, or an airport. Today the eight walkers are the only bodies. Souls and soldiers are numbers painted as houses and tents. A sim that wants to feel like the age it’s in must grow **hands**, not just the score.
+- **Four tribes.** West, east, north, south. Same island.
+- Start **10 walkers a side.** Labour, not kings.
+- People age: camp → settlement → town → city → science → industry → world.
+- Walkers evolve on that same path (breed, knight, king, scribe, builder).
+- Grow toward **8–10 hands a side by city.** Watch starts at the cap.
+- One crown a side, when earned.
+- **Iso** is the sit. Grid is backup.
+- Edicts stay in the kernel, hidden, until Layer 2 opens.
 
-### For now (gameplay solid)
-
-- **Four tribes.** West, east, north, south. Same 48×48 island.
-- Start **10 walkers a side.** They are labour, not kings.
-- The **people** still age: camp → settlement → town → city → science.
-- The **walkers evolve** on that same path:
-  - Settlement — they **breed** up to the cap when a side starts smaller. Watch starts at the cap.
-  - Town — one walker can be raised to **knight** (raids, guard). The others stay labour.
-  - City — that knight (or one child) can be raised to **king**. **Government** starts (hall, one crown).
-  - Science — specialists (scribe, builder). Same people, new jobs.
-- Grow toward **8–10 hands a side by city.** Watch now **starts at 10.**
-- v17 gold/silver “kings” are **paint only**. Undo that lie when rank is real. One crown a side, when earned.
-
-### Later (not this next patch)
-
-- Memory-app agents (smarter walkers, same rules) — **v30 reverted**, watch must stay solid first
-- Playable governor / edicts still exist in the kernel; UI stays watch-first until we open them
-
-### Sit (canvas, still · v29 — not a new era)
-
-Uni / bars painted as buildings. Housing / civic / industry / military / fields. Corner poles fill inward. Camera W/E/N/S.
-
-### Art pass (canvas, still · v29)
-
-Same 48×48 kernel. CSS tiles: grass, water, roofs, mill-wheel, warehouse, runway. Building letters off. Walkers stay dots.
-
-### Sprites (canvas, still · v29)
-
-Train / cab / bus / plane are shapes that face the move. Live mill spins. No new rules. Walkers still dots.
-
-### What this is not
-
-- Not 2×2 fake kings + villagers (v17 paint).
-- Not 4 walkers forever.
-- Not airports before rail. Not clever agents before hands.
-
-### Shipped v18 — hands + knight
-
-Hands breed with population (cap 10). One knight a side at town + barracks. Fake king paint removed.
-
-### Shipped v19 — king + hall government
-
-City era crowns one king a side (the knight if they exist). Capital tagged government. Hall is the seat when it rises. Event log is wired to last_breed / last_knight / last_king.
-
-### Shipped v20 — science specialists
-
-Library names one **scribe** and one **builder** a side from existing walkers. Scribe walks to library / lab / observatory. Builder walks to hall / foundry / workshop. Same 10-hand cap. Paint and city panel follow `role`. Seed 42 east science is **Year 382** (specialists pull two hands toward their seats).
-
-### Shipped v21 — north / south poles
-
-Four peoples, four corners, same 48×48 island. West / east / north / south. Each starts 4 walkers, breeds to 10, same ranks (knight, king, scribe, builder). Watch stamp **· v21**. `pole_agents=0` keeps the two-tribe kernel. Seed 42 east science is **Year 354**.
-
-### Shipped v22 — 10 a side
-
-Watch starts **10 walkers a pole** (40 hands on the island). Cap stays 10. Two-tribe `num_agents=4` still breeds up. Stamp **· v22**. Seed 42 east science is **Year 342**.
-
-### Shipped v23 — industry trains
-
-After observatory a **mill** can rise. Mill + city → era 5. Streets become rail. One **rail crew** and one **train** a pole. Train walks the towns and mill, hauls a little wood. No RNG. Stamp **· v23**.
-
-### Shipped v24 — rail spine
-
-Industry sit. Rail is only the avenue and the line city ↔ mill ↔ other industry towns. Streets stay streets. Grain roads stay dirt. Trains already walk that spine. Stamp **· v24**.
-
-### Shipped v25 — mill power
-
-Mill on water (or irrigation, reach 4) is **live**. Power on the city. Foundry and mill tools only when live. Train loads only at a live mill. Mill-race painted to the water. Dry mill sits dark. Stamp **· v25**. Seed 42 hold stays **Year 342**.
-
-### Shipped v26 — warehouse
-
-After mill + 2 discoveries a **warehouse** can rise. Train loads at a live mill and drops at **W**. Goods sit on the spine. Stamp **· v26**. Seed 42 hold stays **Year 342**.
-
-### Shipped v27 — wonder
-
-One **wonder** a pole after warehouse + 3 discoveries. Fat landmark (3×3 pyramid). Stamp **· v27**. Seed 42 hold stays **Year 342**.
-
-Industry sit is finished: mill, power, rail, warehouse, wonder.
-
-### Shipped v28 — airports
-
-After a wonder, one **airport** a pole. Planes fly the island (2 tiles a tick, no RNG). Runway painted. Era 6 **world**. Stamp **· v28**. Seed 42 hold stays **Year 342**.
-
-### Shipped v29 — taxis / buses
-
-After the airport, one **taxi** loops the square and one **bus** runs hall → warehouse → field. No RNG. Stamp **· v29**. Seed 42 hold stays **Year 342**.
-
-World city sit: planes, cabs, buses.
-
-### Reverted v30 — memory walkers
-
-Labour walkers remembering resource tiles. JS syntax error in map paint blanked the watch (HUD, seed, map never ran). **Fully reverted.** Do not re-land until script-checked.
-
-### Shipped v31 — harbour sit
-
-Toward the concept painting. Quay and boats on the water at a mill. No new kernel. Edicts stay hidden. Stamp **· v31**. Seed 42 hold stays Year 342.
-
-### Shipped v32 — Settlers camera
-
-Isometric cubes of the same snapshot. Flat grid kept as **Grid**. Kernel frozen. Edicts hidden. Stamp **· v32**. Seed 42 hold stays Year 342.
-
-### Shipped v33 — terrain kit
-
-Iso water is a lake (flat), shore sand, grass has lift, fields stripe, roads sit low, trees have canopy. Buildings still cubes. Stamp **· v33**. Seed 42 hold stays Year 342.
-
-### Shipped v34 — buildings
-
-Iso mill (tower + wheel), hall with roof, houses with pitched roofs, barn, warehouse shed. Terrain from v33. Stamp **· v34**. Seed 42 hold stays Year 342.
-
-### Shipped v35 — walkers
-
-Iso labour / knight / king / scribe / builder / crew as figures. Train/cab/bus as wagons. Stamp **· v35**. Seed 42 hold stays Year 342. Option A camera queue (v32–v35) is in.
-
-### Shipped v37 — 96×96
-
-Option B land. Four poles scaled to the bigger island. Seed 42 east science hold is **Year 343** (was 342 on 48×48). Stamp **· v37**. Edicts hidden.
-
-### Restore
-
-Live **· v39** on branch **`v39`**. 96×96. Hold **Year 343**. Edicts hidden. See [PATCH_LEDGER.md](PATCH_LEDGER.md).
-
-### Next patch
-
-See the ledger. Owner picks the axis.
-
+Next axis: owner picks. Ledger holds the stamp.
