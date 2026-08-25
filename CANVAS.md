@@ -24,7 +24,7 @@ Sprites live in `tools/sprites/` (`/sprites/train.png` etc). If those 404, the m
 5. `/workspace/startup.sh` must start play_web, not `npm run dev`.
 6. `sh /workspace/startup.sh` and leave it running.
 7. Prove: page contains `id="begin"` and `· v40`. Prove `/sprites/train.png` is 200.
-8. Tell the user to click **Watch**. Default view is **Iso**. **Grid** is the old map. Park **W**.
+8. Tell the user to click **Watch**. The map is **Iso**. Park **W**.
 
 Never `pkill -f`. Kill only the `python3 tools/play_web.py` PID (SIGTERM), then `sh /workspace/startup.sh`.
 

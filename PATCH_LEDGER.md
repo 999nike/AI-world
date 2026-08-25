@@ -2,7 +2,7 @@
 
 **Live · v40.** Restore branch **`v40`**.
 
-96×96 island. Iso camera (Grid is backup). `playable=False`. Edicts hidden.
+96×96 island. Iso camera (Grid is gone). `playable=False`. Edicts hidden.
 Seed 42, 10 a pole, east science hold **Year 343**.
 
 **This stamp:** events sit on the iso map — raid chevrons, crown, stolen science, discovery, starve. Glyphs stay readable zoomed out. Click a log line to park there. Island crown keeps a gold ring on that king.

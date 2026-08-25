@@ -668,7 +668,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
     <div class="panel">
       <div id="statusBanner" class="banner">Open a world and watch. · v40</div>
       <div id="epilogue" class="epilogue"></div>
-      <div class="map-wrap" id="mapWrap">
+      <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
           <button class="btn ghost" id="zoomOut" type="button" aria-label="Zoom out">−</button>
           <span class="zlabel" id="zoomLabel">1×</span>
@@ -678,12 +678,10 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
           <button class="btn ghost look" data-look="east" type="button">E</button>
           <button class="btn ghost look" data-look="north" type="button">N</button>
           <button class="btn ghost look" data-look="south" type="button">S</button>
-          <button class="btn ghost on" id="viewIso" type="button">Iso</button>
-          <button class="btn ghost" id="viewGrid" type="button">Grid</button>
         </div>
-        <div class="map-sizer" id="mapSizer"><div id="map"></div><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
+        <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Planes fly. Buses use the road and the stop. Rail has sleepers. · v40</div>
+      <div class="legend">Iso is the map. Planes fly. Buses stop. · v40</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -750,17 +748,10 @@ function jumpTo(x,y){
   markLook();
   const wrap=$("mapWrap");
   if(!wrap||x==null||y==null) return;
-  if(viewMode==="iso"){
-    const orig=window.__isoOrig||isoOrigin(96,96);
-    const p=isoScreen(Number(x),Number(y),orig.ox,orig.oy);
-    wrap.scrollLeft=Math.max(0, p.sx*zoom - wrap.clientWidth*0.45);
-    wrap.scrollTop=Math.max(0, p.sy*zoom - wrap.clientHeight*0.42);
-    return;
-  }
-  const map=$("map"), cell=map&&map.querySelector(".cell");
-  const cw=(cell&&cell.offsetWidth)||20, ch=(cell&&cell.offsetHeight)||20;
-  wrap.scrollLeft=Math.max(0, Number(x)*cw*zoom - wrap.clientWidth*0.45);
-  wrap.scrollTop=Math.max(0, Number(y)*ch*zoom - wrap.clientHeight*0.45);
+  const orig=window.__isoOrig||isoOrigin(96,96);
+  const p=isoScreen(Number(x),Number(y),orig.ox,orig.oy);
+  wrap.scrollLeft=Math.max(0, p.sx*zoom - wrap.clientWidth*0.45);
+  wrap.scrollTop=Math.max(0, p.sy*zoom - wrap.clientHeight*0.42);
 }
 function pingColor(kind){
   if(kind==="raid") return "#e07068";
@@ -994,17 +985,19 @@ function renderAges(world){
   const sides=sidesOf(world);
   const row=(side)=>`<div class="ages-row ${side.cls}"><div class="who">${side.label}</div><div class="ages">${AGES.map(([id,name])=>`<div class="age ${id===side.now?"now "+side.cls:(side.on[id]?"on":"")}">${name}</div>`).join("")}</div></div>`;
   $("ages").innerHTML=POLES.map(([fac])=>row(sides[fac])).join("");
-  const map=$("map");
-  map.classList.remove("age-camp","age-settlement","age-town","age-city","age-science","age-industry","age-world");
-  const order=s=>orderOf(s.now);
-  const lead=POLES.map(([fac])=>sides[fac]).sort((a,b)=>order(b)-order(a))[0];
-  if(lead.on.era6) map.classList.add("age-world");
-  else if(lead.on.era5) map.classList.add("age-industry");
-  else if(lead.on.library||lead.on.lab||lead.on.observatory) map.classList.add("age-science");
-  else if(lead.on.era4) map.classList.add("age-city");
-  else if(lead.on.era3) map.classList.add("age-town");
-  else if(lead.on.era2) map.classList.add("age-settlement");
-  else map.classList.add("age-camp");
+  const map=$("mapWrap");
+  if(map){
+    map.classList.remove("age-camp","age-settlement","age-town","age-city","age-science","age-industry","age-world");
+    const order=s=>orderOf(s.now);
+    const lead=POLES.map(([fac])=>sides[fac]).sort((a,b)=>order(b)-order(a))[0];
+    if(lead.on.era6) map.classList.add("age-world");
+    else if(lead.on.era5) map.classList.add("age-industry");
+    else if(lead.on.library||lead.on.lab||lead.on.observatory) map.classList.add("age-science");
+    else if(lead.on.era4) map.classList.add("age-city");
+    else if(lead.on.era3) map.classList.add("age-town");
+    else if(lead.on.era2) map.classList.add("age-settlement");
+    else map.classList.add("age-camp");
+  }
 }
 function sampleOf(world){
   const s=sidesOf(world);
@@ -1710,26 +1703,11 @@ function drawIso(occ,w,h){
     fx.height=canvas.height;
   }
 }
-function setViewMode(mode){
-  viewMode=mode==="grid"?"grid":"iso";
-  const wrap=$("mapWrap");
-  if(wrap){
-    wrap.classList.toggle("mode-iso", viewMode==="iso");
-    wrap.classList.toggle("mode-grid", viewMode==="grid");
-  }
-  const isoBtn=$("viewIso"), gridBtn=$("viewGrid");
-  if(isoBtn) isoBtn.classList.toggle("on", viewMode==="iso");
-  if(gridBtn) gridBtn.classList.toggle("on", viewMode==="grid");
-  if(viewMode==="grid" && prevWorld) renderMap(prevWorld);
-  applyZoom();
-  parkCamera(prevWorld||{});
-}
+function setViewMode(){ /* iso only */ }
 
 function renderMap(world){
   if(!world) return;
-  const w=world.width||48,h=world.height||48,map=$("map");
-  const size=(map.classList.contains("age-town")||map.classList.contains("age-city")||map.classList.contains("age-science")||map.classList.contains("age-industry")||map.classList.contains("age-world"))?22:18;
-  map.style.gridTemplateColumns=`repeat(${w}, ${size}px)`;
+  const w=world.width||48,h=world.height||48;
   const occ={};
   function set(x,y,cls,mark,title,z){
     if(x<0||y<0||x>=w||y>=h) return;
@@ -2053,14 +2031,6 @@ function renderMap(world){
     nowVeh[bus.id||("B"+fn)]={kind:"bus",x:bus.x,y:bus.y,face:(bus.face||face.replace("face-","")),air:0};
   }
   vehPrev=vehNow; vehNow=nowVeh; vehAt=performance.now();
-  let html="";
-  if(viewMode==="grid"){
-    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
-      const c=occ[x+","+y]||{cls:"grass",mark:"",title:""};
-      html+=`<div class="cell ${c.cls}"${c.title?` title="${esc(c.title)}"`:""}>${c.mark||""}</div>`;
-    }
-    map.innerHTML=html;
-  }
   try{ drawIso(occ,w,h); }catch(e){}
   applyZoom();
 }
@@ -2271,24 +2241,15 @@ async function begin(){
   if(timer) clearInterval(timer); timer=setInterval(poll,280); poll();
 }
 function applyZoom(){
-  const map=$("map"), sizer=$("mapSizer"), lab=$("zoomLabel"), iso=$("iso");
-  if(!sizer) return;
-  if(viewMode==="iso" && iso){
-    const w=iso.width||1200, h=iso.height||700;
-    const nw=Math.max(1,Math.round(w*zoom))+"px";
-    const nh=Math.max(1,Math.round(h*zoom))+"px";
-    if(sizer.style.width!==nw) sizer.style.width=nw;
-    if(sizer.style.height!==nh) sizer.style.height=nh;
-    if(iso.style.width!=="100%") iso.style.width="100%";
-    if(iso.style.height!=="100%") iso.style.height="100%";
-    if(map) map.style.transform="";
-  } else if(map){
-    map.style.transform="scale("+zoom+")";
-    map.style.transformOrigin="0 0";
-    const w=map.offsetWidth||0, h=map.offsetHeight||0;
-    sizer.style.width=Math.max(1,Math.round(w*zoom))+"px";
-    sizer.style.height=Math.max(1,Math.round(h*zoom))+"px";
-  }
+  const sizer=$("mapSizer"), lab=$("zoomLabel"), iso=$("iso");
+  if(!sizer||!iso) return;
+  const w=iso.width||1200, h=iso.height||700;
+  const nw=Math.max(1,Math.round(w*zoom))+"px";
+  const nh=Math.max(1,Math.round(h*zoom))+"px";
+  if(sizer.style.width!==nw) sizer.style.width=nw;
+  if(sizer.style.height!==nh) sizer.style.height=nh;
+  if(iso.style.width!=="100%") iso.style.width="100%";
+  if(iso.style.height!=="100%") iso.style.height="100%";
   if(lab) lab.textContent=(zoom<1?(Math.round(zoom*100)/100): (Math.round(zoom*10)/10))+"×";
   markLook();
 }
@@ -2298,28 +2259,17 @@ function markLook(){
   if(island) island.classList.toggle("on", lookAt==="island");
 }
 function parkCamera(world){
-  const wrap=$("mapWrap"), map=$("map");
+  const wrap=$("mapWrap");
   if(!wrap) return;
   if(lookAt==="island"||lookAt==="event") return;
   const s=sidesOf(world||{});
   const side=s[lookAt];
   const cap=side&&side.cap;
   if(!cap||cap.x==null) return;
-  if(viewMode==="iso"){
-    const orig=window.__isoOrig||isoOrigin(96,96);
-    const p=isoScreen(Number(cap.x),Number(cap.y),orig.ox,orig.oy);
-    wrap.scrollLeft=Math.max(0, p.sx*zoom - wrap.clientWidth*0.45);
-    wrap.scrollTop=Math.max(0, p.sy*zoom - wrap.clientHeight*0.40);
-    return;
-  }
-  if(!map) return;
-  const cell=map.querySelector(".cell");
-  const cw=(cell&&cell.offsetWidth)||20;
-  const ch=(cell&&cell.offsetHeight)||20;
-  const x=Number(cap.x)*cw*zoom - wrap.clientWidth*0.45;
-  const y=Number(cap.y)*ch*zoom - wrap.clientHeight*0.45;
-  wrap.scrollLeft=Math.max(0,x);
-  wrap.scrollTop=Math.max(0,y);
+  const orig=window.__isoOrig||isoOrigin(96,96);
+  const p=isoScreen(Number(cap.x),Number(cap.y),orig.ox,orig.oy);
+  wrap.scrollLeft=Math.max(0, p.sx*zoom - wrap.clientWidth*0.45);
+  wrap.scrollTop=Math.max(0, p.sy*zoom - wrap.clientHeight*0.40);
 }
 function lookPole(name){
   lookAt=name;
@@ -2328,26 +2278,19 @@ function lookPole(name){
   parkCamera(prevWorld||{});
   markLook();
 }
-function zoomMin(){ return viewMode==="iso"?0.12:0.35; }
+function zoomMin(){ return 0.12; }
 function fitMap(){
-  const wrap=$("mapWrap"), map=$("map"), iso=$("iso");
+  const wrap=$("mapWrap"), iso=$("iso");
   if(!wrap) return;
   lookAt="island";
   const pad=16;
-  if(viewMode==="iso" && iso && iso.width){
+  if(iso && iso.width){
     const sx=(Math.max(80,wrap.clientWidth)-pad*2)/iso.width;
     const sy=(Math.max(80,wrap.clientHeight)-pad*2)/Math.max(1,iso.height);
     setZoom(Math.min(sx, sy));
     wrap.scrollLeft=0;
     wrap.scrollTop=0;
-    return;
   }
-  if(!map||!map.offsetWidth) return;
-  const sx=(Math.max(80,wrap.clientWidth)-pad*2)/map.offsetWidth;
-  const sy=(Math.max(80,wrap.clientHeight)-pad*2)/Math.max(1,map.offsetHeight);
-  setZoom(Math.min(sx, sy||sx));
-  wrap.scrollLeft=0;
-  wrap.scrollTop=0;
 }
 function setZoom(z){
   const zmin=zoomMin();
@@ -2364,8 +2307,6 @@ $("zoomReset").onclick=()=>lookPole("island");
 document.querySelectorAll("[data-look]").forEach(btn=>{
   btn.onclick=()=>lookPole(btn.dataset.look);
 });
-if($("viewIso")) $("viewIso").onclick=()=>setViewMode("iso");
-if($("viewGrid")) $("viewGrid").onclick=()=>setViewMode("grid");
 (function(){
   const wrap=$("mapWrap");
   if(!wrap) return;
