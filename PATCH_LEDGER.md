@@ -17,9 +17,10 @@ Seed 42, 10 a pole, east science hold **Year 343**.
 
 - [x] **One true king** — one crown on the island. That people get order / haul / raid. Everyone else wants the head. Lose the king, lose the bonus. (Four local kings stay as rank; one island crown is what matters.)
 - [x] **Stolen science** — a raid can rip a discovery off the next city. Soldiers pay. Snatch the lab, come home thinner.
+- [x] **Gold** — a purse. Bar mints it. Crown tribute. Raids take gold. Gold never feeds. Food still kills.
 
-Later (not this pin): gold (a purse — food still kills) · temples / hidden pyramids (late, buried) · sit that feels like physics · event popups (look at other games) · crown a bit clearer on the map.
+Later (not this pin): temples / hidden pyramids (late, buried) · sit that feels like physics · event popups (look at other games) · crown a bit clearer on the map.
 
-**Next axis:** later — gold. Owner says wait.
+**Next axis:** gold. Stamp stays **v40** until owner confirms.
 
 **Next chat:** restore **`v40`**. Prove `id="begin"` and `· v40`. Hold **Year 343**. Never Vite. Do not turn edicts on.

@@ -77,6 +77,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .log .ev.jump{cursor:pointer;padding-left:10px}
 .log .ev.jump:hover{color:var(--fg);background:color-mix(in oklab,var(--fg) 6%,transparent)}
 .log .ev-raid{box-shadow:inset 3px 0 0 var(--danger)}
+.log .ev-gold{box-shadow:inset 3px 0 0 #e8c040}
 .log .ev-steal{box-shadow:inset 3px 0 0 #7ec8e0}
 .log .ev-crown,.log .ev-king{box-shadow:inset 3px 0 0 #e8c040}
 .log .ev-discover{box-shadow:inset 3px 0 0 #c8d0a8}
@@ -763,6 +764,7 @@ function jumpTo(x,y){
 }
 function pingColor(kind){
   if(kind==="raid") return "#e07068";
+  if(kind==="gold") return "#e8c040";
   if(kind==="steal") return "#8fd4ea";
   if(kind==="crown"||kind==="king") return "#f0d060";
   if(kind==="vacant") return "#8a7a48";
@@ -773,6 +775,7 @@ function pingColor(kind){
 }
 function pingWord(kind){
   if(kind==="raid") return "RAID";
+  if(kind==="gold") return "GOLD";
   if(kind==="steal") return "STOLEN";
   if(kind==="crown") return "CROWN";
   if(kind==="king") return "KING";
@@ -788,6 +791,11 @@ function drawPingGlyph(ctx,kind,col){
   if(kind==="raid"){
     ctx.beginPath(); ctx.moveTo(-6,-5); ctx.lineTo(0,5); ctx.lineTo(6,-5); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-6,1); ctx.lineTo(0,11); ctx.lineTo(6,1); ctx.stroke();
+    return;
+  }
+  if(kind==="gold"){
+    ctx.beginPath(); ctx.arc(-2,2,5,0,6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-1,4.2,0,6.28); ctx.fill();
     return;
   }
   if(kind==="steal"){
@@ -925,7 +933,7 @@ function ageState(world,fac){
   const era=towns.reduce((a,s)=>Math.max(a,Number(s.era||2)),0);
   const on={camp:true,era2:towns.length>0,era3:era>=3,era4:era>=4,library:sci.lib,lab:sci.lab,observatory:sci.obs,era5:era>=5,era6:era>=6};
   let now="camp";for(const [id] of AGES) if(on[id]) now=id;
-  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder"),uni:ownStructs(world,fac).some(s=>s.type==="academy"),bar:ownStructs(world,fac).some(s=>s.type==="market")};
+  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),gold:sum(towns,"gold_stock"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder"),uni:ownStructs(world,fac).some(s=>s.type==="academy"),bar:ownStructs(world,fac).some(s=>s.type==="market")};
 }
 function ranksOf(world,fac){
   const hands=((world&&world.agents)||[]).filter(a=>(a.faction||"player")===fac);
@@ -1022,7 +1030,8 @@ function renderRace(world){
   $("race").innerHTML=
     lane("Science path",poles.map(sci).join(" · "),poles.map(p=>p.sci.steps))+
     lane("People",poles.map(p=>p.people).join(" · "),poles.map(p=>p.people))+
-    lane("Soldiers",poles.map(p=>p.soldiers.toFixed(1)).join(" · "),poles.map(p=>p.soldiers));
+    lane("Soldiers",poles.map(p=>p.soldiers.toFixed(1)).join(" · "),poles.map(p=>p.soldiers))+
+    lane("Gold",poles.map(p=>(p.gold||0).toFixed(1)).join(" · "),poles.map(p=>p.gold||0));
 }
 function folkBlock(side,title,barCls){
   const cap=side.cap;
@@ -1050,6 +1059,9 @@ function folkBlock(side,title,barCls){
   if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A wonder stands.";
   if(side.uni) lead+=(lead.endsWith(".")?" ":"")+"A university stands.";
   if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"A bar sits on the street.";
+  const purse=Number(side.gold||0);
+  if(purse>=1) lead+=(lead.endsWith(".")?" ":"")+"A purse of "+purse.toFixed(0)+" gold. Food still kills.";
+  else if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"The purse is empty.";
   if(side.live) lead+=(lead.endsWith(".")?" ":"")+"A harbour sits on the water.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Planes leave the field.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Cabs and buses work the streets.";
@@ -1074,6 +1086,7 @@ function folkBlock(side,title,barCls){
     <div class="meter"><label><span>Food days</span><span>${days==null?"—":(days<1?"short":Math.floor(days)+"d")}</span></label><div class="bar ${low?"low":""} ${barCls}"><i style="width:${fill.toFixed(0)}%"></i></div></div>
     <div class="meter"><label><span>Science</span><span>${esc(sci)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.sci.steps/5*100)}%"></i></div></div>
     <div class="meter"><label><span>Military</span><span>${side.soldiers.toFixed(1)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.soldiers*8)}%"></i></div></div>
+    <div class="meter"><label><span>Purse</span><span>${(side.gold||0)<1?"—":(side.gold||0).toFixed(0)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,(side.gold||0)/20*100)}%"></i></div></div>
     <div class="meter"><label><span>Power</span><span>${side.live?"live":(side.era>=5?"dry":"—")}</span></label><div class="bar ${barCls}"><i style="width:${side.live?100:0}%"></i></div></div>
     ${chips}</div>`;
 }
@@ -1459,6 +1472,16 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
     }
     return;
   }
+  if(cls.indexOf("bar")>=0){
+    drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),ox,oy);
+    if(cls.indexOf("purse")>=0){
+      const b=isoScreen(x,y,ox,oy);
+      ctx.fillStyle="#e8c040";
+      ctx.beginPath(); ctx.arc(b.sx-3, b.sy-14, 2.4, 0, 6.28); ctx.fill();
+      ctx.beginPath(); ctx.arc(b.sx+2, b.sy-16, 2.1, 0, 6.28); ctx.fill();
+    }
+    return;
+  }
   drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),ox,oy);
 }
 
@@ -1764,6 +1787,10 @@ function renderMap(world){
       const days=owner?townDays[owner.id]:null;
       extra=days==null?"":(days<1?" empty":(days<3?" low":" full"));
     }
+    if(st.type==="market"){
+      const purse=towns.filter(t=>(t.faction||"player")===fac).reduce((a,t)=>a+Number(t.gold_stock||0),0);
+      if(purse>=1) extra+=" purse";
+    }
     const liveTown=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
     const skin=skinType+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"");
     const label=st.type==="academy"?"university":(st.type==="market"?"bar":(st.type||""));
@@ -1981,8 +2008,10 @@ async function poll(){
       lastRaidTick=raid.tick;
       const tgt=townXY(world, raid.target);
       const atk=townXY(world, raid.attacker);
-      const meta=tgt?{x:tgt.x,y:tgt.y,fac:raid.attacker_faction,kind:"raid",fromX:atk&&atk.x,fromY:atk&&atk.y}:null;
-      logLine(world.tick,`${whoOf(raid.attacker_faction)} raided ${raid.target}.`, meta);
+      const g=Number((raid.loot||{}).gold||0);
+      const kind=g>=1?"gold":"raid";
+      const meta=tgt?{x:tgt.x,y:tgt.y,fac:raid.attacker_faction,kind:kind,fromX:atk&&atk.x,fromY:atk&&atk.y}:null;
+      logLine(world.tick, g>=1?`${whoOf(raid.attacker_faction)} raided ${raid.target} and took ${g} gold.`:`${whoOf(raid.attacker_faction)} raided ${raid.target}.`, meta);
     }
     const taken=(world.metrics||{}).last_crown_taken;
     if(taken&&taken.tick!==lastCrownTakenTick){

@@ -79,6 +79,9 @@ SETTLEMENT_RULES = {
     "island_crown_raid_extra": 2,
     "island_crown_head_cost": 2.0,
     "science_steal_cost": 4.0,
+    "market_gold_per_tick": 0.20,
+    "island_crown_gold_tribute": 0.08,
+    "raid_loot_gold": 3,
     "industry_min_era": 5,
     "age_up5_min_pop": 20,
     "age_up5_food_bonus": 5.0,
@@ -125,7 +128,7 @@ class SettlementManager:
             "id": sid, "x": x, "y": y, "owner_id": owner_id,
             "faction": faction or self.active_faction or "player",
             "population": int(SETTLEMENT_RULES.get("starting_population", 1)),
-            "food_stock": 0, "wood_stock": 0, "stone_stock": 0,
+            "food_stock": 0, "wood_stock": 0, "stone_stock": 0, "gold_stock": 0.0,
             "tools_stock": 0.0, "soldiers": 0.0, "knowledge": 0.0,
             "power": 0.0, "mill_live": False, "mill_race": None,
             "goods_stock": 0,
@@ -443,10 +446,17 @@ class SettlementManager:
             if has_market:
                 mw = float(SETTLEMENT_RULES.get("market_wood_per_tick", 0.5))
                 ms = float(SETTLEMENT_RULES.get("market_stone_per_tick", 0.25))
+                mg = float(SETTLEMENT_RULES.get("market_gold_per_tick", 0.20))
                 s["wood_stock"] = float(s.get("wood_stock", 0) or 0) + mw
                 s["stone_stock"] = float(s.get("stone_stock", 0) or 0) + ms
+                s["gold_stock"] = float(s.get("gold_stock", 0) or 0) + mg
                 self.metrics["market_wood_total"] = self.metrics.get("market_wood_total", 0) + mw
                 self.metrics["market_stone_total"] = self.metrics.get("market_stone_total", 0) + ms
+                self.metrics["market_gold_total"] = self.metrics.get("market_gold_total", 0) + mg
+            if self._cross_faction() and s.get("faction", "player") == self.island_crown_faction():
+                tribute = float(SETTLEMENT_RULES.get("island_crown_gold_tribute", 0.08))
+                s["gold_stock"] = float(s.get("gold_stock", 0) or 0) + tribute
+                self.metrics["crown_gold_total"] = self.metrics.get("crown_gold_total", 0) + tribute
             if has_temple:
                 tf = float(SETTLEMENT_RULES.get("temple_food_per_tick", 0.35))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + tf
@@ -683,15 +693,18 @@ class SettlementManager:
         loot_w = base_w + extra
         loot_s = base_s + max(0, extra // 2)
         loot_f = base_f + max(0, extra // 2)
+        loot_g = int(SETTLEMENT_RULES.get("raid_loot_gold", 3)) + max(0, extra // 2)
         # Strategy subject on defender reduces loot taken
         tgt_subjects = tgt.get("subjects") or []
         if "strategy" in tgt_subjects:
             loot_w = max(1, int(loot_w * 0.75))
             loot_s = max(1, int(loot_s * 0.75))
             loot_f = max(1, int(loot_f * 0.75))
+            loot_g = max(1, int(loot_g * 0.75))
         take_w = min(loot_w, int(tgt.get("wood_stock", 0)))
         take_s = min(loot_s, int(tgt.get("stone_stock", 0)))
         take_f = min(loot_f, int(float(tgt.get("food_stock", 0))))
+        take_g = min(loot_g, int(float(tgt.get("gold_stock", 0) or 0)))
         steal_cost = float(SETTLEMENT_RULES.get("science_steal_cost", 4.0))
         head_cost = float(SETTLEMENT_RULES.get("island_crown_head_cost", 2.0))
         crown_fac = self.island_crown_faction()
@@ -708,11 +721,14 @@ class SettlementManager:
         tgt["wood_stock"] = int(tgt.get("wood_stock", 0)) - take_w
         tgt["stone_stock"] = int(tgt.get("stone_stock", 0)) - take_s
         tgt["food_stock"] = float(tgt.get("food_stock", 0)) - take_f
+        tgt["gold_stock"] = float(tgt.get("gold_stock", 0) or 0) - take_g
         atk["wood_stock"] = int(atk.get("wood_stock", 0)) + take_w
         atk["stone_stock"] = int(atk.get("stone_stock", 0)) + take_s
         atk["food_stock"] = float(atk.get("food_stock", 0)) + take_f
+        atk["gold_stock"] = float(atk.get("gold_stock", 0) or 0) + take_g
         self.metrics["raid_events"] = self.metrics.get("raid_events", 0) + 1
         self.metrics["raid_loot_total"] = self.metrics.get("raid_loot_total", 0) + take_w + take_s + take_f
+        self.metrics["raid_gold_total"] = self.metrics.get("raid_gold_total", 0) + take_g
         stolen = 0
         crown_taken = False
         vacant = False
@@ -785,7 +801,7 @@ class SettlementManager:
             "type": "raid", "tick": tick, "attacker": atk_sid, "target": tgt_sid,
             "attacker_faction": atk.get("faction", "player"),
             "target_faction": tgt.get("faction", "player"),
-            "cost_soldiers": cost, "loot": {"wood": take_w, "stone": take_s, "food": take_f},
+            "cost_soldiers": cost, "loot": {"wood": take_w, "stone": take_s, "food": take_f, "gold": take_g},
             "attacker_soldiers_after": atk["soldiers"],
             "target_had_walls": self.settlement_has_walls(tgt_sid, world),
             "target_had_strategy": "strategy" in tgt_subjects,
@@ -797,7 +813,7 @@ class SettlementManager:
             "tick": tick, "attacker": atk_sid, "target": tgt_sid,
             "attacker_faction": atk.get("faction", "player"),
             "target_faction": tgt.get("faction", "player"),
-            "loot": {"wood": take_w, "stone": take_s, "food": take_f},
+            "loot": {"wood": take_w, "stone": take_s, "food": take_f, "gold": take_g},
             "science_stolen": stolen, "crown_taken": crown_taken, "vacant": vacant,
         }
 
