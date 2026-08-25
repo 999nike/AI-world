@@ -42,9 +42,9 @@ Paint is not rank. One walker is knighted, then crowned.
 
 **Industry.** After science: mill on water is live power. Train + rail crew haul wood mill → warehouse. Foundry and mill tools only when the mill is live.
 
-**World city.** After the wonder: airport + runway. Planes cross the island. Taxi loops the square. Bus runs hall → warehouse → field.
+**World city.** After the wonder: airport + runway. Planes cross the island. Taxi loops the square. Bus runs hall → warehouse → field. Hotel towers and highrises when the people are many — a skyline, not a camp.
 
-**Camera.** Iso is the sit (Settlers cubes of the same snapshot). Grid is the old map, kept as backup. Park W / E / N / S / Island. Island fits; scrollbar stays.
+**Camera.** Iso is the map. Park W / E / N / S / Island. Island fits; scrollbar stays.
 
 **Watch, not cheat.** Edicts exist in the kernel and stay hidden until the map is a place worth deciding on.
 
@@ -82,7 +82,7 @@ Each era must **last**. It is a finished sit that *leads into* the next — not 
 | City | Academy + inquiry | Districts, houses, fields, food chain |
 | Science | Library → lab → observatory | Knowledge buildings, discoveries, a *hold* |
 | Industry | Rail, mills, warehouse, wonder | Trains. Goods on the spine. Live mill. One landmark |
-| World city | Airports, taxis, buses | Planes. Cabs on the square. Buses on the spine |
+| World city | Airports, taxis, buses, hotel towers | Planes. Cabs on the square. A skyline when the city is full |
 
 You do not jump to airports. Rail is the spine. Airports sit on the spine.
 

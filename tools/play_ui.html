@@ -643,7 +643,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v42</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v43</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -666,7 +666,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v42</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v43</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -681,7 +681,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Iso is the map. Planes fly. Buses stop. · v42</div>
+      <div class="legend">Iso is the map. Planes fly. Buses stop. · v43</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -1325,6 +1325,7 @@ function isoH(cls,x,y){
   if(c.indexOf("hall")>=0||c.indexOf("settlement")>=0) return 16;
   if(c.indexOf("wonder")>=0) return 22;
   if(c.indexOf("uni")>=0||c.indexOf("warehouse")>=0) return 14;
+  if(c.indexOf("tower")>=0||c.indexOf("hotel")>=0||c.indexOf("highrise")>=0) return 32;
   if(c.indexOf("manor")>=0) return 16;
   if(c.indexOf("house")>=0||c.indexOf("housing")>=0){
     if(c.indexOf("row")>=0) return 13;
@@ -1461,6 +1462,56 @@ function drawIsoHouse(ctx,x,y,ox,oy,cls){
     ctx.fillRect(b.sx-2, b.sy-wallH-roofH-4, 4, 3);
   }
 }
+function drawIsoTower(ctx,x,y,ox,oy,cls){
+  const c=cls||"";
+  const hungry=c.indexOf("hungry")>=0;
+  const fed=c.indexOf("fed")>=0;
+  const hotel=c.indexOf("hotel")>=0;
+  const hVar=((x*5+y*3)%3);
+  const wallH=hotel?34:(24+hVar*7);
+  let wall=["#d8d0c4","#6a6458","#3a3830"];
+  if(c.indexOf("east")>=0) wall=["#e0c0b8","#7a5048","#3a2824"];
+  else if(c.indexOf("north")>=0) wall=["#c8d4e0","#4a5a68","#243038"];
+  else if(c.indexOf("south")>=0) wall=["#c8d4b0","#4a5a38","#243020"];
+  if(hungry) wall=["#8a8480","#4a4844","#242220"];
+  drawIsoBox(ctx,x,y,3,["#5a5a58","#3a3a38","#1a1a18"],ox,oy);
+  drawIsoBox(ctx,x,y,wallH,wall,ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  const tw=ISO_TW/2, th=ISO_TH/2;
+  const floors=Math.max(5, Math.floor(wallH/5));
+  const lit=hungry?"#2a2420":(fed?"#f0d878":"#8ab0c8");
+  ctx.fillStyle=lit;
+  for(let i=1;i<floors;i++){
+    const wy=b.sy-Math.floor(i*(wallH/(floors+1)));
+    ctx.fillRect(b.sx-8, wy, 2, 2);
+    ctx.fillRect(b.sx-4, wy-1, 2, 2);
+    ctx.fillRect(b.sx+3, wy, 2, 2);
+    ctx.fillRect(b.sx+7, wy-1, 2, 2);
+  }
+  ctx.fillStyle=hungry?"#3a3834":"#2a3238";
+  ctx.beginPath();
+  ctx.moveTo(b.sx, b.sy+th-wallH);
+  ctx.lineTo(b.sx+tw, b.sy-wallH);
+  ctx.lineTo(b.sx, b.sy-th-wallH);
+  ctx.lineTo(b.sx-tw, b.sy-wallH);
+  ctx.closePath();
+  ctx.fill();
+  if(hotel){
+    ctx.fillStyle="#c8a040";
+    ctx.beginPath();
+    ctx.moveTo(b.sx-10, b.sy-8);
+    ctx.lineTo(b.sx+10, b.sy-8);
+    ctx.lineTo(b.sx+8, b.sy-12);
+    ctx.lineTo(b.sx-8, b.sy-12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle="#e8d080";
+    ctx.fillRect(b.sx-2, b.sy-wallH-6, 4, 4);
+  } else {
+    ctx.fillStyle="#6a7078";
+    ctx.fillRect(b.sx+4, b.sy-wallH-6, 3, 5);
+  }
+}
 function drawIsoHall(ctx,x,y,ox,oy){
   drawIsoBox(ctx,x,y,14,["#e8e4d8","#8a8680","#4a4844"],ox,oy);
   drawIsoRoof(ctx,isoScreen(x,y,ox,oy),14,12,"#6a5040","#3a2c24");
@@ -1511,6 +1562,9 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
   if(cls.indexOf("granary")>=0||cls.indexOf("farm")>=0){
     if(isoAnchor(occ,x,y,"granary")||isoAnchor(occ,x,y,"farm")) drawIsoBarn(ctx,x,y,ox,oy);
     return;
+  }
+  if(cls.indexOf("tower")>=0||cls.indexOf("hotel")>=0||cls.indexOf("highrise")>=0){
+    drawIsoTower(ctx,x,y,ox,oy,cls); return;
   }
   if(cls.indexOf("house")>=0||cls.indexOf("housing")>=0||cls.indexOf("hut")>=0)
     { drawIsoHouse(ctx,x,y,ox,oy,cls); return; }
@@ -1698,7 +1752,7 @@ function drawIso(occ,w,h){
   const canvas=$("iso");
   if(!canvas||!canvas.getContext) return;
   const orig=isoOrigin(w,h);
-  orig.oy=42;
+  orig.oy=58;
   const width=Math.ceil(orig.ox+(w)*(ISO_TW/2)+24);
   const height=Math.ceil(orig.oy+(w+h)*(ISO_TH/2)+88);
   if(canvas.width!==width) canvas.width=width;
@@ -1973,7 +2027,7 @@ function renderMap(world){
     if(c.indexOf("rail")>=0||c.indexOf("street")>=0||c.indexOf("runway")>=0||c.indexOf("stop")>=0) return true;
     if(c.indexOf("mill")>=0||c.indexOf("airport")>=0||c.indexOf("warehouse")>=0) return true;
     if(c.indexOf("quay")>=0||c.indexOf("field")>=0||c.indexOf("crop")>=0) return true;
-    if(c.indexOf("hall")>=0||c.indexOf("uni")>=0||c.indexOf("wonder")>=0) return true;
+    if(c.indexOf("hall")>=0||c.indexOf("uni")>=0||c.indexOf("wonder")>=0||c.indexOf("tower")>=0||c.indexOf("hotel")>=0) return true;
     if(cell.z>=6) return true;
     return false;
   }
@@ -2007,8 +2061,19 @@ function renderMap(world){
         slots.push({x:hx,y:hy,ring:ring});
       }
     }
+    slots.sort(function(a,b){ return a.ring-b.ring; });
+    const nTowers=era>=6?Math.min(6, 2+Math.floor(pop/35)):0;
+    let placedT=0;
+    for(const s of slots){
+      if(placedT>=nTowers) break;
+      const kind=placedT===0?"hotel":"highrise";
+      set(s.x,s.y,"tower "+kind+" "+fn+(hungry?" hungry":(fed?" fed":"")),"",town.id+" "+kind,6);
+      placedT++;
+    }
     let placed=0;
     for(const s of slots){
+      const cell=occ[s.x+","+s.y];
+      if(cell&&((cell.cls||"").indexOf("tower")>=0)) continue;
       if(placed>=homes) break;
       set(s.x,s.y,"house "+fn+" "+grade+(hungry?" hungry":(fed?" fed":"")),"",town.id+" house",5);
       placed++;
@@ -2146,7 +2211,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v42";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v43";}
   renderEpilogue(state);
 }
 async function poll(){
