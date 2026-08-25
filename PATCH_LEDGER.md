@@ -1,26 +1,24 @@
 # AI-world Patch Ledger
 
-**Live · v40.** Restore branch **`v40`**.
+**Live · v41.** Restore branch **`v41`**.
 
 96×96 island. Iso camera (Grid is gone). `playable=False`. Edicts hidden.
 Seed 42, 10 a pole, east science hold **Year 343**.
 
-**This stamp:** events sit on the iso map — raid chevrons, crown, stolen science, discovery, starve. Glyphs stay readable zoomed out. Click a log line to park there. Island crown keeps a gold ring on that king.
+**This hop:** iso is the only map. Planes fly, buses stop, rail has sleepers. Gold purse is live. Events sit on the map.
 
-**Carried:** iso camera, terrain, buildings, walker figures, houses off the rail, 96×96, Island fits.
+**Carried:** iso camera, terrain, buildings, walker figures, houses off the rail, 96×96, Island fits, true king, stolen science, gold.
 
 **Heading:** a civ, not a pile of cheats. Every new rule hurts as well as helps.
 
-**Versioning:** stamp bumps only when the owner confirms the patches are good. Between confirms: work the axis, follow the commits. Do not bump on every hop. Next chat restores the live branch.
+**Versioning:** each **patch** bumps the number (v41 → v42 → …). Owner says **stamp** → freeze that version as the pin for the next chat (ledger snapshot). Do not stamp unless they say stamp.
 
 ## Jobs (cross off)
 
-- [x] **One true king** — one crown on the island. That people get order / haul / raid. Everyone else wants the head. Lose the king, lose the bonus. (Four local kings stay as rank; one island crown is what matters.)
-- [x] **Stolen science** — a raid can rip a discovery off the next city. Soldiers pay. Snatch the lab, come home thinner.
+- [x] **One true king**
+- [x] **Stolen science**
 - [x] **Gold** — a purse. Bar mints it. Crown tribute. Raids take gold. Gold never feeds. Food still kills.
 
 Later (not this pin): temples / hidden pyramids (late, buried) · sit that feels like physics · event popups (look at other games) · crown a bit clearer on the map.
 
-**Next axis:** gold. Stamp stays **v40** until owner confirms.
-
-**Next chat:** restore **`v40`**. Prove `id="begin"` and `· v40`. Hold **Year 343**. Never Vite. Do not turn edicts on.
+**Next chat:** restore **`v41`**. Prove `id="begin"` and `· v41`. Hold **Year 343**. Never Vite. Do not turn edicts on.
