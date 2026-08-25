@@ -478,12 +478,16 @@ def step_trains(world, sm, t, metrics, logger):
             _train_stop(world, sm, tr)
             tr["target"] = (ti + 1) % len(pts)
             tx, ty = pts[tr["target"]]
+        ox, oy = int(tr["x"]), int(tr["y"])
         if int(tr["x"]) != tx:
             tr["x"] = int(tr["x"]) + (1 if tx > int(tr["x"]) else -1)
         elif int(tr["y"]) != ty:
             tr["y"] = int(tr["y"]) + (1 if ty > int(tr["y"]) else -1)
         tr["x"] = max(0, min(w - 1, int(tr["x"])))
         tr["y"] = max(0, min(h - 1, int(tr["y"])))
+        dx, dy = int(tr["x"]) - ox, int(tr["y"]) - oy
+        if dx or dy:
+            tr["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
 
 
 def _airports(world):
@@ -550,6 +554,7 @@ def step_planes(world, sm, t, metrics, logger):
         if int(pl["x"]) == tx and int(pl["y"]) == ty:
             pl["target"] = (ti + 1) % len(dests)
             tx, ty = dests[pl["target"]]
+        ox, oy = int(pl["x"]), int(pl["y"])
         for _ in range(2):
             if int(pl["x"]) == tx and int(pl["y"]) == ty:
                 break
@@ -559,6 +564,11 @@ def step_planes(world, sm, t, metrics, logger):
                 pl["y"] = int(pl["y"]) + (1 if ty > int(pl["y"]) else -1)
             pl["x"] = max(0, min(w - 1, int(pl["x"])))
             pl["y"] = max(0, min(h - 1, int(pl["y"])))
+        dx, dy = int(pl["x"]) - ox, int(pl["y"]) - oy
+        if dx or dy:
+            pl["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
+        pads = {(ax, ay) for _f, ax, ay in airs}
+        pl["air"] = 0 if (int(pl["x"]), int(pl["y"])) in pads else 1
 
 
 def _own_struct(world, sm, fac, kind):
@@ -578,6 +588,7 @@ def _step_vehicle(veh, pts, w, h, speed=1):
     if int(veh["x"]) == tx and int(veh["y"]) == ty:
         veh["target"] = (ti + 1) % len(pts)
         tx, ty = pts[veh["target"]]
+    ox, oy = int(veh["x"]), int(veh["y"])
     for _ in range(speed):
         if int(veh["x"]) == tx and int(veh["y"]) == ty:
             break
@@ -587,6 +598,9 @@ def _step_vehicle(veh, pts, w, h, speed=1):
             veh["y"] = int(veh["y"]) + (1 if ty > int(veh["y"]) else -1)
         veh["x"] = max(0, min(w - 1, int(veh["x"])))
         veh["y"] = max(0, min(h - 1, int(veh["y"])))
+    dx, dy = int(veh["x"]) - ox, int(veh["y"]) - oy
+    if dx or dy:
+        veh["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
 
 
 def step_traffic(world, sm, t, metrics, logger):
@@ -645,12 +659,19 @@ def step_traffic(world, sm, t, metrics, logger):
             continue
         cap = _capital(towns)
         pts = [(int(cap["x"]), int(cap["y"]))]
+        stop = (max(0, int(cap["x"]) - 1), int(cap["y"]))
+        if stop not in pts:
+            pts.append(stop)
         for kind in ("warehouse", "airport", "hall"):
             st = _own_struct(world, sm, fac, kind)
             if st:
                 xy = (int(st.x), int(st.y))
                 if xy not in pts:
                     pts.append(xy)
+                if kind == "hall":
+                    bay = (max(0, int(st.x) - 1), int(st.y))
+                    if bay not in pts:
+                        pts.append(bay)
         _step_vehicle(bus, pts, w, h, 1)
 
 

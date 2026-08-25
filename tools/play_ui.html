@@ -683,7 +683,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><div id="map"></div><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Events sit on the map — raid, crown, discovery, starve. Click a log line to park there. · v40</div>
+      <div class="legend">Planes fly. Buses use the road and the stop. Rail has sleepers. · v40</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -897,6 +897,19 @@ function drawIsoFx(now){
     ctx.restore();
   }
   mapPings=keep;
+  const origVeh=window.__isoOrig;
+  if(origVeh && typeof drawIsoSprite==="function"){
+    const u=Math.min(1,(now-vehAt)/280);
+    const e=1-Math.pow(1-u,2);
+    const ids=Object.keys(vehNow).sort(function(a,b){ return (vehNow[a].air||0)-(vehNow[b].air||0); });
+    for(let i=0;i<ids.length;i++){
+      const cur=vehNow[ids[i]];
+      const prev=vehPrev[ids[i]]||cur;
+      const x=prev.x+(cur.x-prev.x)*e;
+      const y=prev.y+(cur.y-prev.y)*e;
+      drawIsoSprite(ctx, x, y, origVeh.ox, origVeh.oy, cur.kind, cur.face||"e", cur.air);
+    }
+  }
 }
 (function tickFx(now){ drawIsoFx(now||performance.now()); requestAnimationFrame(tickFx); })();
 const POLES=[["player","west","West"],["rival","east","East"],["north","north","North"],["south","south","South"]];
@@ -1218,6 +1231,16 @@ function paintHarbour(set,occ,w,h,world){
 
 
 const ISO_TW=24, ISO_TH=12;
+const SPRITE_SRC={train:"/sprites/train.png",taxi:"/sprites/taxi.png",bus:"/sprites/bus.png",plane:"/sprites/plane.png"};
+const SPRITES={};
+(function loadSprites(){
+  Object.keys(SPRITE_SRC).forEach(function(k){
+    const im=new Image();
+    im.onload=function(){ SPRITES[k]=im; };
+    im.src=SPRITE_SRC[k];
+  });
+})();
+let vehPrev={}, vehNow={}, vehAt=0;
 function isoOrigin(w,h){
   return {ox:(h*ISO_TW/2)+20, oy:28};
 }
@@ -1465,6 +1488,19 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
     }
     return;
   }
+  if(cls.indexOf("airport")>=0){
+    if(isoAnchor(occ,x,y,"airport")) drawIsoAirport(ctx,x,y,ox,oy);
+    else drawIsoBox(ctx,x,y,8,["#8a8a94","#3a3a42","#1a1a20"],ox,oy);
+    return;
+  }
+  if(cls.indexOf("runway")>=0){
+    drawIsoRunway(ctx,x,y,ox,oy);
+    return;
+  }
+  if(cls.indexOf("stop")>=0){
+    drawIsoStop(ctx,x,y,ox,oy);
+    return;
+  }
   if(cls.indexOf("uni")>=0){
     if(isoAnchor(occ,x,y,"uni")){
       drawIsoBox(ctx,x,y,16,["#d0e0ec","#4a6880","#243848"],ox,oy);
@@ -1523,26 +1559,107 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls){
     ctx.fillRect(cx-3, cy-21, 6, 3);
   }
 }
-function drawIsoWagon(ctx,x,y,ox,oy,cls){
-  drawIsoBox(ctx,x,y,4,["#5a5044","#3a342c","#1c1814"],ox,oy);
+function drawIsoRail(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,4,["#6a6458","#3a3630","#1a1814"],ox,oy);
   const b=isoScreen(x,y,ox,oy);
-  const c=cls||"";
+  ctx.strokeStyle="#c8c8d0";
+  ctx.lineWidth=1.3;
+  ctx.beginPath(); ctx.moveTo(b.sx-9, b.sy-1); ctx.lineTo(b.sx+1, b.sy+5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(b.sx-1, b.sy-5); ctx.lineTo(b.sx+9, b.sy+1); ctx.stroke();
+  ctx.strokeStyle="#5a4030";
+  ctx.lineWidth=1.1;
+  for(let i=-2;i<=2;i++){
+    const t=i/3;
+    ctx.beginPath();
+    ctx.moveTo(b.sx-6+t*10, b.sy-2+t*4);
+    ctx.lineTo(b.sx-2+t*10, b.sy+2+t*4);
+    ctx.stroke();
+  }
+}
+function drawIsoStreet(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,3,["#5a5248","#3a342c","#1c1814"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.strokeStyle="rgba(200,190,140,.35)";
+  ctx.lineWidth=1;
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(b.sx-6, b.sy); ctx.lineTo(b.sx+6, b.sy); ctx.stroke();
+  ctx.setLineDash([]);
+}
+function drawIsoRunway(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,2,["#5a5a64","#2a2a32","#121218"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.strokeStyle="#e8e0c8";
+  ctx.lineWidth=1.2;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(b.sx-8, b.sy); ctx.lineTo(b.sx+8, b.sy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="#c8b040";
+  ctx.fillRect(b.sx-9, b.sy-2, 2, 2);
+  ctx.fillRect(b.sx+7, b.sy-2, 2, 2);
+}
+function drawIsoAirport(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,10,["#c8c8d0","#5a5a68","#2a2a34"],ox,oy);
+  drawIsoRoof(ctx,isoScreen(x,y,ox,oy),10,8,"#4a5060","#2a3038");
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#8a9098";
+  ctx.fillRect(b.sx+4, b.sy-22, 4, 12);
+  ctx.fillStyle="#e8e0c0";
+  ctx.fillRect(b.sx+5, b.sy-26, 2, 4);
+}
+function drawIsoStop(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,4,["#6a6058","#3a342c","#1c1814"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#c8b890";
+  ctx.fillRect(b.sx-6, b.sy-14, 12, 3);
+  ctx.fillStyle="#4a4038";
+  ctx.fillRect(b.sx-5, b.sy-11, 2, 8);
+  ctx.fillRect(b.sx+3, b.sy-11, 2, 8);
+  ctx.fillStyle="#e8c040";
+  ctx.fillRect(b.sx-1, b.sy-16, 2, 2);
+}
+function drawIsoSprite(ctx,x,y,ox,oy,kind,face,air){
+  const b=isoScreen(x,y,ox,oy);
+  const lift=kind==="plane"?(air?26:8):6;
+  if(kind==="plane"){
+    ctx.save();
+    ctx.globalAlpha=0.28;
+    ctx.fillStyle="#0a1018";
+    ctx.beginPath(); ctx.ellipse(b.sx, b.sy+2, 10, 4, 0, 0, 6.28); ctx.fill();
+    ctx.restore();
+  }
+  const img=SPRITES[kind];
+  if(img&&img.complete&&img.naturalWidth){
+    ctx.save();
+    ctx.translate(b.sx, b.sy-lift);
+    if(face==="w") ctx.scale(-1,1);
+    else if(face==="n") ctx.rotate(-0.55);
+    else if(face==="s") ctx.rotate(0.55);
+    const s=kind==="plane"?28:(kind==="bus"?26:(kind==="train"?28:22));
+    ctx.drawImage(img, -s/2, -s+4, s, s);
+    ctx.restore();
+    return;
+  }
   let body="#b09060";
-  if(c.indexOf("taxi")>=0) body="#d8c050";
-  if(c.indexOf("bus")>=0) body="#6a8aaa";
-  if(c.indexOf("plane")>=0) body="#d0d4d8";
-  if(c.indexOf("train")>=0) body="#8a5a38";
+  if(kind==="taxi") body="#d8c050";
+  if(kind==="bus") body="#6a8aaa";
+  if(kind==="plane") body="#d0d4d8";
+  if(kind==="train") body="#8a5a38";
   ctx.fillStyle=body;
   ctx.beginPath();
-  ctx.moveTo(b.sx-10, b.sy-6);
-  ctx.lineTo(b.sx+10, b.sy-10);
-  ctx.lineTo(b.sx+10, b.sy-16);
-  ctx.lineTo(b.sx-10, b.sy-12);
+  ctx.moveTo(b.sx-10, b.sy-lift);
+  ctx.lineTo(b.sx+10, b.sy-lift-4);
+  ctx.lineTo(b.sx+10, b.sy-lift-10);
+  ctx.lineTo(b.sx-10, b.sy-lift-6);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle="#2a2420";
-  ctx.beginPath(); ctx.arc(b.sx-6, b.sy-4, 2.4, 0, 6.28); ctx.fill();
-  ctx.beginPath(); ctx.arc(b.sx+5, b.sy-6, 2.4, 0, 6.28); ctx.fill();
+}
+function drawIsoWagon(ctx,x,y,ox,oy,cls){
+  drawIsoBox(ctx,x,y,3,["#5a5044","#3a342c","#1c1814"],ox,oy);
+  const c=cls||"";
+  const kind=c.indexOf("plane")>=0?"plane":(c.indexOf("bus")>=0?"bus":(c.indexOf("taxi")>=0?"taxi":"train"));
+  const face=c.indexOf("face-w")>=0?"w":(c.indexOf("face-n")>=0?"n":(c.indexOf("face-s")>=0?"s":"e"));
+  const air=c.indexOf(" air")>=0||c.indexOf("air")>=0&&kind==="plane"?1:0;
+  drawIsoSprite(ctx,x,y,ox,oy,kind,face,air);
 }
 function drawIso(occ,w,h){
   const canvas=$("iso");
@@ -1550,7 +1667,7 @@ function drawIso(occ,w,h){
   const orig=isoOrigin(w,h);
   orig.oy=42;
   const width=Math.ceil(orig.ox+(w)*(ISO_TW/2)+24);
-  const height=Math.ceil(orig.oy+(w+h)*(ISO_TH/2)+56);
+  const height=Math.ceil(orig.oy+(w+h)*(ISO_TH/2)+88);
   if(canvas.width!==width) canvas.width=width;
   if(canvas.height!==height) canvas.height=height;
   const ctx=canvas.getContext("2d");
@@ -1571,6 +1688,8 @@ function drawIso(occ,w,h){
       const cls=cell.cls||"grass";
       if(!pred(cls)) continue;
       if(isoKind(cls)==="tree"){ drawIsoTree(ctx,x,y,orig.ox,orig.oy); continue; }
+      if(isoKind(cls)==="rail"){ drawIsoRail(ctx,x,y,orig.ox,orig.oy); continue; }
+      if(isoKind(cls)==="road"){ drawIsoStreet(ctx,x,y,orig.ox,orig.oy); continue; }
       if(isoKind(cls)==="built"){ drawIsoBuilt(ctx,occ,x,y,orig.ox,orig.oy,cls); continue; }
       if(isoKind(cls)==="walker"){ drawIsoWalker(ctx,x,y,orig.ox,orig.oy,cls); continue; }
       if(isoKind(cls)==="vehicle"){ drawIsoWagon(ctx,x,y,orig.ox,orig.oy,cls); continue; }
@@ -1581,7 +1700,6 @@ function drawIso(occ,w,h){
   pass(function(c){ const k=isoKind(c); return k==="shore"; });
   pass(function(c){ const k=isoKind(c); return k!=="water"&&k!=="shore"&&k!=="built"&&k!=="walker"&&k!=="vehicle"; });
   pass(function(c){ return isoKind(c)==="built"; });
-  pass(function(c){ return isoKind(c)==="vehicle"; });
   pass(function(c){ return isoKind(c)==="walker"; });
   window.__isoOcc=occ;
   window.__isoWH=[w,h];
@@ -1821,8 +1939,11 @@ function renderMap(world){
       }
     }
     if(st.type==="airport"){
-      for(let dx=1;dx<=4;dx++){
+      for(let dx=1;dx<=8;dx++){
         if(!wet(st.x+dx,st.y)) set(st.x+dx,st.y,"runway","",(fn+" runway"),5);
+      }
+      for(let dx=1;dx<=3;dx++){
+        if(!wet(st.x+dx,st.y+1)) set(st.x+dx,st.y+1,"runway","",(fn+" taxiway"),5);
       }
     }
   }
@@ -1831,12 +1952,22 @@ function renderMap(world){
     if(!cell) return false;
     const c=cell.cls||"";
     if(c==="water") return true;
-    if(c.indexOf("rail")>=0||c.indexOf("street")>=0||c.indexOf("runway")>=0) return true;
+    if(c.indexOf("rail")>=0||c.indexOf("street")>=0||c.indexOf("runway")>=0||c.indexOf("stop")>=0) return true;
     if(c.indexOf("mill")>=0||c.indexOf("airport")>=0||c.indexOf("warehouse")>=0) return true;
     if(c.indexOf("quay")>=0||c.indexOf("field")>=0||c.indexOf("crop")>=0) return true;
     if(c.indexOf("hall")>=0||c.indexOf("uni")>=0||c.indexOf("wonder")>=0) return true;
     if(cell.z>=6) return true;
     return false;
+  }
+  const halls=(world.structures||[]).filter(s=>s.type==="hall");
+  const busesLive=(world.buses||[]).length>0;
+  for(const hall of halls){
+    const fac=factionOf(world,hall);
+    const eraTowns=towns.filter(t=>(t.faction||"player")===fac);
+    const late=eraTowns.some(t=>Number(t.era||2)>=6) || busesLive || (world.planes||[]).some(p=>(p.faction||"player")===fac);
+    if(!late) continue;
+    const sx=hall.x-1, sy=hall.y;
+    if(sx>=0&&!wet(sx,sy)&&!sitBusy(sx,sy)) set(sx,sy,"stop "+facName(fac),"",(facName(fac)+" bus stop"),6);
   }
   for(const town of towns){
     const fn=facName(town.faction);
@@ -1894,23 +2025,34 @@ function renderMap(world){
       set(a.x,a.y,skin,"",title,9);
     });
   }
+  const nowVeh={};
   for(const tr of world.trains||[]){
     const fn=facName(tr.faction||"player");
     const cargo=Number(tr.cargo||0)?" loaded":"";
-    set(tr.x,tr.y,"train "+fn+" "+faceClass("train",tr.id||fn,tr.x,tr.y),"",(fn+" train"+cargo),10);
+    const face=tr.face?("face-"+tr.face):faceClass("train",tr.id||fn,tr.x,tr.y);
+    set(tr.x,tr.y,"train "+fn+" "+face,"",(fn+" train"+cargo),10);
+    nowVeh[tr.id||("T"+fn)]={kind:"train",x:tr.x,y:tr.y,face:(tr.face||face.replace("face-","")),air:0};
   }
   for(const pl of world.planes||[]){
     const fn=facName(pl.faction||"player");
-    set(pl.x,pl.y,"plane "+fn+" "+faceClass("plane",pl.id||fn,pl.x,pl.y),"",(fn+" plane"),11);
+    const face=pl.face?("face-"+pl.face):faceClass("plane",pl.id||fn,pl.x,pl.y);
+    const air=Number(pl.air||0)?" air":"";
+    set(pl.x,pl.y,"plane "+fn+" "+face+air,"",(fn+" plane"),11);
+    nowVeh[pl.id||("P"+fn)]={kind:"plane",x:pl.x,y:pl.y,face:(pl.face||face.replace("face-","")),air:Number(pl.air||0)};
   }
   for(const cab of world.taxis||[]){
     const fn=facName(cab.faction||"player");
-    set(cab.x,cab.y,"taxi "+fn+" "+faceClass("taxi",cab.id||fn,cab.x,cab.y),"",(fn+" taxi"),10);
+    const face=cab.face?("face-"+cab.face):faceClass("taxi",cab.id||fn,cab.x,cab.y);
+    set(cab.x,cab.y,"taxi "+fn+" "+face,"",(fn+" taxi"),10);
+    nowVeh[cab.id||("C"+fn)]={kind:"taxi",x:cab.x,y:cab.y,face:(cab.face||face.replace("face-","")),air:0};
   }
   for(const bus of world.buses||[]){
     const fn=facName(bus.faction||"player");
-    set(bus.x,bus.y,"bus "+fn+" "+faceClass("bus",bus.id||fn,bus.x,bus.y),"",(fn+" bus"),10);
+    const face=bus.face?("face-"+bus.face):faceClass("bus",bus.id||fn,bus.x,bus.y);
+    set(bus.x,bus.y,"bus "+fn+" "+face,"",(fn+" bus"),10);
+    nowVeh[bus.id||("B"+fn)]={kind:"bus",x:bus.x,y:bus.y,face:(bus.face||face.replace("face-","")),air:0};
   }
+  vehPrev=vehNow; vehNow=nowVeh; vehAt=performance.now();
   let html="";
   if(viewMode==="grid"){
     for(let y=0;y<h;y++) for(let x=0;x<w;x++){
@@ -2119,7 +2261,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
   syncWorldSum();
