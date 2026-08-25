@@ -643,7 +643,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v41</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v42</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -666,7 +666,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v41</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v42</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -681,7 +681,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Iso is the map. Planes fly. Buses stop. · v41</div>
+      <div class="legend">Iso is the map. Planes fly. Buses stop. · v42</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -1325,7 +1325,12 @@ function isoH(cls,x,y){
   if(c.indexOf("hall")>=0||c.indexOf("settlement")>=0) return 16;
   if(c.indexOf("wonder")>=0) return 22;
   if(c.indexOf("uni")>=0||c.indexOf("warehouse")>=0) return 14;
-  if(c.indexOf("house")>=0||c.indexOf("housing")>=0) return 10;
+  if(c.indexOf("manor")>=0) return 16;
+  if(c.indexOf("house")>=0||c.indexOf("housing")>=0){
+    if(c.indexOf("row")>=0) return 13;
+    if(c.indexOf("cot")>=0) return 10;
+    return 8;
+  }
   if(c.indexOf("king")>=0||c.indexOf("knight")>=0) return 12;
   if(c.indexOf("vil")>=0||c.indexOf("scribe")>=0||c.indexOf("builder")>=0||c.indexOf("crew")>=0) return 9;
   if(c.indexOf("train")>=0||c.indexOf("bus")>=0) return 8;
@@ -1414,12 +1419,47 @@ function drawIsoRoof(ctx,b,wall,rh,light,dark){
   ctx.fill();
 }
 function drawIsoHouse(ctx,x,y,ox,oy,cls){
-  let wall=["#e8d2b0","#b08a60","#6a4a30"], roofL="#c45a38", roofD="#8a3020";
-  if((cls||"").indexOf("east")>=0){ wall=["#ead0c4","#b07060","#6a3830"]; roofL="#c05048"; roofD="#7a2820"; }
-  else if((cls||"").indexOf("north")>=0){ wall=["#d8e0e8","#7a90a0","#3a4858"]; roofL="#4a7090"; roofD="#2a4058"; }
-  else if((cls||"").indexOf("south")>=0){ wall=["#dce8b8","#7a9a50","#3a5820"]; roofL="#6a9a38"; roofD="#3a5818"; }
-  drawIsoBox(ctx,x,y,9,wall,ox,oy);
-  drawIsoRoof(ctx,isoScreen(x,y,ox,oy),9,10,roofL,roofD);
+  const c=cls||"";
+  const hungry=c.indexOf("hungry")>=0;
+  const fed=c.indexOf("fed")>=0;
+  const manor=c.indexOf("manor")>=0;
+  const row=c.indexOf("row")>=0;
+  const cot=c.indexOf("cot")>=0;
+  const grade=manor?3:(row?2:(cot?1:0));
+  let wall=["#ead8b8","#b08a60","#6a4a30"], roofL="#c45a38", roofD="#8a3020", thatch=false;
+  if(c.indexOf("east")>=0){ wall=["#f0d0c4","#b07060","#6a3830"]; roofL="#c05048"; roofD="#7a2820"; }
+  else if(c.indexOf("north")>=0){ wall=["#dce4ec","#7a90a0","#3a4858"]; roofL="#4a7090"; roofD="#2a4058"; }
+  else if(c.indexOf("south")>=0){ wall=["#e0ecb8","#7a9a50","#3a5820"]; roofL="#6a9a38"; roofD="#3a5818"; }
+  if(grade===0){ roofL="#c8a858"; roofD="#8a7030"; thatch=true; wall[0]="#d8c4a0"; }
+  if(hungry){ roofL="#6a6058"; roofD="#3a3834"; wall=["#b8a898","#6a5a50","#3a3028"]; }
+  const plot=hungry?["#6a5a40","#3a3228","#1c1814"]:["#7a6a50","#4a4030","#2a2418"];
+  drawIsoBox(ctx,x,y,3,plot,ox,oy);
+  const wallH=7+grade*3;
+  const roofH=6+grade*2;
+  drawIsoBox(ctx,x,y,wallH,wall,ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,wallH,roofH,roofL,roofD);
+  const tw=ISO_TW/2;
+  ctx.fillStyle=hungry?"#2a2018":"#3a2418";
+  ctx.fillRect(b.sx+2, b.sy-wallH+2, 3, 5+grade);
+  ctx.fillStyle=hungry?"#2a2820":"#d8e8f0";
+  ctx.fillRect(b.sx-7, b.sy-wallH-1, 3, 3);
+  if(grade>=2) ctx.fillRect(b.sx+6, b.sy-wallH-2, 3, 3);
+  if(grade>=1){
+    ctx.fillStyle=wall[1];
+    ctx.fillRect(b.sx-tw+2, b.sy-wallH-roofH+2, 3, 6+grade);
+    ctx.fillStyle=roofD;
+    ctx.fillRect(b.sx-tw+1, b.sy-wallH-roofH-1, 5, 2);
+  }
+  if(fed && !hungry){
+    ctx.fillStyle="rgba(220,220,220,.55)";
+    ctx.beginPath(); ctx.arc(b.sx-tw+4, b.sy-wallH-roofH-6, 2.2, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.sx-tw+6, b.sy-wallH-roofH-10, 1.6, 0, 6.28); ctx.fill();
+  }
+  if(manor){
+    ctx.fillStyle=roofL;
+    ctx.fillRect(b.sx-2, b.sy-wallH-roofH-4, 4, 3);
+  }
 }
 function drawIsoHall(ctx,x,y,ox,oy){
   drawIsoBox(ctx,x,y,14,["#e8e4d8","#8a8680","#4a4844"],ox,oy);
@@ -1950,16 +1990,17 @@ function renderMap(world){
   for(const town of towns){
     const fn=facName(town.faction);
     const days=townDays[town.id];
+    const era=Number(town.era||2);
+    const grade=era>=6?"manor":(era>=4?"row":(era>=3?"cot":"hut"));
     const hungry=days!=null&&days<1;
     const fed=days!=null&&days>=3;
     const pop=Number(town.population||0);
-    const homes=Math.min(8, Math.max(4, Math.floor(pop/14)));
+    const homes=Math.min(14, Math.max(6, Math.floor(pop/10)));
     const slots=[];
-    for(let ring=2;ring<=5;ring++){
+    for(let ring=2;ring<=4;ring++){
       for(let dy=-ring;dy<=ring;dy++) for(let dx=-ring;dx<=ring;dx++){
         if(Math.abs(dx)<=1 && Math.abs(dy)<=1) continue;
         if(Math.abs(dx)+Math.abs(dy)!==ring) continue;
-        if((dx+dy)&1) continue;
         const hx=town.x+dx, hy=town.y+dy;
         if(hx<0||hy<0||hx>=w||hy>=h) continue;
         if(wet(hx,hy)||sitBusy(hx,hy)) continue;
@@ -1969,7 +2010,7 @@ function renderMap(world){
     let placed=0;
     for(const s of slots){
       if(placed>=homes) break;
-      set(s.x,s.y,"house "+fn+(hungry?" hungry":(fed?" fed":"")),"",town.id+" house",5);
+      set(s.x,s.y,"house "+fn+" "+grade+(hungry?" hungry":(fed?" fed":"")),"",town.id+" house",5);
       placed++;
     }
   }
@@ -2105,7 +2146,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v41";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v42";}
   renderEpilogue(state);
 }
 async function poll(){
