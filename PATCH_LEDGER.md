@@ -1,17 +1,17 @@
 # AI-world Patch Ledger
 
-**Live · v44.** Restore branch **`v44`**.
+**Live · v45.** Restore branch **`v45`**.
 
 96×96 island. Iso camera (Grid is gone). `playable=False`. Edicts hidden.
 Seed 42, 10 a pole, east science hold **Year 343**.
 
-**This hop:** civic pack. Hall with banner and door. Mill wheel that splashes when live. Warehouse dock. Foundry stack. University dome. Bar awning. Barracks block.
+**This hop:** temples and hidden pyramids. Temple is stone, pillars, a flame. Wonder is a pyramid rising from dirt berms — found, not a camp hut.
 
-**Carried:** hotel towers at world city, houses hut→manor, iso only, planes fly, buses stop, gold purse, events on the map, true king, stolen science.
+**Carried:** civic pack, hotel towers, houses hut→manor, iso only, planes fly, buses stop, gold purse, events on the map, true king, stolen science.
 
 **Heading:** a civ, not a pile of cheats. Every new rule hurts as well as helps.
 
-**Versioning:** each **patch** bumps the number (v44 → v45 → …). Owner says **stamp** → freeze that version as the pin for the next chat. Do not stamp unless they say stamp.
+**Versioning:** each **patch** bumps the number (v45 → v46 → …). Owner says **stamp** → freeze that version as the pin for the next chat. Do not stamp unless they say stamp.
 
 ## Jobs (cross off)
 
@@ -20,8 +20,9 @@ Seed 42, 10 a pole, east science hold **Year 343**.
 - [x] **Gold**
 - [x] **Houses sit**
 - [x] **Hotel towers**
-- [x] **Hall / mill pack** — civic buildings you can read at a glance.
+- [x] **Hall / mill pack**
+- [x] **Temples / hidden pyramids** — sit this hop. Late. Buried.
 
-Later (not this pin): temples / hidden pyramids · sit that feels like physics · event popups · crown clearer · hotel as a rule (gold in, food out).
+Later (not this pin): sit that feels like physics · event popups · crown clearer · hotel as a rule (gold in, food out).
 
-**Next chat:** restore **`v44`**. Prove `id="begin"` and `· v44`. Hold **Year 343**. Never Vite. Do not turn edicts on.
+**Next chat:** restore **`v45`**. Prove `id="begin"` and `· v45`. Hold **Year 343**. Never Vite. Do not turn edicts on.

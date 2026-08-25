@@ -29,7 +29,7 @@ Four peoples on one island — west / east / north / south, inland camps, poles 
 
 **Land.** A 96×96 island you can sit with. Water is a lake (flat), shore is sand, grass has lift, fields stripe, roads sit low, trees have canopy. Grain stays dirt. Streets stay streets. **Rail is the spine** — avenue plus the line city ↔ mill ↔ warehouse — not a carpet.
 
-**City.** Districts you can read: housing, civic, industry, fields, military. Houses pitched off the rail. Hall with a roof. Barn. Warehouse shed. Mill tower + wheel; mill-race to the water; a dry mill sits dark. One wonder a pole (fat landmark). Harbour: quay and boats on the water at a mill.
+**City.** Districts you can read: housing, civic, industry, fields, military. Houses pitched off the rail. Hall with a roof. Barn. Warehouse shed. Mill tower + wheel; mill-race to the water; a dry mill sits dark. Temple is stone and flame, not a hut. One pyramid a pole — found in the dirt, berms around it. Harbour: quay and boats on the water at a mill.
 
 **Hands.** Ten walkers a pole. They are labour, not kings.
 
@@ -81,7 +81,7 @@ Each era must **last**. It is a finished sit that *leads into* the next — not 
 | Town | Workshop + barracks | Streets starting, a camp |
 | City | Academy + inquiry | Districts, houses, fields, food chain |
 | Science | Library → lab → observatory | Knowledge buildings, discoveries, a *hold* |
-| Industry | Rail, mills, warehouse, wonder | Trains. Goods on the spine. Live mill. One landmark |
+| Industry | Rail, mills, warehouse, pyramid | Trains. Goods on the spine. Live mill. A pyramid in the dirt |
 | World city | Airports, taxis, buses, hotel towers | Planes. Cabs on the square. A skyline when the city is full |
 
 You do not jump to airports. Rail is the spine. Airports sit on the spine.

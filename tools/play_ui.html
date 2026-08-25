@@ -643,7 +643,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v44</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v45</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -666,7 +666,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v44</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v45</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -681,7 +681,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Iso is the map. Planes fly. Buses stop. · v44</div>
+      <div class="legend">Iso is the map. Planes fly. Buses stop. · v45</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -1062,7 +1062,7 @@ function folkBlock(side,title,barCls){
   else if((side.era>=5)||(side.ranks&&side.ranks.crew)) lead+=(lead.endsWith(".")?" ":"")+"The mill is dry.";
   const goods=Number((side.cap&&side.cap.goods_stock)||0);
   if(goods>0) lead+=(lead.endsWith(".")?" ":"")+"Goods in the warehouse.";
-  if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A wonder stands.";
+  if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A pyramid rose from the dirt.";
   if(side.uni) lead+=(lead.endsWith(".")?" ":"")+"A university stands.";
   if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"A bar sits on the street.";
   const purse=Number(side.gold||0);
@@ -1324,7 +1324,8 @@ function isoH(cls,x,y){
   if(c.indexOf("foundry")>=0) return 16;
   if(c.indexOf("mill")>=0) return 18;
   if(c.indexOf("hall")>=0||c.indexOf("settlement")>=0) return 16;
-  if(c.indexOf("wonder")>=0) return 22;
+  if(c.indexOf("wonder")>=0||c.indexOf("peak")>=0) return 28;
+  if(c.indexOf("temple")>=0) return 14;
   if(c.indexOf("uni")>=0||c.indexOf("warehouse")>=0) return 14;
   if(c.indexOf("tower")>=0||c.indexOf("hotel")>=0||c.indexOf("highrise")>=0) return 32;
   if(c.indexOf("manor")>=0) return 16;
@@ -1513,6 +1514,44 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
     ctx.fillRect(b.sx+4, b.sy-wallH-6, 3, 5);
   }
 }
+function drawIsoPyramid(ctx,x,y,ox,oy,cls){
+  drawIsoBox(ctx,x,y,6,["#c8a878","#8a6840","#4a3018"],ox,oy);
+  drawIsoBox(ctx,x,y,12,["#e0c890","#a08048","#5a4018"],ox,oy);
+  drawIsoBox(ctx,x,y,18,["#ead898","#b09040","#6a4810"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,18,10,"#f0e0a0","#c4a040");
+  ctx.fillStyle="#e8c040";
+  ctx.fillRect(b.sx-2, b.sy-32, 4, 3);
+}
+function drawIsoBerm(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,7,["#c4a070","#8a6840","#4a3018"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#d8c090";
+  ctx.beginPath();
+  ctx.moveTo(b.sx-4, b.sy-4);
+  ctx.lineTo(b.sx+2, b.sy-8);
+  ctx.lineTo(b.sx+6, b.sy-3);
+  ctx.closePath();
+  ctx.fill();
+}
+function drawIsoTemple(ctx,x,y,ox,oy,cls){
+  const c=cls||"";
+  let stone=["#d8d4c8","#7a7868","#3a3830"], flame="#f0a040";
+  if(c.indexOf("east")>=0){ stone=["#e4d0c8","#8a6860","#4a3028"]; }
+  else if(c.indexOf("north")>=0){ stone=["#d0d8e0","#687888","#283848"]; }
+  else if(c.indexOf("south")>=0){ stone=["#d8e0c8","#687858","#283828"]; }
+  drawIsoBox(ctx,x,y,5,["#8a8070","#4a4438","#2a2418"],ox,oy);
+  drawIsoBox(ctx,x,y,11,stone,ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle=stone[0];
+  ctx.fillRect(b.sx-8, b.sy-18, 3, 10);
+  ctx.fillRect(b.sx+5, b.sy-18, 3, 10);
+  drawIsoRoof(ctx,b,11,7,"#c8c0b0","#6a6860");
+  ctx.fillStyle=flame;
+  ctx.beginPath(); ctx.arc(b.sx, b.sy-22, 2.4, 0, 6.28); ctx.fill();
+  ctx.fillStyle="#f0e0a0";
+  ctx.beginPath(); ctx.arc(b.sx, b.sy-24, 1.2, 0, 6.28); ctx.fill();
+}
 function drawIsoHall(ctx,x,y,ox,oy,cls){
   const c=cls||"";
   let wall=["#ece8dc","#8a8680","#4a4844"], roofL="#6a5040", roofD="#3a2c24", ban="#e8c040";
@@ -1649,10 +1688,13 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
   if(cls.indexOf("house")>=0||cls.indexOf("housing")>=0||cls.indexOf("hut")>=0)
     { drawIsoHouse(ctx,x,y,ox,oy,cls); return; }
   if(cls.indexOf("wonder")>=0){
-    if(isoAnchor(occ,x,y,"wonder")){
-      drawIsoBox(ctx,x,y,8,["#e8d090","#8a6818","#4a380c"],ox,oy);
-      drawIsoRoof(ctx,isoScreen(x,y,ox,oy),8,18,"#f0dc98","#8a6818");
-    }
+    if(cls.indexOf("peak")>=0) drawIsoPyramid(ctx,x,y,ox,oy,cls);
+    else drawIsoBerm(ctx,x,y,ox,oy);
+    return;
+  }
+  if(cls.indexOf("temple")>=0){
+    if(isoAnchor(occ,x,y,"temple")) drawIsoTemple(ctx,x,y,ox,oy,cls);
+    else drawIsoBox(ctx,x,y,6,["#d8d4c8","#7a7868","#3a3830"],ox,oy);
     return;
   }
   if(cls.indexOf("airport")>=0){
@@ -2089,7 +2131,8 @@ function renderMap(world){
     }
     if(st.type==="wonder"){
       for(let dy=0;dy<=2;dy++) for(let dx=0;dx<=2;dx++){
-        set(st.x+dx,st.y+dy,skin,dx===1&&dy===0?mark:"",(fn+" wonder"),8);
+        const peak=dx===1&&dy===1;
+        set(st.x+dx,st.y+dy,skin+(peak?" peak":" berm"),"",fn+" pyramid",8);
       }
     }
     if(st.type==="airport"){
@@ -2109,7 +2152,7 @@ function renderMap(world){
     if(c.indexOf("rail")>=0||c.indexOf("street")>=0||c.indexOf("runway")>=0||c.indexOf("stop")>=0) return true;
     if(c.indexOf("mill")>=0||c.indexOf("airport")>=0||c.indexOf("warehouse")>=0) return true;
     if(c.indexOf("quay")>=0||c.indexOf("field")>=0||c.indexOf("crop")>=0) return true;
-    if(c.indexOf("hall")>=0||c.indexOf("uni")>=0||c.indexOf("wonder")>=0||c.indexOf("tower")>=0||c.indexOf("hotel")>=0) return true;
+    if(c.indexOf("hall")>=0||c.indexOf("uni")>=0||c.indexOf("wonder")>=0||c.indexOf("temple")>=0||c.indexOf("tower")>=0||c.indexOf("hotel")>=0) return true;
     if(cell.z>=6) return true;
     return false;
   }
@@ -2236,7 +2279,7 @@ function chronicleDiff(world){
     if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`,{x:s.x,y:s.y,fac:s.faction,kind:"discover"});
     if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`,{x:s.x,y:s.y,fac:s.faction,kind:"starve"});
   }
-  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A wonder rose",airport:"An airport rose",market:"A bar opened on the street"};
+  const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A pyramid rose from the dirt",temple:"A temple was found",airport:"An airport rose",market:"A bar opened on the street"};
   for(const [typ,line] of Object.entries(risen)){
     const n=(wld,fac)=>ownStructs(wld,fac).filter(s=>s.type===typ).length;
     if(n(world,"player")>n(prevWorld,"player")) logLine(tick,`${line} in the west.`);
@@ -2293,7 +2336,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v44";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v45";}
   renderEpilogue(state);
 }
 async function poll(){
