@@ -643,7 +643,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v43</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v44</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -666,7 +666,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v43</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v44</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -681,7 +681,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Iso is the map. Planes fly. Buses stop. · v43</div>
+      <div class="legend">Iso is the map. Planes fly. Buses stop. · v44</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -1321,6 +1321,7 @@ function isoH(cls,x,y){
   if(k==="tree") return 8+Math.round(e*8);
   if(k==="rock") return 9+Math.round(e*12);
   if(c.indexOf("boat")>=0) return 8;
+  if(c.indexOf("foundry")>=0) return 16;
   if(c.indexOf("mill")>=0) return 18;
   if(c.indexOf("hall")>=0||c.indexOf("settlement")>=0) return 16;
   if(c.indexOf("wonder")>=0) return 22;
@@ -1512,36 +1513,110 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
     ctx.fillRect(b.sx+4, b.sy-wallH-6, 3, 5);
   }
 }
-function drawIsoHall(ctx,x,y,ox,oy){
-  drawIsoBox(ctx,x,y,14,["#e8e4d8","#8a8680","#4a4844"],ox,oy);
-  drawIsoRoof(ctx,isoScreen(x,y,ox,oy),14,12,"#6a5040","#3a2c24");
+function drawIsoHall(ctx,x,y,ox,oy,cls){
+  const c=cls||"";
+  let wall=["#ece8dc","#8a8680","#4a4844"], roofL="#6a5040", roofD="#3a2c24", ban="#e8c040";
+  if(c.indexOf("east")>=0){ wall=["#f0d8d0","#8a6058","#4a3028"]; roofL="#8a4038"; roofD="#4a2018"; ban="#e07068"; }
+  else if(c.indexOf("north")>=0){ wall=["#dce4ec","#6a7a88","#2a3844"]; roofL="#3a5068"; roofD="#1a2838"; ban="#7aa0c0"; }
+  else if(c.indexOf("south")>=0){ wall=["#e4eccc","#6a7a50","#2a3818"]; roofL="#4a6830"; roofD="#243818"; ban="#7a9a62"; }
+  drawIsoBox(ctx,x,y,4,["#8a8070","#4a4438","#2a2418"],ox,oy);
+  drawIsoBox(ctx,x,y,16,wall,ox,oy);
   const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,16,11,roofL,roofD);
   ctx.fillStyle="#f0e8c8";
-  ctx.fillRect(b.sx-2, b.sy-20, 4, 8);
+  ctx.fillRect(b.sx-2, b.sy-24, 4, 10);
+  ctx.fillStyle=ban;
+  ctx.fillRect(b.sx-1, b.sy-28, 2, 5);
+  ctx.fillStyle="#2a2420";
+  ctx.fillRect(b.sx-6, b.sy-14, 3, 4);
+  ctx.fillRect(b.sx+2, b.sy-14, 3, 4);
+  ctx.fillRect(b.sx-2, b.sy-8, 4, 6);
 }
 function drawIsoMill(ctx,x,y,ox,oy,cls){
-  drawIsoBox(ctx,x,y,8,["#c8b898","#6a5a40","#3a3020"],ox,oy);
-  drawIsoBox(ctx,x,y,20,["#d8c8a0","#7a6240","#4a3818"],ox,oy);
-  const b=isoScreen(x,y,ox,oy);
   const live=(cls||"").indexOf("live")>=0;
-  ctx.strokeStyle=live?"#e8d080":"#6a6050";
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.arc(b.sx+14, b.sy-10, 9, 0, 6.28);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(b.sx+14-8, b.sy-10); ctx.lineTo(b.sx+14+8, b.sy-10);
-  ctx.moveTo(b.sx+14, b.sy-10-8); ctx.lineTo(b.sx+14, b.sy-10+8);
-  ctx.stroke();
-  drawIsoRoof(ctx,b,20,6,"#8a7048","#4a3820");
+  drawIsoBox(ctx,x,y,6,["#7a6a50","#4a4030","#2a2418"],ox,oy);
+  drawIsoBox(ctx,x,y,18,["#d8c8a0","#7a6240","#4a3818"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,18,7,"#8a7048","#4a3820");
+  const wx=b.sx+13, wy=b.sy-8;
+  ctx.strokeStyle=live?"#e8d080":"#5a5048";
+  ctx.lineWidth=2.4;
+  ctx.beginPath(); ctx.arc(wx, wy, 10, 0, 6.28); ctx.stroke();
+  ctx.lineWidth=1.6;
+  for(let i=0;i<6;i++){
+    const a=i*1.047;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy);
+    ctx.lineTo(wx+Math.cos(a)*10, wy+Math.sin(a)*10);
+    ctx.stroke();
+  }
+  if(live){
+    ctx.fillStyle="rgba(180,220,230,.45)";
+    ctx.beginPath(); ctx.arc(wx+8, wy+8, 3, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(wx+12, wy+6, 2, 0, 6.28); ctx.fill();
+  }
 }
 function drawIsoWarehouse(ctx,x,y,ox,oy){
-  drawIsoBox(ctx,x,y,11,["#c8b898","#6a5a40","#3a3024"],ox,oy);
-  drawIsoRoof(ctx,isoScreen(x,y,ox,oy),11,8,"#8a7a58","#4a4030");
+  drawIsoBox(ctx,x,y,4,["#6a5a44","#3a3228","#1c1814"],ox,oy);
+  drawIsoBox(ctx,x,y,12,["#c8b898","#6a5a40","#3a3024"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,12,6,"#8a7a58","#4a4030");
+  ctx.fillStyle="#3a3020";
+  ctx.fillRect(b.sx+2, b.sy-8, 6, 6);
+  ctx.fillStyle="#c4a060";
+  ctx.fillRect(b.sx-8, b.sy-2, 4, 3);
+  ctx.fillRect(b.sx-4, b.sy, 3, 3);
 }
 function drawIsoBarn(ctx,x,y,ox,oy){
   drawIsoBox(ctx,x,y,10,["#d8c090","#8a6840","#4a3818"],ox,oy);
-  drawIsoRoof(ctx,isoScreen(x,y,ox,oy),10,11,"#a05030","#6a2818");
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,10,12,"#a05030","#6a2818");
+  ctx.fillStyle="#3a2410";
+  ctx.fillRect(b.sx+1, b.sy-6, 5, 6);
+}
+function drawIsoFoundry(ctx,x,y,ox,oy,cls){
+  const live=(cls||"").indexOf("live")>=0;
+  drawIsoBox(ctx,x,y,12,["#8a6050","#5a3830","#2a1814"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#5a4038";
+  ctx.fillRect(b.sx+5, b.sy-28, 5, 16);
+  ctx.fillStyle=live?"#e07040":"#4a3830";
+  ctx.fillRect(b.sx+6, b.sy-32, 3, 4);
+  if(live){
+    ctx.fillStyle="rgba(80,80,80,.5)";
+    ctx.beginPath(); ctx.arc(b.sx+8, b.sy-36, 3, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.sx+10, b.sy-41, 2.2, 0, 6.28); ctx.fill();
+    ctx.fillStyle="#f0a040";
+    ctx.fillRect(b.sx-4, b.sy-8, 4, 3);
+  }
+}
+function drawIsoUni(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,16,["#d0e0ec","#4a6880","#243848"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  drawIsoRoof(ctx,b,16,8,"#8ab0c4","#3a5870");
+  ctx.fillStyle="#e8f0f4";
+  ctx.beginPath(); ctx.arc(b.sx, b.sy-28, 7, 0, 6.28); ctx.fill();
+  ctx.fillStyle="#2a3844";
+  ctx.fillRect(b.sx-2, b.sy-8, 4, 7);
+  ctx.fillStyle="#c8dce8";
+  ctx.fillRect(b.sx-8, b.sy-14, 2, 8);
+  ctx.fillRect(b.sx+6, b.sy-14, 2, 8);
+}
+function drawIsoMarket(ctx,x,y,ox,oy,cls){
+  drawIsoBox(ctx,x,y,8,["#c4b080","#6a5a38","#3a3018"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#c45a38";
+  ctx.beginPath();
+  ctx.moveTo(b.sx-12, b.sy-10);
+  ctx.lineTo(b.sx, b.sy-18);
+  ctx.lineTo(b.sx+12, b.sy-10);
+  ctx.closePath();
+  ctx.fill();
+  if((cls||"").indexOf("purse")>=0){
+    ctx.fillStyle="#e8c040";
+    ctx.beginPath(); ctx.arc(b.sx-3, b.sy-6, 2.4, 0, 6.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(b.sx+3, b.sy-7, 2.1, 0, 6.28); ctx.fill();
+  }
 }
 function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
   if(cls.indexOf("mill")>=0){
@@ -1550,8 +1625,13 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
     return;
   }
   if(cls.indexOf("hall")>=0||cls.indexOf("settlement")>=0){
-    if(isoAnchor(occ,x,y,"hall")||isoAnchor(occ,x,y,"settlement")) drawIsoHall(ctx,x,y,ox,oy);
+    if(isoAnchor(occ,x,y,"hall")||isoAnchor(occ,x,y,"settlement")) drawIsoHall(ctx,x,y,ox,oy,cls);
     else drawIsoBox(ctx,x,y,8,["#d8d4c8","#6a6860","#3a3834"],ox,oy);
+    return;
+  }
+  if(cls.indexOf("foundry")>=0){
+    if(isoAnchor(occ,x,y,"foundry")) drawIsoFoundry(ctx,x,y,ox,oy,cls);
+    else drawIsoBox(ctx,x,y,8,["#8a6050","#5a3830","#2a1814"],ox,oy);
     return;
   }
   if(cls.indexOf("warehouse")>=0){
@@ -1589,20 +1669,22 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
     return;
   }
   if(cls.indexOf("uni")>=0){
-    if(isoAnchor(occ,x,y,"uni")){
-      drawIsoBox(ctx,x,y,16,["#d0e0ec","#4a6880","#243848"],ox,oy);
-      drawIsoRoof(ctx,isoScreen(x,y,ox,oy),16,10,"#8ab0c4","#3a5870");
-    }
+    if(isoAnchor(occ,x,y,"uni")) drawIsoUni(ctx,x,y,ox,oy);
+    else drawIsoBox(ctx,x,y,10,["#d0e0ec","#4a6880","#243848"],ox,oy);
+    return;
+  }
+  if(cls.indexOf("barracks")>=0||cls.indexOf("military")>=0){
+    drawIsoBox(ctx,x,y,10,["#8a6058","#5a3830","#2a1814"],ox,oy);
+    const b=isoScreen(x,y,ox,oy);
+    ctx.fillStyle="#3a2018";
+    ctx.fillRect(b.sx-2, b.sy-8, 4, 6);
+    ctx.fillStyle="#c07060";
+    ctx.fillRect(b.sx-1, b.sy-16, 2, 4);
     return;
   }
   if(cls.indexOf("bar")>=0){
-    drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),ox,oy);
-    if(cls.indexOf("purse")>=0){
-      const b=isoScreen(x,y,ox,oy);
-      ctx.fillStyle="#e8c040";
-      ctx.beginPath(); ctx.arc(b.sx-3, b.sy-14, 2.4, 0, 6.28); ctx.fill();
-      ctx.beginPath(); ctx.arc(b.sx+2, b.sy-16, 2.1, 0, 6.28); ctx.fill();
-    }
+    if(isoAnchor(occ,x,y,"bar")) drawIsoMarket(ctx,x,y,ox,oy,cls);
+    else drawIsoBox(ctx,x,y,6,["#c4b080","#6a5a38","#3a3018"],ox,oy);
     return;
   }
   drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),ox,oy);
@@ -1982,7 +2064,7 @@ function renderMap(world){
       if(purse>=1) extra+=" purse";
     }
     const liveTown=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
-    const skin=skinType+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"");
+    const skin=skinType+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"")+(st.type==="foundry"&&liveTown?" live":"");
     const label=st.type==="academy"?"university":(st.type==="market"?"bar":(st.type||""));
     set(st.x,st.y,skin,mark,(fn+" "+label),6);
     if(BIG[st.type]){
@@ -2211,7 +2293,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v43";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v44";}
   renderEpilogue(state);
 }
 async function poll(){
