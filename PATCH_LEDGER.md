@@ -1,20 +1,22 @@
 # AI-world Patch Ledger
 
-**STAMP · v45.** Restore branch **`v45`**. SHA on GitHub `v45`.
+**Live · v47.** Pin / good save **`v45`** SHA `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`.
 
-96×96 island. Iso is the map (Grid is gone). `playable=False`. Edicts hidden.
+96×96 island. Iso is the map. `playable=False`. Edicts hidden.
 Seed 42, 10 a pole, east science hold **Year 343**.
 
-**This stamp:**
-- Iso only. Planes fly, buses stop, rail has sleepers. Airport + runway.
-- Houses hut → cottage → row → manor. World-city hotel towers + highrises.
-- Civic pack: hall banner, mill wheel (splash when live), warehouse dock, foundry stack, uni dome, bar awning, barracks block.
-- Temple is stone and flame. Wonder is a pyramid in the dirt, berms around it.
-- Events sit on the map. True king, stolen science, gold purse (food still kills).
+**This hop:** phone pinch. One finger drags the map. Two fingers pinch-zoom on the point between them. Wheel zooms under the cursor. Kernel unchanged.
+
+**Carried:** v46 physics sit · v45 iso, houses, hotel, civic pack, temple + pyramid, glyphs, true king, stolen science, gold.
 
 **Heading:** a civ, not a pile of cheats. Every new rule hurts as well as helps.
 
-**Versioning:** next **patch** is **v46**. Owner says **stamp** to freeze a pin. Do not stamp unless they say stamp.
+**Versioning:** next **patch** is **v48**. Owner says **stamp** to freeze a pin.
+
+## Good save (do not lose)
+
+- **King pin:** branch `v45` · SHA `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`
+- Restore that if a hop breaks. Owner approves new SHAs.
 
 ## Jobs (cross off)
 
@@ -25,7 +27,9 @@ Seed 42, 10 a pole, east science hold **Year 343**.
 - [x] **Hotel towers**
 - [x] **Hall / mill pack**
 - [x] **Temples / hidden pyramids**
+- [x] **Sit that feels like physics** — v46
+- [x] **Phone pinch / finger scroll** — v47
 
-Later (not this pin): sit that feels like physics · event popups · crown clearer · hotel as a rule (gold in, food out).
+Later (not this pin): event popups · crown clearer · hotel as a rule (gold in, food out).
 
-**Next chat:** restore **`v45`**. Prove `id="begin"` and `· v45`. Hold **Year 343**. Never Vite. Do not turn edicts on. First patch in that chat is **v46**.
+**Next chat:** restore **`v45`** (`0cc2d59`) unless a later SHA is stamped. Live may be **· v47**. Hold **Year 343**. Never Vite. Do not turn edicts on.

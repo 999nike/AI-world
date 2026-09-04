@@ -183,14 +183,18 @@ GAME = Game()
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def log_message(self, fmt, *args):
         return
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close")
+        self.close_connection = True
 
     def _json(self, obj, code=200):
         raw = json.dumps(obj).encode("utf-8")
@@ -207,8 +211,37 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self._cors()
+        self.send_header("Content-Security-Policy", "frame-ancestors *")
         self.end_headers()
         self.wfile.write(raw)
+
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path in ("/", "/index.html"):
+            raw = load_html().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Cache-Control", "no-store")
+            self._cors()
+            self.send_header("Content-Security-Policy", "frame-ancestors *")
+            self.end_headers()
+            return
+        if path in ("/favicon.ico", "/__grok/icon-180.png"):
+            fp = Path("/workspace/public/__grok/icon-180.png")
+            n = fp.stat().st_size if fp.is_file() else 0
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(n))
+            self._cors()
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self._cors()
+        self.end_headers()
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -230,6 +263,19 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             self._html(load_html())
             return
+        if path in ("/favicon.ico",):
+            fp = Path("/workspace/public/__grok/icon-180.png")
+            if fp.is_file():
+                self._bytes(fp.read_bytes(), "image/png", "public, max-age=3600")
+                return
+        if path.startswith("/__grok/"):
+            rel = path[len("/__grok/"):]
+            fp = (Path("/workspace/public/__grok") / rel).resolve()
+            root = Path("/workspace/public/__grok").resolve()
+            if str(fp).startswith(str(root)) and fp.is_file():
+                mime = "image/png" if fp.suffix == ".png" else ("text/css" if fp.suffix == ".css" else "application/octet-stream")
+                self._bytes(fp.read_bytes(), mime, "public, max-age=3600")
+                return
         if path.startswith("/sprites/"):
             name = path.rsplit("/", 1)[-1]
             if name in {"train.png", "taxi.png", "bus.png", "plane.png", "mill.png"}:
