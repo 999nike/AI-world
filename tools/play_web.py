@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watchable god-view. Same kernel. Human edicts hidden.
+"""Watchable god-view. Same kernel. You govern the west when the world asks.
 
   PYTHONPATH=. python tools/play_web.py --host 0.0.0.0 --port 8080
 """
@@ -42,7 +42,7 @@ class Game:
         self.speed = 2
         self.state: Dict[str, Any] = {
             "status": "idle", "world": None, "decision": None,
-            "paused": False, "speed": 2,
+            "paused": False, "speed": 2, "last_choice": None,
         }
 
     def snapshot(self) -> Dict[str, Any]:
@@ -68,10 +68,6 @@ class Game:
         if speed is not None:
             self.speed = int(speed)
         self.paused = False
-        try:
-            self.choice_q.put_nowait("food")
-        except Exception:
-            pass
         while True:
             try:
                 self.choice_q.get_nowait()
@@ -80,6 +76,7 @@ class Game:
         self._set(
             status="running", world=None, decision=None, score=None,
             run_id=None, error=None, outcome=None, paused=False, speed=self.speed,
+            last_choice=None,
         )
 
         class Cancelled(Exception):
@@ -110,6 +107,45 @@ class Game:
                     self.state["status"] = "running"
             pace()
 
+        def picker(payload):
+            if gen != self.generation:
+                raise Cancelled()
+            choices = []
+            for c in payload.get("choices") or []:
+                choices.append({
+                    "id": c.get("id"),
+                    "title": c.get("title"),
+                    "hurt": c.get("hurt"),
+                })
+            self._set(
+                status="decision",
+                decision={
+                    "tick": payload.get("tick"),
+                    "reason": payload.get("reason"),
+                    "prompt": payload.get("prompt"),
+                    "choices": choices,
+                },
+            )
+            while True:
+                if gen != self.generation:
+                    raise Cancelled()
+                try:
+                    edict = str(self.choice_q.get(timeout=0.15))
+                except Empty:
+                    continue
+                title = next((c.get("title") for c in choices if c.get("id") == edict), edict)
+                self._set(
+                    status="running",
+                    decision=None,
+                    last_choice={
+                        "tick": payload.get("tick"),
+                        "reason": payload.get("reason"),
+                        "edict": edict,
+                        "title": title,
+                    },
+                )
+                return edict
+
         def run():
             try:
                 os.chdir(ROOT)
@@ -119,7 +155,9 @@ class Game:
                     snapshot_every=0,
                     return_score=True,
                     quiet=True,
-                    playable=False,
+                    playable=True,
+                    choice_policy="human",
+                    decision_picker=picker,
                     on_tick=on_tick,
                     on_tick_every=4,
                     num_agents=10,
@@ -175,7 +213,6 @@ class Game:
         self.thread.start()
 
     def choose(self, edict: str) -> None:
-        self._set(status="running", decision=None)
         self.choice_q.put(edict)
 
 

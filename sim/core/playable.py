@@ -55,14 +55,15 @@ DISCOVERY_EDICTS: List[Dict[str, str]] = [
 
 REASON_TEXT = {
     "opening": "The tribe looks to you. Where do we put our labour?",
-    "era4": "A settlement reached Era 4. What do we pursue?",
+    "era3": "A town rose. Farms, knowledge, or soldiers — not all three.",
+    "era4": "A settlement reached the city. What do we pursue?",
     "inquiry": "Inquiry is unlocked. Science is possible. What now?",
     "discovery": "Observatory is ready. Knowledge can become farm yield — or stay banked.",
     "drought": "Drought. Regrowth is thin. How do we answer?",
 }
 
 # One decision per tick, this order if several fire together.
-REASON_PRIORITY = ("drought", "era4", "inquiry", "discovery", "opening")
+REASON_PRIORITY = ("drought", "era4", "inquiry", "discovery", "era3", "opening")
 
 
 @dataclass
@@ -96,11 +97,14 @@ def detect_reason(
     metrics: Dict[str, Any],
     settlements: List[Dict[str, Any]],
     drought_this_tick: bool,
+    commit: bool = True,
 ) -> Optional[str]:
     now_inquiry = _has_inquiry(settlements)
     inquiry_new = now_inquiry and not state.had_inquiry
-    state.had_inquiry = now_inquiry
-
+    if commit:
+        state.had_inquiry = now_inquiry
+    era3_now = any(int(s.get("era", 2)) >= 3 for s in settlements)
+    era3_new = era3_now and "era3" not in state.asked
     era4_now = any(int(s.get("era", 2)) >= 4 for s in settlements)
     era4_new = era4_now and "era4" not in state.asked
 
@@ -116,9 +120,9 @@ def detect_reason(
         candidates.append("inquiry")
     if disc_new and "discovery" not in state.asked:
         candidates.append("discovery")
-    if tick == 0 and "opening" not in state.asked:
-        candidates.append("opening")
-
+    if era3_new and "era3" not in state.asked and "era4" not in candidates:
+        candidates.append("era3")
+    # Camp at tick 0 is not a turn. Town is the first fat sit.
     for reason in REASON_PRIORITY:
         if reason in candidates:
             return reason

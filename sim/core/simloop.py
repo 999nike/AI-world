@@ -894,6 +894,7 @@ def run_sim(
         play_state.player_ids = {
             a.agent_id for a in world.agents if getattr(a, "faction", "player") == "player"
         }
+        sm.discovery_mode = "pending"
 
     (run_dir / "config.json").write_text(json.dumps({
         "seed": seed, "ticks": ticks, "num_agents": num_agents, "snapshot_every": snapshot_every,
@@ -1203,11 +1204,28 @@ def run_sim(
             break
 
         if play_state is not None:
-            from sim.core.playable import maybe_decide
+            from sim.core.playable import detect_reason, maybe_decide
             player_towns = [s for s in sm.all() if s.get("faction", "player") == "player"]
+            pending = detect_reason(
+                play_state, t, metrics, player_towns, drought_this_tick, commit=False,
+            )
+            if pending and on_tick is not None:
+                snap = world.to_dict_summary()
+                snap["settlements"] = sm.all()
+                snap["metrics"] = dict(metrics)
+                if headline:
+                    snap["outcome"] = headline
+                tagged = []
+                for st3 in snap.get("structures") or []:
+                    sid = sm.structure_settlement_id(st3["x"], st3["y"])
+                    fac = sm.get(sid).get("faction", "player") if sid else "player"
+                    tagged.append({**st3, "settlement_id": sid, "faction": fac})
+                snap["structures"] = tagged
+                on_tick(snap)
             maybe_decide(
                 play_state, gov, brains, logger, t, metrics, player_towns,
                 drought_this_tick=drought_this_tick,
+                sm=sm,
             )
 
         if snapshot_every > 0 and (t % snapshot_every) == 0:

@@ -94,6 +94,12 @@ SETTLEMENT_RULES = {
     "mill_power_reach": 4,
     "mill_power_on": 1.0,
     "foundry_power_need": 0.15,
+    # v55 — late ages last. Science hold (obs + 2 disc) is unchanged.
+    "age_up5_min_discoveries": 2,
+    "age_up5_dwell_ticks": 80,
+    "age_up5_food_cost": 16.0,
+    "age_up6_dwell_ticks": 120,
+    "age_up6_food_cost": 24.0,
 }
 
 
@@ -108,7 +114,9 @@ class SettlementManager:
         self.metrics = metrics
         self.logger = logger
         self.active_faction = None
-
+        self.science_ready_tick = {}
+        self.era_entered_tick = {}
+        self.discovery_mode = "auto"
     def _cross_faction(self) -> bool:
         facs = {s.get("faction", "player") for s in self.settlements.values()}
         return len(facs) > 1
@@ -625,6 +633,8 @@ class SettlementManager:
 
     def _try_discovery(self, sid: str, s: Dict[str, Any], tick: int) -> None:
         """Spend knowledge for permanent farm bonus (Observatory sink)."""
+        if s.get("faction", "player") == "player" and getattr(self, "discovery_mode", "auto") in ("pending", "bank"):
+            return
         cost = float(SETTLEMENT_RULES.get("discovery_cost", 40))
         max_d = int(SETTLEMENT_RULES.get("discovery_max", 8))
         discoveries = int(s.get("discoveries", 0))
@@ -834,6 +844,37 @@ class SettlementManager:
             "science_stolen": stolen, "crown_taken": crown_taken, "vacant": vacant,
         }
 
+    def _faction_towns(self, fac):
+        return [ss for ss in self.settlements.values() if ss.get("faction", "player") == fac]
+
+    def _faction_discoveries(self, fac) -> int:
+        return sum(int(ss.get("discoveries") or 0) for ss in self._faction_towns(fac))
+
+    def _faction_has_observatory(self, fac, world) -> bool:
+        for ss in self._faction_towns(fac):
+            osid = ss.get("id")
+            if osid and self.settlement_has_observatory(osid, world):
+                return True
+        return False
+
+    def _faction_mill_live(self, fac) -> bool:
+        return any(bool(ss.get("mill_live")) for ss in self._faction_towns(fac))
+
+    def _note_science_ready(self, world, tick: int) -> None:
+        need = int(SETTLEMENT_RULES.get("age_up5_min_discoveries", 2))
+        for fac in {ss.get("faction", "player") for ss in self.settlements.values()}:
+            if fac in self.science_ready_tick:
+                continue
+            if self._faction_has_observatory(fac, world) and self._faction_discoveries(fac) >= need:
+                self.science_ready_tick[fac] = int(tick)
+
+    def _pay_age_food(self, s, cost: float) -> bool:
+        have = float(s.get("food_stock", 0) or 0)
+        if have < cost:
+            return False
+        s["food_stock"] = have - cost
+        return True
+
     def _try_age_up(self, world, tick: int) -> None:
         min_pop = int(SETTLEMENT_RULES.get("age_up_min_pop", 15))
         food_bonus = float(SETTLEMENT_RULES.get("age_up_food_bonus", 5.0))
@@ -845,6 +886,7 @@ class SettlementManager:
             if not (self.settlement_has_workshop(sid, world) and self.settlement_has_barracks(sid, world)):
                 continue
             s["era"] = 3
+            self.era_entered_tick[sid] = int(tick)
             s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
             self.metrics["age_up_events"] = self.metrics.get("age_up_events", 0) + 1
             self.logger.event({
@@ -866,6 +908,7 @@ class SettlementManager:
             if not self.settlement_has_academy(sid, world):
                 continue
             s["era"] = 4
+            self.era_entered_tick[sid] = int(tick)
             s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
             self.metrics["age_up4_events"] = self.metrics.get("age_up4_events", 0) + 1
             self.logger.event({
@@ -875,78 +918,69 @@ class SettlementManager:
             })
 
     def _try_age_up5(self, world, tick: int) -> None:
-        min_pop = int(SETTLEMENT_RULES.get("age_up5_min_pop", 20))
-        food_bonus = float(SETTLEMENT_RULES.get("age_up5_food_bonus", 5.0))
+        min_pop = int(SETTLEMENT_RULES.get("age_up5_min_pop", 28))
+        dwell = int(SETTLEMENT_RULES.get("age_up5_dwell_ticks", 80))
+        food_cost = float(SETTLEMENT_RULES.get("age_up5_food_cost", 16.0))
+        self._note_science_ready(world, tick)
         for sid, s in self.settlements.items():
             if int(s.get("era", 2)) != 4:
                 continue
             if int(s.get("population", 0)) < min_pop:
                 continue
             fac = s.get("faction", "player")
-            own = [ss for ss in self.settlements.values() if ss.get("faction", "player") == fac]
-            has_obs = False
-            for ss in own:
-                osid = ss.get("id")
-                if osid and self.settlement_has_observatory(osid, world):
-                    has_obs = True
-                    break
-            if not has_obs:
+            ready = self.science_ready_tick.get(fac)
+            if ready is None or int(tick) - int(ready) < dwell:
                 continue
-            if not self.settlement_has_mill(sid, world):
+            if not self._faction_mill_live(fac):
                 continue
-            has_wh = False
-            for ss in own:
-                osid = ss.get("id")
-                if osid and self.settlement_has_warehouse(osid, world):
-                    has_wh = True
-                    break
+            has_wh = any(
+                osid and self.settlement_has_warehouse(osid, world)
+                for osid in (ss.get("id") for ss in self._faction_towns(fac))
+            )
             if not has_wh:
                 continue
+            if not self._pay_age_food(s, food_cost):
+                continue
             s["era"] = 5
-            s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
+            self.era_entered_tick[sid] = int(tick)
             self.metrics["age_up5_events"] = self.metrics.get("age_up5_events", 0) + 1
             self.logger.event({
                 "type": "age_transition", "tick": tick, "settlement_id": sid,
                 "from_era": 4, "to_era": 5, "population": s.get("population"),
-                "food_bonus": food_bonus,
+                "food_cost": food_cost, "dwell": dwell,
             })
 
     def _try_age_up6(self, world, tick: int) -> None:
-        min_pop = int(SETTLEMENT_RULES.get("age_up6_min_pop", 20))
-        food_bonus = float(SETTLEMENT_RULES.get("age_up6_food_bonus", 5.0))
+        min_pop = int(SETTLEMENT_RULES.get("age_up6_min_pop", 40))
+        dwell = int(SETTLEMENT_RULES.get("age_up6_dwell_ticks", 120))
+        food_cost = float(SETTLEMENT_RULES.get("age_up6_food_cost", 24.0))
         for sid, s in self.settlements.items():
             if int(s.get("era", 2)) != 5:
                 continue
             if int(s.get("population", 0)) < min_pop:
                 continue
+            entered = self.era_entered_tick.get(sid)
+            if entered is None or int(tick) - int(entered) < dwell:
+                continue
             fac = s.get("faction", "player")
-            has_air = False
-            for ss in self.settlements.values():
-                if ss.get("faction", "player") != fac:
-                    continue
-                osid = ss.get("id")
-                if osid and self.settlement_has_airport(osid, world):
-                    has_air = True
-                    break
+            if not self._faction_mill_live(fac):
+                continue
+            towns = self._faction_towns(fac)
+            has_air = any(osid and self.settlement_has_airport(osid, world) for osid in (ss.get("id") for ss in towns))
             if not has_air:
                 continue
-            has_hall = False
-            for ss in self.settlements.values():
-                if ss.get("faction", "player") != fac:
-                    continue
-                osid = ss.get("id")
-                if osid and self.settlement_has_hall(osid, world):
-                    has_hall = True
-                    break
+            has_hall = any(osid and self.settlement_has_hall(osid, world) for osid in (ss.get("id") for ss in towns))
             if not has_hall:
                 continue
+            if not self._pay_age_food(s, food_cost):
+                continue
             s["era"] = 6
-            s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
+            self.era_entered_tick[sid] = int(tick)
             self.metrics["age_up6_events"] = self.metrics.get("age_up6_events", 0) + 1
             self.logger.event({
                 "type": "age_transition", "tick": tick, "settlement_id": sid,
                 "from_era": 5, "to_era": 6, "population": s.get("population"),
-                "food_bonus": food_bonus,
+                "food_cost": food_cost, "dwell": dwell,
             })
 
     def count_structures_of_type(self, sid, structure_type, world) -> int:

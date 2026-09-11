@@ -1,7 +1,88 @@
 # AI-world Design Notes (Internal)
 
-**Last updated:** 2026-08-25  
+**Last updated:** 2026-09-11  
 **This file is vision.** Status, restore, jobs → [PATCH_LEDGER.md](PATCH_LEDGER.md).
+
+---
+
+## Standing destination (what the builder heads for)
+
+**Finish the sit so the island reads as the painting. Then paint. Never paint a camp.**
+
+The painting is one island, left-to-right through time: fields and a small town → mill, wheel, mill-race, rail spine → brick works and a civic square → a skyline and a working waterfront. This canvas will never match that lighting. It must match that **structure** before any graphics pass.
+
+Every hop answers: *does the island read more like that picture, as a place with a race in it?* If the hop is only prettier letters, skip it. If the hop skips an era, skip it. If the hop turns edicts on to hide a missing sit, skip it.
+
+Watch stays solid. The kernel stays one. The human is the brain later. Hands walk now.
+
+---
+
+## The law: sit, then graphics
+
+Order is locked. Owner stamps pins. Edicts are open as of **v56** — you govern the west when the world asks. Seed 42 east science hold stays **Year 343**.
+
+| When | Axis | What “done” looks like |
+|---|---|---|
+| Done · v55 | **A. Eras last** | Industry and world cannot skip. Science hold seed 42 stays **Year 343**. Aging 4→5 and 5→6 **costs food**. Mill must be live. Dwell after the science sit. |
+| Done · v56 | **B. Playable governor** | Pause. 3 fat choices that hurt. No `focus food`. Same kernel. You govern the west; east/north/south keep their own heads. |
+| Next | **C. Hotel / rail as rules** | Train is labour mill→warehouse. Hotel: gold in, food out. Stickers die. Spine you can point at. |
+| After sit | **Districts you can name** | Park W and read housing / fields / spine / civic / water. Empty granary reads. Uni and bar stop being stand-in letters. |
+| After sit | **Graphics pass** | Sprites, roofs, water, mill-race, skyline — on top of a finished sit, not instead of it. The painting is the brief. |
+| Later | **Late starve honest** | World city doesn’t silently die. Food still kills. A full skyline can still go hungry. |
+| Later | **Crown that reads** | One island king: taller, a banner, a name. Bonus you can lose. Head worth taking. |
+| Later | **Memory-app agents** | Walkers get clever on the same rules. Watch stays solid first. Do not drop brains on a camp. |
+
+Do not clone Civ religion, hex armies, 20 unique civs. Steal feelings: Civ 7 age-crisis, Anno chains, Frostpunk districts, Storm’s 3 buttons, Banished food-as-death, Settlers haul, SimCity skyline.
+
+---
+
+## Horizon (parked until the sit can carry it)
+
+These are real. They are not this pin. Do not pull them forward to look busy.
+
+- **Gold as a purse.** Trade, tribute, a reason to raid besides food. Food still kills. Coin is not a starve-skip.
+- **Buried temples / hidden pyramids.** Late, found in the dirt, berms around them. Mystery on the island, not a camp hut with a new letter.
+- **Sit that feels like physics.** Weight, mill-race, haul that takes time. Same kernel. After the civ race is real.
+- **Event popups on iso.** Glyphs stay; a short slip that names the moment (already started). Popups are the next read, not a second UI.
+- **Traffic as a living city.** Taxi on the square, bus hall→warehouse→field, planes on the spine. After C, they are labour, not parade.
+- **One rival you can see thinking.** Own governor, cross-faction raids, stolen science. `rival_agents=0` still exists so validate RNG is untouched.
+- **Win you can point at.** Science (obs + 2 discoveries), wipe, survival clock, or hold the island crown.
+
+Do not open a second kernel to “feel more like Firaxis.” Do not add buildings to fake a finished game.
+
+---
+
+## What we steal (looked up 2026), what we do not
+
+The painting is still the destination. Other games are feelings, not a feature list.
+
+| Steal this feeling | From | Do not steal |
+|---|---|---|
+| Ages that change the rules; a sit between them | Civ 7 age system, Millennia | Hex armies, religion, tourism, 20 unique civs, 400-click city screens |
+| Few laws that hurt someone | Frostpunk 2 districts + laws | A full political sim, faction meters as chrome |
+| 3 buttons, a crisis clock | Against the Storm | Roguelite reset, randomised blueprint soup |
+| Chains you can see: mill → warehouse | Anno 1800 / 117 | 40-step production trees, island-hopping trade empires |
+| Food stockpile; pop is resource and liability | Banished | Happiness spreadsheets, no-war-ever |
+| Haul labour, buildings that feel alive | The Settlers / The Colonists | Micro every villager |
+| Districts + traffic as a place | SimCity / Cities: Skylines | Zoning tools, utility-layer micromanagement |
+| Organic read of a town | Manor Lords | Precision medieval logistics as the game |
+
+If a hop would make this a clone, push back. If a hop would skip the sit to chase art, push back.
+
+---
+
+## Builder standing rules
+
+These survive chats. They are how the destination is kept.
+
+1. **Look up live facts.** Versions, bots, pins, “does X exist” — search, don’t recap Memory Space.
+2. **Push back.** Skip-an-era, edicts-as-paint, Vite, shrinking the map, buff-only rules, art-before-sit — say no.
+3. **Research other games** when picking a hop. Steal a feeling, not a system.
+4. **Discuss product.** The owner is building a game, not a file tree. Talk in sits, eras, and the painting.
+5. **One axis at a time.** Ledger = jobs + pin. DESIGN = vision. Do not stamp. Pin stays until the owner says stamp.
+6. **Year 343 does not move.** Seed 42, east science hold, observatory + 2 discoveries. Soft outcome; Watch continues.
+7. **You govern the west.** Edicts are a turn, not a cheat box. No typing `focus food`. East/north/south keep their own heads. Year 343 is east’s science hold — a west pick must not move it.
+8. **Never Vite.** The canvas is `play_web` on the preview. Iso is the map.
 
 ---
 
@@ -95,11 +176,13 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 
 ### After the city can carry it
 
-1. **One true king** — one island crown that can be taken
-2. **Stolen science** — raids that rip discoveries. Soldiers pay
-3. **Playable governor** — pause, 3 fat choices, no typing `focus food`
-4. **Gold / buried temples / physics sit** — later
-5. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
+1. **Eras last** — v55. Hurt to leave science/industry.
+2. **Playable governor** — now (v56). Pause, 3 fat choices, no typing `focus food`
+3. **Hotel / rail as rules** — gold in food out; train is haul
+4. **Districts + graphics** — sit first, paint second
+5. **Late starve honest** — a world city can still go hungry
+6. **Crown that reads** — banner, name, a head you can lose
+7. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
 
 Do not drop clever agents onto a camp with letters. Do not open edicts to paper over a missing race.
 
@@ -182,18 +265,18 @@ Buildings that *arrive later* are eras, shipped as upgrades, each one a finished
 
 ---
 
-## Why it is not playable yet
+## Why it was not playable (and what v56 opened)
 
-Right now the utility agent is the player. A human watches. Governor text (`focus food`) is a cheat code, not a turn.
+The utility agent is still the hands. The human is the brain — only when the world asks.
 
-A human cannot yet:
+As of v56 a human can:
 
-1. **Stop time** at a decision
-2. **Pick one thing** that hurts something else
-3. **See a rival** doing the same
-4. **Read the map** as a place, not a table
+1. **Stop time** at a fat moment (town, city, inquiry, discovery, drought)
+2. **Pick one thing** that hurts something else — three buttons, hurt written on them
+3. **See a rival** doing the same (east/north/south keep their own governors)
+4. **Read the map** as a place, not a table — still not a painting. Good enough to decide on.
 
-The first three exist in the kernel. The map now carries districts, houses, a food chain, iso terrain, and a chronicle in sentences. Still not a painting. Good enough to watch. Edicts stay hidden until the sit is worth deciding on.
+You do not type `focus food`. You do not micro A0. Edicts are a turn.
 
 Four local kings is not a civ. One island crown is.
 
@@ -290,6 +373,7 @@ God-view is the watchable layer. It is not the playable layer until it can pause
 9. Each era is a finished sit that leads into the next (DLC / upgrade workflow)
 10. Rail before airports. City before clever agents. Hands before world city. Crown before gold.
 11. Paint is not rank. Four walkers cannot run a world city. Hands grow.
+12. Look up live facts. Push back. Research other games. Discuss product.
 
 ---
 
@@ -307,3 +391,4 @@ Do not invent a different one.
 - Edicts stay in the kernel, hidden, until Layer 2 opens.
 
 Later sit (not this pin): little **event popups** on iso — look at other games when we pick that hop. Glyphs stay; popups are the next read. Gold, temples / hidden pyramids, sit that feels like physics — still parked.
+
