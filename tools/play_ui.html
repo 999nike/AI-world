@@ -643,7 +643,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v45</div></div>
+    <div><h1>AI-world</h1><div class="sub">Watch the ages. Four peoples. Same map. · v47</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -666,7 +666,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel">
-      <div id="statusBanner" class="banner">Open a world and watch. · v45</div>
+      <div id="statusBanner" class="banner">Open a world and watch. · v47</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -681,7 +681,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Iso is the map. Planes fly. Buses stop. · v45</div>
+      <div class="legend">Iso is the map. Events pop on the land. · v47</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -715,12 +715,12 @@ function logLine(tick,t,meta){
   d.appendChild(document.createTextNode(t));
   if(meta&&meta.x!=null){
     d.onclick=function(){ jumpTo(meta.x, meta.y); };
-    pushPing(meta);
+    pushPing(Object.assign({}, meta, {text:t}));
   }
   $("log").prepend(d);
 }
 let mapPings=[];
-const PING_LIFE=3200;
+const PING_LIFE=5600;
 function pushPing(p){
   if(p==null||p.x==null||p.y==null) return;
   mapPings.push({
@@ -729,14 +729,58 @@ function pushPing(p){
     fromY:p.fromY!=null?Number(p.fromY):null,
     kind:p.kind||"found",
     fac:p.fac||"player",
+    text:String(p.text||"").trim(),
     born:performance.now()
   });
-  if(mapPings.length>28) mapPings.shift();
+  if(mapPings.length>18) mapPings.shift();
 }
 function townXY(world,id){
   const t=((world&&world.settlements)||[]).find(s=>s&&s.id===id);
   if(!t||t.x==null) return null;
   return {x:Number(t.x), y:Number(t.y), fac:t.faction||"player"};
+}
+function capXY(world,fac){
+  const cap=capital(townsOf(world,fac));
+  if(!cap||cap.x==null) return null;
+  return {x:Number(cap.x), y:Number(cap.y), fac:fac};
+}
+function structXY(world,typ,fac){
+  const list=((world&&world.structures)||[]).filter(s=>s.type===typ && factionOf(world,s)===fac);
+  const st=list[list.length-1];
+  if(!st||st.x==null) return capXY(world,fac);
+  return {x:Number(st.x), y:Number(st.y), fac:fac};
+}
+function agentXY(world,id){
+  if(id==null) return null;
+  const a=((world&&world.agents)||[]).find(x=>(x.agent_id||x.id)===id);
+  if(!a||a.x==null) return null;
+  return {x:Number(a.x), y:Number(a.y), fac:a.faction||"player"};
+}
+function wrapPopup(text,max){
+  const words=String(text||"").split(/\s+/).filter(Boolean);
+  const lines=[]; let cur="";
+  for(let i=0;i<words.length;i++){
+    const n=cur?cur+" "+words[i]:words[i];
+    if(n.length>max && cur){ lines.push(cur); cur=words[i]; }
+    else cur=n;
+    if(lines.length>=2) break;
+  }
+  if(cur && lines.length<2) lines.push(cur);
+  if(lines[1]&&lines[1].length>max) lines[1]=lines[1].slice(0,max-1)+"…";
+  return lines;
+}
+function roundBubble(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
 }
 function pingAt(world,sid,kind,extra){
   const xy=townXY(world,sid);
@@ -828,6 +872,69 @@ function drawIsoFx(now){
   if(!orig) return;
   const z=Math.max(0.08, zoom||1);
   const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const t=now||0;
+  const lives=window.__isoLives||{mills:[],foundries:[]};
+  for(let i=0;i<lives.mills.length;i++){
+    const m=lives.mills[i];
+    const b=isoScreen(m.x,m.y,orig.ox,orig.oy);
+    const wx=b.sx+13, wy=b.sy-8;
+    const spin=m.live&&!reduce?(t*0.004):0;
+    ctx.save();
+    ctx.strokeStyle=m.live?"#e8d080":"#5a5048";
+    ctx.lineWidth=2.4;
+    ctx.beginPath(); ctx.arc(wx, wy, 10, 0, 6.28); ctx.stroke();
+    ctx.lineWidth=1.6;
+    ctx.translate(wx, wy);
+    ctx.rotate(spin);
+    for(let k=0;k<6;k++){
+      const a=k*1.047;
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(a)*10, Math.sin(a)*10);
+      ctx.stroke();
+    }
+    ctx.restore();
+    if(m.live){
+      for(let d=0;d<5;d++){
+        const ph=((t*0.35+d*110+m.x*9)%640);
+        const fall=(ph*ph)*0.00005;
+        ctx.fillStyle="rgba(170,210,225,"+(0.5-ph/1400)+")";
+        ctx.beginPath();
+        ctx.arc(wx+7+(d%2)*3, wy+6+fall, 2.2-ph/900, 0, 6.28);
+        ctx.fill();
+      }
+    }
+  }
+  for(let i=0;i<lives.foundries.length;i++){
+    const f=lives.foundries[i];
+    if(!f.live) continue;
+    const b=isoScreen(f.x,f.y,orig.ox,orig.oy);
+    for(let p=0;p<4;p++){
+      const ph=((t*0.04+p*70+f.y*5)%900)/900;
+      ctx.fillStyle="rgba(90,90,90,"+(0.42*(1-ph))+")";
+      ctx.beginPath();
+      ctx.arc(b.sx+8+(p%2)*2, b.sy-36-ph*22, 2.8+ph*3, 0, 6.28);
+      ctx.fill();
+    }
+  }
+  const wu=Math.min(1,(t-walkAt)/280);
+  const we=1-Math.pow(1-wu,2);
+  const wids=Object.keys(walkNow);
+  wids.sort(function(a,b){
+    const A=walkNow[a], B=walkNow[b];
+    const ax=(walkPrev[a]||A).x+(A.x-(walkPrev[a]||A).x)*we;
+    const ay=(walkPrev[a]||A).y+(A.y-(walkPrev[a]||A).y)*we;
+    const bx=(walkPrev[b]||B).x+(B.x-(walkPrev[b]||B).x)*we;
+    const by=(walkPrev[b]||B).y+(B.y-(walkPrev[b]||B).y)*we;
+    return (ax+ay)-(bx+by);
+  });
+  for(let i=0;i<wids.length;i++){
+    const cur=walkNow[wids[i]];
+    const prev=walkPrev[wids[i]]||cur;
+    const x=prev.x+(cur.x-prev.x)*we;
+    const y=prev.y+(cur.y-prev.y)*we;
+    drawIsoWalker(ctx, x, y, orig.ox, orig.oy, cur.cls, t, cur.x!==prev.x||cur.y!==prev.y);
+  }
   const world=prevWorld;
   const ic=world&&world.metrics&&world.metrics.island_crown;
   if(ic&&!ic.vacant&&world.agents){
@@ -846,20 +953,24 @@ function drawIsoFx(now){
     }
   }
   const keep=[];
+  const stacks={};
   for(let i=0;i<mapPings.length;i++){
     const ping=mapPings[i];
     const age=now-ping.born;
     if(age>PING_LIFE) continue;
     keep.push(ping);
-    const t=age/PING_LIFE;
-    const a=t<0.15?t/0.15:1-Math.pow((t-0.15)/0.85,1.4);
-    const rise=reduce?10:(1-Math.pow(1-Math.min(1,t*1.4),2))*18;
+    const tt=age/PING_LIFE;
+    const a=tt<0.12?tt/0.12:1-Math.pow((tt-0.12)/0.88,1.35);
+    const rise=reduce?8:(1-Math.pow(1-Math.min(1,tt*1.6),2))*14;
     const p=isoScreen(ping.x,ping.y,orig.ox,orig.oy);
     const col=pingColor(ping.kind);
+    const key=ping.x+","+ping.y;
+    const stack=stacks[key]||0;
+    stacks[key]=stack+1;
     if(ping.fromX!=null&&ping.fromY!=null){
       const q=isoScreen(ping.fromX,ping.fromY,orig.ox,orig.oy);
       ctx.save();
-      ctx.globalAlpha=Math.max(0,a*0.7);
+      ctx.globalAlpha=Math.max(0,a*0.55);
       ctx.strokeStyle=col;
       ctx.lineWidth=Math.max(1.2, 1.6/z);
       ctx.setLineDash([5/z, 4/z]);
@@ -867,23 +978,48 @@ function drawIsoFx(now){
       ctx.setLineDash([]);
       ctx.restore();
     }
-    const s=16/(12*z);
+    const sc=Math.max(0.85, Math.min(1.35, 12*z>10?1:1.15/Math.max(0.45,z)));
     ctx.save();
     ctx.globalAlpha=Math.max(0,a);
-    ctx.translate(p.sx, p.sy-18-rise);
-    ctx.scale(s,s);
+    ctx.translate(p.sx, p.sy-22-rise-stack*28);
+    ctx.scale(sc, sc);
+    const line=ping.text||pingWord(ping.kind);
+    const lines=wrapPopup(line, 26);
+    ctx.font="600 9px Segoe UI, system-ui, sans-serif";
+    let tw=0;
+    for(let li=0;li<lines.length;li++) tw=Math.max(tw, ctx.measureText(lines[li]).width);
+    const bw=Math.max(86, Math.min(176, tw+36));
+    const bh=16+lines.length*12;
+    ctx.fillStyle="rgba(10,16,22,.92)";
+    roundBubble(ctx, -bw/2, -bh, bw, bh, 5);
+    ctx.fill();
     ctx.strokeStyle=col;
-    ctx.globalAlpha=Math.max(0,a*0.45);
     ctx.lineWidth=1.4;
-    ctx.beginPath(); ctx.arc(0,4,11+t*4,0,6.28); ctx.stroke();
-    ctx.globalAlpha=Math.max(0,a);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(0, 7);
+    ctx.lineTo(5, 0);
+    ctx.closePath();
+    ctx.fillStyle="rgba(10,16,22,.92)";
+    ctx.fill();
+    ctx.strokeStyle=col;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(-bw/2+12, -bh+11);
+    ctx.scale(0.72,0.72);
     drawPingGlyph(ctx, ping.kind, col);
-    const word=pingWord(ping.kind);
-    if(word){
-      ctx.font="bold 7px ui-monospace, Menlo, sans-serif";
-      ctx.textAlign="center";
-      ctx.fillStyle=col;
-      ctx.fillText(word, 0, 16);
+    ctx.restore();
+    ctx.fillStyle=col;
+    ctx.textAlign="left";
+    ctx.textBaseline="top";
+    ctx.font="700 8px ui-monospace, Menlo, sans-serif";
+    const tag=pingWord(ping.kind);
+    if(tag) ctx.fillText(tag, -bw/2+24, -bh+4);
+    ctx.fillStyle="#e7eef6";
+    ctx.font="600 9px Segoe UI, system-ui, sans-serif";
+    for(let li=0;li<lines.length;li++){
+      ctx.fillText(lines[li], -bw/2+8, -bh+16+li*12);
     }
     ctx.restore();
   }
@@ -1234,6 +1370,16 @@ const SPRITES={};
   });
 })();
 let vehPrev={}, vehNow={}, vehAt=0;
+let walkPrev={}, walkNow={}, walkAt=0;
+function isoContact(ctx,sx,sy,rx,ry){
+  ctx.save();
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle="#05080c";
+  ctx.beginPath();
+  ctx.ellipse(sx, sy+2, rx||8, ry||3.2, 0, 0, 6.28);
+  ctx.fill();
+  ctx.restore();
+}
 function isoOrigin(w,h){
   return {ox:(h*ISO_TW/2)+20, oy:28};
 }
@@ -1375,8 +1521,11 @@ function drawIsoTree(ctx,x,y,ox,oy){
   const ground=5+Math.round(elev(x,y)*8);
   drawIsoBox(ctx,x,y,ground,["#3a6a34","#245028","#16381c"],ox,oy);
   const b=isoScreen(x,y,ox,oy);
+  isoContact(ctx,b.sx,b.sy+1,7,2.8);
   const h=ground+16;
   const tw=7, th=5;
+  ctx.fillStyle="#5a4030";
+  ctx.fillRect(b.sx-1.5, b.sy-ground-8, 3, 10);
   ctx.beginPath();
   ctx.moveTo(b.sx, b.sy-th-h);
   ctx.lineTo(b.sx+tw, b.sy-h+2);
@@ -1437,6 +1586,7 @@ function drawIsoHouse(ctx,x,y,ox,oy,cls){
   if(hungry){ roofL="#6a6058"; roofD="#3a3834"; wall=["#b8a898","#6a5a50","#3a3028"]; }
   const plot=hungry?["#6a5a40","#3a3228","#1c1814"]:["#7a6a50","#4a4030","#2a2418"];
   drawIsoBox(ctx,x,y,3,plot,ox,oy);
+  isoContact(ctx,isoScreen(x,y,ox,oy).sx, isoScreen(x,y,ox,oy).sy, 9, 3.4);
   const wallH=7+grade*3;
   const roofH=6+grade*2;
   drawIsoBox(ctx,x,y,wallH,wall,ox,oy);
@@ -1477,6 +1627,7 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
   else if(c.indexOf("south")>=0) wall=["#c8d4b0","#4a5a38","#243020"];
   if(hungry) wall=["#8a8480","#4a4844","#242220"];
   drawIsoBox(ctx,x,y,3,["#5a5a58","#3a3a38","#1a1a18"],ox,oy);
+  isoContact(ctx,isoScreen(x,y,ox,oy).sx, isoScreen(x,y,ox,oy).sy, 10, 4);
   drawIsoBox(ctx,x,y,wallH,wall,ox,oy);
   const b=isoScreen(x,y,ox,oy);
   const tw=ISO_TW/2, th=ISO_TH/2;
@@ -1561,6 +1712,7 @@ function drawIsoHall(ctx,x,y,ox,oy,cls){
   drawIsoBox(ctx,x,y,4,["#8a8070","#4a4438","#2a2418"],ox,oy);
   drawIsoBox(ctx,x,y,16,wall,ox,oy);
   const b=isoScreen(x,y,ox,oy);
+  isoContact(ctx,b.sx,b.sy,11,4);
   drawIsoRoof(ctx,b,16,11,roofL,roofD);
   ctx.fillStyle="#f0e8c8";
   ctx.fillRect(b.sx-2, b.sy-24, 4, 10);
@@ -1576,24 +1728,10 @@ function drawIsoMill(ctx,x,y,ox,oy,cls){
   drawIsoBox(ctx,x,y,6,["#7a6a50","#4a4030","#2a2418"],ox,oy);
   drawIsoBox(ctx,x,y,18,["#d8c8a0","#7a6240","#4a3818"],ox,oy);
   const b=isoScreen(x,y,ox,oy);
+  isoContact(ctx,b.sx,b.sy,10,3.6);
   drawIsoRoof(ctx,b,18,7,"#8a7048","#4a3820");
-  const wx=b.sx+13, wy=b.sy-8;
-  ctx.strokeStyle=live?"#e8d080":"#5a5048";
-  ctx.lineWidth=2.4;
-  ctx.beginPath(); ctx.arc(wx, wy, 10, 0, 6.28); ctx.stroke();
-  ctx.lineWidth=1.6;
-  for(let i=0;i<6;i++){
-    const a=i*1.047;
-    ctx.beginPath();
-    ctx.moveTo(wx, wy);
-    ctx.lineTo(wx+Math.cos(a)*10, wy+Math.sin(a)*10);
-    ctx.stroke();
-  }
-  if(live){
-    ctx.fillStyle="rgba(180,220,230,.45)";
-    ctx.beginPath(); ctx.arc(wx+8, wy+8, 3, 0, 6.28); ctx.fill();
-    ctx.beginPath(); ctx.arc(wx+12, wy+6, 2, 0, 6.28); ctx.fill();
-  }
+  ctx.fillStyle=live?"#6a5040":"#4a4038";
+  ctx.fillRect(b.sx+10, b.sy-10, 3, 6);
 }
 function drawIsoWarehouse(ctx,x,y,ox,oy){
   drawIsoBox(ctx,x,y,4,["#6a5a44","#3a3228","#1c1814"],ox,oy);
@@ -1617,14 +1755,12 @@ function drawIsoFoundry(ctx,x,y,ox,oy,cls){
   const live=(cls||"").indexOf("live")>=0;
   drawIsoBox(ctx,x,y,12,["#8a6050","#5a3830","#2a1814"],ox,oy);
   const b=isoScreen(x,y,ox,oy);
+  isoContact(ctx,b.sx,b.sy,9,3.4);
   ctx.fillStyle="#5a4038";
   ctx.fillRect(b.sx+5, b.sy-28, 5, 16);
   ctx.fillStyle=live?"#e07040":"#4a3830";
   ctx.fillRect(b.sx+6, b.sy-32, 3, 4);
   if(live){
-    ctx.fillStyle="rgba(80,80,80,.5)";
-    ctx.beginPath(); ctx.arc(b.sx+8, b.sy-36, 3, 0, 6.28); ctx.fill();
-    ctx.beginPath(); ctx.arc(b.sx+10, b.sy-41, 2.2, 0, 6.28); ctx.fill();
     ctx.fillStyle="#f0a040";
     ctx.fillRect(b.sx-4, b.sy-8, 4, 3);
   }
@@ -1732,9 +1868,13 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
   drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),ox,oy);
 }
 
-function drawIsoWalker(ctx,x,y,ox,oy,cls){
-  drawIsoBox(ctx,x,y,4,["#5a5044","#3a342c","#1c1814"],ox,oy);
+function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
   const b=isoScreen(x,y,ox,oy);
+  const t=now||0;
+  const step=Math.sin(t*0.008+(x*9+y*5));
+  const bob=moving?Math.abs(step)*1.7:0.4;
+  const swing=moving?step*2.4:0;
+  isoContact(ctx,b.sx,b.sy+1,6.4,2.5);
   const c=cls||"";
   let shirt="#d8d2c6", pants="#4a4038", skin="#e8c8a8";
   if(c.indexOf("east")>=0) shirt="#c47a62";
@@ -1745,29 +1885,29 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls){
   if(c.indexOf("crew")>=0) shirt="#6a6058";
   if(c.indexOf("knight")>=0){ shirt="#8a9098"; pants="#3a4048"; }
   if(c.indexOf("king")>=0){ shirt="#e8d080"; pants="#5a3a18"; }
-  const cx=b.sx, cy=b.sy-5;
+  const cx=b.sx, cy=b.sy-3-bob;
   ctx.fillStyle=pants;
-  ctx.fillRect(cx-3, cy-7, 2, 7);
-  ctx.fillRect(cx+1, cy-7, 2, 7);
+  ctx.fillRect(cx-3-swing, cy, 2, 6);
+  ctx.fillRect(cx+1+swing, cy, 2, 6);
   ctx.fillStyle=shirt;
-  ctx.fillRect(cx-4, cy-15, 8, 9);
+  ctx.fillRect(cx-4, cy-9, 8, 9);
   ctx.fillStyle=skin;
   ctx.beginPath();
-  ctx.arc(cx, cy-18, 3.2, 0, 6.28);
+  ctx.arc(cx, cy-12, 3.2, 0, 6.28);
   ctx.fill();
   if(c.indexOf("true-crown")>=0){
     ctx.fillStyle="#f0d060";
-    ctx.fillRect(cx-4, cy-23, 8, 3);
-    ctx.fillRect(cx-1, cy-26, 2, 3);
+    ctx.fillRect(cx-4, cy-17, 8, 3);
+    ctx.fillRect(cx-1, cy-20, 2, 3);
     ctx.fillStyle="#e8c040";
-    ctx.fillRect(cx-0.5, cy-27, 1, 1);
+    ctx.fillRect(cx-0.5, cy-21, 1, 1);
   } else if(c.indexOf("king")>=0){
     ctx.fillStyle="#f0d060";
-    ctx.fillRect(cx-3, cy-22, 6, 2);
+    ctx.fillRect(cx-3, cy-16, 6, 2);
   }
   if(c.indexOf("knight")>=0){
     ctx.fillStyle="#6a7078";
-    ctx.fillRect(cx-3, cy-21, 6, 3);
+    ctx.fillRect(cx-3, cy-15, 6, 3);
   }
 }
 function drawIsoRail(ctx,x,y,ox,oy){
@@ -1830,14 +1970,8 @@ function drawIsoStop(ctx,x,y,ox,oy){
 }
 function drawIsoSprite(ctx,x,y,ox,oy,kind,face,air){
   const b=isoScreen(x,y,ox,oy);
-  const lift=kind==="plane"?(air?26:8):6;
-  if(kind==="plane"){
-    ctx.save();
-    ctx.globalAlpha=0.28;
-    ctx.fillStyle="#0a1018";
-    ctx.beginPath(); ctx.ellipse(b.sx, b.sy+2, 10, 4, 0, 0, 6.28); ctx.fill();
-    ctx.restore();
-  }
+  const lift=kind==="plane"?(air?26:4):(kind==="train"?3:(kind==="bus"?3:2));
+  isoContact(ctx, b.sx, b.sy+(air&&kind==="plane"?4:1), kind==="plane"?11:8, kind==="plane"?4:3);
   const img=SPRITES[kind];
   if(img&&img.complete&&img.naturalWidth){
     ctx.save();
@@ -1902,8 +2036,8 @@ function drawIso(occ,w,h){
       if(isoKind(cls)==="rail"){ drawIsoRail(ctx,x,y,orig.ox,orig.oy); continue; }
       if(isoKind(cls)==="road"){ drawIsoStreet(ctx,x,y,orig.ox,orig.oy); continue; }
       if(isoKind(cls)==="built"){ drawIsoBuilt(ctx,occ,x,y,orig.ox,orig.oy,cls); continue; }
-      if(isoKind(cls)==="walker"){ drawIsoWalker(ctx,x,y,orig.ox,orig.oy,cls); continue; }
-      if(isoKind(cls)==="vehicle"){ drawIsoWagon(ctx,x,y,orig.ox,orig.oy,cls); continue; }
+      if(isoKind(cls)==="walker") continue;
+      if(isoKind(cls)==="vehicle") continue;
       drawIsoBox(ctx,x,y,isoH(cls,x,y),isoFill(cls,x,y),orig.ox,orig.oy);
     }
   }
@@ -2207,6 +2341,7 @@ function renderMap(world){
   for(const town of towns){
     set(town.x,town.y,"settlement "+facName(town.faction||"player"),"",town.id,7);
   }
+  const nowWalk={};
   const byFac={player:[],rival:[],north:[],south:[]};
   for(const a of world.agents||[]){
     const fac=a.faction||"player";
@@ -2225,43 +2360,49 @@ function renderMap(world){
         :(role==="builder"?("builder "+fn)
         :(role==="crew"?("crew "+fn)
         :("vil "+fn)))));
-      const title=role==="king"?(wears?(fn+" island king"):(fn+" king"))
-        :(role==="knight"?(fn+" knight")
-        :(role==="scribe"?(fn+" scribe")
-        :(role==="builder"?(fn+" builder")
-        :(role==="crew"?(fn+" rail crew")
-        :(fn+" walker")))));
-      set(a.x,a.y,skin,"",title,9);
+      const id=a.agent_id||a.id||(fn+":"+a.x+","+a.y);
+      nowWalk[id]={x:Number(a.x),y:Number(a.y),cls:skin};
     });
   }
+  walkPrev=walkNow; walkNow=nowWalk; walkAt=performance.now();
   const nowVeh={};
   for(const tr of world.trains||[]){
     const fn=facName(tr.faction||"player");
     const cargo=Number(tr.cargo||0)?" loaded":"";
     const face=tr.face?("face-"+tr.face):faceClass("train",tr.id||fn,tr.x,tr.y);
-    set(tr.x,tr.y,"train "+fn+" "+face,"",(fn+" train"+cargo),10);
     nowVeh[tr.id||("T"+fn)]={kind:"train",x:tr.x,y:tr.y,face:(tr.face||face.replace("face-","")),air:0};
   }
   for(const pl of world.planes||[]){
     const fn=facName(pl.faction||"player");
     const face=pl.face?("face-"+pl.face):faceClass("plane",pl.id||fn,pl.x,pl.y);
     const air=Number(pl.air||0)?" air":"";
-    set(pl.x,pl.y,"plane "+fn+" "+face+air,"",(fn+" plane"),11);
     nowVeh[pl.id||("P"+fn)]={kind:"plane",x:pl.x,y:pl.y,face:(pl.face||face.replace("face-","")),air:Number(pl.air||0)};
   }
   for(const cab of world.taxis||[]){
     const fn=facName(cab.faction||"player");
     const face=cab.face?("face-"+cab.face):faceClass("taxi",cab.id||fn,cab.x,cab.y);
-    set(cab.x,cab.y,"taxi "+fn+" "+face,"",(fn+" taxi"),10);
     nowVeh[cab.id||("C"+fn)]={kind:"taxi",x:cab.x,y:cab.y,face:(cab.face||face.replace("face-","")),air:0};
   }
   for(const bus of world.buses||[]){
     const fn=facName(bus.faction||"player");
     const face=bus.face?("face-"+bus.face):faceClass("bus",bus.id||fn,bus.x,bus.y);
-    set(bus.x,bus.y,"bus "+fn+" "+face,"",(fn+" bus"),10);
     nowVeh[bus.id||("B"+fn)]={kind:"bus",x:bus.x,y:bus.y,face:(bus.face||face.replace("face-","")),air:0};
   }
   vehPrev=vehNow; vehNow=nowVeh; vehAt=performance.now();
+  const lives={mills:[],foundries:[]};
+  for(const st of world.structures||[]){
+    if(st.type==="mill"){
+      const fac=factionOf(world,st);
+      const live=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
+      lives.mills.push({x:st.x,y:st.y,live:!!live});
+    }
+    if(st.type==="foundry"){
+      const fac=factionOf(world,st);
+      const live=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
+      lives.foundries.push({x:st.x,y:st.y,live:!!live});
+    }
+  }
+  window.__isoLives=lives;
   try{ drawIso(occ,w,h); }catch(e){}
   applyZoom();
 }
@@ -2275,17 +2416,19 @@ function chronicleDiff(world){
     if(!o){logLine(tick,`${who} founded ${s.id}.`,{x:s.x,y:s.y,fac:s.faction,kind:"found"});continue;}
     if(Number(s.era||2)>Number(o.era||2)) logLine(tick,`${who} ${s.id} became a ${ERA_WORD[s.era]||("era "+s.era)}.`,{x:s.x,y:s.y,fac:s.faction,kind:"age"});
     const had=new Set(o.subjects||[]);
-    for(const sub of (s.subjects||[])) if(sub&&!had.has(sub)) logLine(tick,`${who} ${s.id} unlocked ${sub}.`);
+    for(const sub of (s.subjects||[])) if(sub&&!had.has(sub)) logLine(tick,`${who} ${s.id} unlocked ${sub}.`,{x:s.x,y:s.y,fac:s.faction,kind:"age"});
     if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`,{x:s.x,y:s.y,fac:s.faction,kind:"discover"});
     if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`,{x:s.x,y:s.y,fac:s.faction,kind:"starve"});
   }
   const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A pyramid rose from the dirt",temple:"A temple was found",airport:"An airport rose",market:"A bar opened on the street"};
   for(const [typ,line] of Object.entries(risen)){
     const n=(wld,fac)=>ownStructs(wld,fac).filter(s=>s.type===typ).length;
-    if(n(world,"player")>n(prevWorld,"player")) logLine(tick,`${line} in the west.`);
-    if(n(world,"rival")>n(prevWorld,"rival")) logLine(tick,`${line} in the east.`);
-    if(n(world,"north")>n(prevWorld,"north")) logLine(tick,`${line} in the north.`);
-    if(n(world,"south")>n(prevWorld,"south")) logLine(tick,`${line} in the south.`);
+    const pop=function(fac,label){
+      if(n(world,fac)<=n(prevWorld,fac)) return;
+      const xy=structXY(world,typ,fac)||capXY(world,fac);
+      logLine(tick, `${line} in the ${label}.`, xy&&{x:xy.x,y:xy.y,fac:fac,kind:"found"});
+    };
+    pop("player","west"); pop("rival","east"); pop("north","north"); pop("south","south");
   }
   prevWorld=world;
 }
@@ -2336,7 +2479,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world and watch. · v45";}
+  else {banner.className="banner";banner.textContent="Open a world and watch. · v47";}
   renderEpilogue(state);
 }
 async function poll(){
@@ -2389,13 +2532,15 @@ async function poll(){
     if(born&&born.tick!==lastBreedTick){
       lastBreedTick=born.tick;
       const who=whoOf(born.faction);
-      logLine(world.tick,`${who} gained a walker (${born.agent_id}) · ${born.hands_after} hands.`);
+      const xy=agentXY(world, born.agent_id)||capXY(world, born.faction);
+      logLine(world.tick,`${who} gained a walker (${born.agent_id}) · ${born.hands_after} hands.`, xy&&{x:xy.x,y:xy.y,fac:born.faction,kind:"found"});
     }
     const kn=(world.metrics||{}).last_knight;
     if(kn&&kn.tick!==lastKnightTick){
       lastKnightTick=kn.tick;
       const who=whoOf(kn.faction);
-      logLine(world.tick,`${who} raised a knight · ${kn.agent_id}.`);
+      const xy=agentXY(world, kn.agent_id)||capXY(world, kn.faction);
+      logLine(world.tick,`${who} raised a knight · ${kn.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:kn.faction,kind:"king"});
     }
     const kg=(world.metrics||{}).last_king;
     if(kg&&kg.tick!==lastKingTick){
@@ -2408,41 +2553,48 @@ async function poll(){
     if(sc&&sc.tick!==lastScribeTick){
       lastScribeTick=sc.tick;
       const who=whoOf(sc.faction);
-      logLine(world.tick,`${who} named a scribe · ${sc.agent_id}.`);
+      const xy=agentXY(world, sc.agent_id)||capXY(world, sc.faction);
+      logLine(world.tick,`${who} named a scribe · ${sc.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:sc.faction,kind:"discover"});
     }
     const bd=(world.metrics||{}).last_builder;
     if(bd&&bd.tick!==lastBuilderTick){
       lastBuilderTick=bd.tick;
       const who=whoOf(bd.faction);
-      logLine(world.tick,`${who} named a builder · ${bd.agent_id}.`);
+      const xy=agentXY(world, bd.agent_id)||capXY(world, bd.faction);
+      logLine(world.tick,`${who} named a builder · ${bd.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:bd.faction,kind:"found"});
     }
     const cr=(world.metrics||{}).last_crew;
     if(cr&&cr.tick!==lastCrewTick){
       lastCrewTick=cr.tick;
       const who=whoOf(cr.faction);
-      logLine(world.tick,`${who} named a rail crew · ${cr.agent_id}.`);
+      const xy=agentXY(world, cr.agent_id)||capXY(world, cr.faction);
+      logLine(world.tick,`${who} named a rail crew · ${cr.agent_id}.`, xy&&{x:xy.x,y:xy.y,fac:cr.faction,kind:"found"});
     }
     const trn=(world.metrics||{}).last_train;
     if(trn&&trn.tick!==lastTrainTick){
       lastTrainTick=trn.tick;
       const who=whoOf(trn.faction);
-      logLine(world.tick,`${who} rolled a train · ${trn.train_id}.`);
+      const xy=capXY(world, trn.faction);
+      logLine(world.tick,`${who} rolled a train · ${trn.train_id}.`, xy&&{x:xy.x,y:xy.y,fac:trn.faction,kind:"age"});
     }
     const pln=(world.metrics||{}).last_plane;
     if(pln&&pln.tick!==lastPlaneTick){
       lastPlaneTick=pln.tick;
       const who=whoOf(pln.faction);
-      logLine(world.tick,`${who} launched a plane · ${pln.plane_id}.`);
+      const xy=structXY(world,"airport",pln.faction)||capXY(world, pln.faction);
+      logLine(world.tick,`${who} launched a plane · ${pln.plane_id}.`, xy&&{x:xy.x,y:xy.y,fac:pln.faction,kind:"age"});
     }
     const tx=(world.metrics||{}).last_taxi;
     if(tx&&tx.tick!==lastTaxiTick){
       lastTaxiTick=tx.tick;
-      logLine(world.tick,`${whoOf(tx.faction)} put a cab on the square · ${tx.taxi_id}.`);
+      const xy=capXY(world, tx.faction);
+      logLine(world.tick,`${whoOf(tx.faction)} put a cab on the square · ${tx.taxi_id}.`, xy&&{x:xy.x,y:xy.y,fac:tx.faction,kind:"found"});
     }
     const bs=(world.metrics||{}).last_bus;
     if(bs&&bs.tick!==lastBusTick){
       lastBusTick=bs.tick;
-      logLine(world.tick,`${whoOf(bs.faction)} ran a bus · ${bs.bus_id}.`);
+      const xy=structXY(world,"hall",bs.faction)||capXY(world, bs.faction);
+      logLine(world.tick,`${whoOf(bs.faction)} ran a bus · ${bs.bus_id}.`, xy&&{x:xy.x,y:xy.y,fac:bs.faction,kind:"found"});
     }
   }
   renderBanner(state);
@@ -2462,7 +2614,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;walkPrev={};walkNow={};walkAt=0;window.__isoLives={mills:[],foundries:[]};
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
   syncWorldSum();
