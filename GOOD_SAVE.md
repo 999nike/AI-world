@@ -3,7 +3,7 @@
 Owner asked this SHA kept as the known-good restore.
 
 - **Branch:** `v56`
-- **SHA:** `4cb115b2292f73ed7d1771d1f81ac8d295fe24c4`
+- **SHA:** `53c0563adb9810f952056a56ca62d44347fa5951`
 - **Stamp:** · v56
 - **Date noted:** 2026-09-11
 - **What it is:** 96×96 iso, Year 343 hold (unsteered), playable governor (pause, 3 buttons, no typing), eras last, mill must live, civic pack, temples/pyramid, hotel towers, true king, stolen science, gold.

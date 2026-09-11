@@ -1,6 +1,6 @@
 # AI-world Patch Ledger
 
-**Live · v56.** Pin / good save **`v56`** SHA `4cb115b2292f73ed7d1771d1f81ac8d295fe24c4`.
+**Live · v56.** Pin / good save **`v56`** SHA `53c0563adb9810f952056a56ca62d44347fa5951`.
 
 96×96 island. Iso is the map. You govern the west when the world asks. Three buttons. No typing.
 Seed 42, 10 a pole, east science hold **Year 343** (unsteered).
@@ -30,7 +30,7 @@ Parked (not this pin): gold as purse, buried temples, physics sit, event popups.
 
 ## Good save (do not lose)
 
-- **King pin:** branch `v56` · SHA `4cb115b2292f73ed7d1771d1f81ac8d295fe24c4`
+- **King pin:** branch `v56` · SHA `53c0563adb9810f952056a56ca62d44347fa5951`
 - Previous: `v45` `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`
 
 ## Jobs (cross off)
@@ -40,4 +40,4 @@ Parked (not this pin): gold as purse, buried temples, physics sit, event popups.
 - [x] **Eras last** — v55
 - [x] **Playable governor** — v56
 
-**Next chat:** restore **`v56`** (`4cb115b`) unless stamped later. Hold **Year 343** unsteered. Never Vite. You govern the west.
+**Next chat:** restore **`v56`** (`53c0563`) unless stamped later. Hold **Year 343** unsteered. Never Vite. You govern the west.

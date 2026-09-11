@@ -18,7 +18,7 @@ Sprites live in `tools/sprites/` (`/sprites/train.png` etc). If those 404, the m
 ## New Grok chat (same project)
 
 1. User must be in **Build**, not Expert.
-2. Restore branch **v56** pin (`4cb115b`) if the tree is trash. Live line is **v56**.
+2. Restore branch **v56** pin (`53c0563`) if the tree is trash. Live line is **v56**.
 3. Canvas live stamp is **· v56**.
 4. Copy `/workspace/artifacts/ai-world` → `/workspace/ai-world` if the kernel is missing or `play_web.py` / `play_ui.html` is PLACEHOLDER / <1KB.
 5. `/workspace/startup.sh` must start play_web, not `npm run dev`.
