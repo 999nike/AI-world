@@ -1,35 +1,27 @@
 # AI-world Patch Ledger
 
-**Live · v47.** Pin / good save **`v45`** SHA `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`.
+**Live · v54.** Pin / good save **`v45`** SHA `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`.
 
 96×96 island. Iso is the map. `playable=False`. Edicts hidden.
 Seed 42, 10 a pole, east science hold **Year 343**.
 
-**This hop:** phone pinch. One finger drags the map. Two fingers pinch-zoom on the point between them. Wheel zooms under the cursor. Kernel unchanged.
+**This hop:** one slip on the map for age, crown, steal, starve, science. It fades. Tap jumps. No modal. No pause.
 
-**Carried:** v46 physics sit · v45 iso, houses, hotel, civic pack, temple + pyramid, glyphs, true king, stolen science, gold.
+**Carried:** v53 crown · v52 traffic · v51 hotel · v50 rail · v49 industry · v48 transport sit.
 
 **Heading:** a civ, not a pile of cheats. Every new rule hurts as well as helps.
 
-**Versioning:** next **patch** is **v48**. Owner says **stamp** to freeze a pin.
+**Versioning:** next **patch** is **v55**. Owner says **stamp** to freeze a pin.
 
 ## Good save (do not lose)
 
 - **King pin:** branch `v45` · SHA `0cc2d59d4cf454fe5f516144b8ff09de17f96cc8`
-- Restore that if a hop breaks. Owner approves new SHAs.
 
 ## Jobs (cross off)
 
-- [x] **One true king**
-- [x] **Stolen science**
-- [x] **Gold**
-- [x] **Houses sit**
-- [x] **Hotel towers**
-- [x] **Hall / mill pack**
-- [x] **Temples / hidden pyramids**
-- [x] **Sit that feels like physics** — v46
-- [x] **Phone pinch / finger scroll** — v47
+- [x] Industry / rail / hotel / traffic / crown — v49–v53
+- [x] **Event slips** — v54, one card, map stays clear
 
-Later (not this pin): event popups · crown clearer · hotel as a rule (gold in, food out).
+Later: playable governor.
 
-**Next chat:** restore **`v45`** (`0cc2d59`) unless a later SHA is stamped. Live may be **· v47**. Hold **Year 343**. Never Vite. Do not turn edicts on.
+**Next chat:** restore **`v45`** (`0cc2d59`) unless stamped. Live **· v54**. Hold **Year 343**. Never Vite. Do not turn edicts on.

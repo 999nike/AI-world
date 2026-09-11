@@ -83,10 +83,13 @@ SETTLEMENT_RULES = {
     "island_crown_gold_tribute": 0.08,
     "raid_loot_gold": 3,
     "industry_min_era": 5,
-    "age_up5_min_pop": 20,
+    "age_up5_min_pop": 28,
     "age_up5_food_bonus": 5.0,
-    "age_up6_min_pop": 20,
+    "age_up6_min_pop": 40,
     "age_up6_food_bonus": 5.0,
+    "hotel_gold_per_tick": 0.12,
+    "hotel_food_per_tick": 0.18,
+    "hotel_pop_step": 35,
     "mill_tools_per_tick": 0.25,
     "mill_power_reach": 4,
     "mill_power_on": 1.0,
@@ -243,6 +246,9 @@ class SettlementManager:
 
     def settlement_has_mill(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "mill", world) >= 1
+
+    def settlement_has_warehouse(self, sid, world) -> bool:
+        return self.count_structures_of_type(sid, "warehouse", world) >= 1
 
     def settlement_has_airport(self, sid, world) -> bool:
         return self.count_structures_of_type(sid, "airport", world) >= 1
@@ -465,6 +471,16 @@ class SettlementManager:
                 hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.20))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + hf
                 self.metrics["hall_food_total"] = self.metrics.get("hall_food_total", 0) + hf
+            hotels = 0
+            if era >= 6:
+                step = max(1, int(SETTLEMENT_RULES.get("hotel_pop_step", 35)))
+                hotels = min(6, 2 + int(pop_before) // step)
+            s["hotels"] = hotels
+            if hotels:
+                hg = hotels * float(SETTLEMENT_RULES.get("hotel_gold_per_tick", 0.12))
+                s["gold_stock"] = float(s.get("gold_stock", 0) or 0) + hg
+                self.metrics["hotel_gold_total"] = self.metrics.get("hotel_gold_total", 0) + hg
+                self.metrics["hotel_nights"] = self.metrics.get("hotel_nights", 0) + hotels
             used_floor = False
             if city and farms > 0:
                 people_need = pop_before * cons
@@ -497,7 +513,8 @@ class SettlementManager:
             post_harvest = float(s.get("food_stock", 0))
             soldiers_now = float(s.get("soldiers", 0.0))
             soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
-            need = pop_before * cons + soldier_upkeep
+            hotel_eat = hotels * float(SETTLEMENT_RULES.get("hotel_food_per_tick", 0.18))
+            need = pop_before * cons + soldier_upkeep + hotel_eat
             if city and soldiers_now > 0:
                 people_need = pop_before * cons
                 eat = float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
@@ -877,6 +894,14 @@ class SettlementManager:
                 continue
             if not self.settlement_has_mill(sid, world):
                 continue
+            has_wh = False
+            for ss in own:
+                osid = ss.get("id")
+                if osid and self.settlement_has_warehouse(osid, world):
+                    has_wh = True
+                    break
+            if not has_wh:
+                continue
             s["era"] = 5
             s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus
             self.metrics["age_up5_events"] = self.metrics.get("age_up5_events", 0) + 1
@@ -904,6 +929,16 @@ class SettlementManager:
                     has_air = True
                     break
             if not has_air:
+                continue
+            has_hall = False
+            for ss in self.settlements.values():
+                if ss.get("faction", "player") != fac:
+                    continue
+                osid = ss.get("id")
+                if osid and self.settlement_has_hall(osid, world):
+                    has_hall = True
+                    break
+            if not has_hall:
                 continue
             s["era"] = 6
             s["food_stock"] = float(s.get("food_stock", 0)) + food_bonus

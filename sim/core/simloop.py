@@ -434,8 +434,86 @@ def _train_stop(world, sm, tr):
         tr["cargo"] = 0
 
 
+def _manhattan_line(x0, y0, x1, y1):
+    tiles = [(int(x0), int(y0))]
+    x, y = int(x0), int(y0)
+    while x != int(x1) or y != int(y1):
+        if x != int(x1):
+            x += 1 if int(x1) > x else -1
+        elif y != int(y1):
+            y += 1 if int(y1) > y else -1
+        tiles.append((x, y))
+    return tiles
+
+
+def _rail_tiles(world, sm, fac):
+    """Same spine the iso map paints. Deterministic. No RNG."""
+    tiles = set()
+    towns = [s for s in sm.all() if s.get("faction", "player") == fac]
+    if not towns:
+        return tiles
+    hot = [s for s in towns if int(s.get("era", 2) or 2) >= 5]
+    cap = _capital(hot or towns)
+    cx, cy = int(cap["x"]), int(cap["y"])
+    tiles.add((cx, cy))
+    for d in range(-4, 5):
+        if d == 0:
+            continue
+        tiles.add((cx + d, cy))
+        tiles.add((cx, cy + d))
+    def link(x0, y0, x1, y1):
+        tiles.update(_manhattan_line(x0, y0, x1, y1))
+    mill = _own_struct(world, sm, fac, "mill")
+    foundry = _own_struct(world, sm, fac, "foundry")
+    warehouse = _own_struct(world, sm, fac, "warehouse")
+    airport = _own_struct(world, sm, fac, "airport")
+    if mill:
+        link(cx, cy, int(mill.x), int(mill.y))
+    if foundry:
+        link(cx, cy, int(foundry.x), int(foundry.y))
+    if warehouse:
+        link(cx, cy, int(warehouse.x), int(warehouse.y))
+    if mill and warehouse:
+        link(int(mill.x), int(mill.y), int(warehouse.x), int(warehouse.y))
+    if airport:
+        link(cx, cy, int(airport.x), int(airport.y))
+    for t in hot:
+        if int(t["x"]) == cx and int(t["y"]) == cy:
+            continue
+        link(cx, cy, int(t["x"]), int(t["y"]))
+    return tiles
+
+
+def _step_on_line(veh, tx, ty, allowed, w, h):
+    ox, oy = int(veh["x"]), int(veh["y"])
+    cands = []
+    if ox != tx:
+        cands.append((ox + (1 if tx > ox else -1), oy))
+    if oy != ty:
+        cands.append((ox, oy + (1 if ty > oy else -1)))
+    picked = None
+    for nx, ny in cands:
+        if nx < 0 or ny < 0 or nx >= w or ny >= h:
+            continue
+        if allowed and (nx, ny) not in allowed:
+            continue
+        picked = (nx, ny)
+        break
+    if picked is None:
+        for nx, ny in cands:
+            if 0 <= nx < w and 0 <= ny < h:
+                picked = (nx, ny)
+                break
+    if picked is None:
+        return
+    veh["x"], veh["y"] = picked
+    dx, dy = int(veh["x"]) - ox, int(veh["y"]) - oy
+    if dx or dy:
+        veh["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
+
+
 def step_trains(world, sm, t, metrics, logger):
-    """One train a pole after industry. No RNG. Roads are the line."""
+    """One train a pole after industry. Stays on the rail. Dry mill sits still."""
     if getattr(world, "trains", None) is None:
         world.trains = []
     industrial = set()
@@ -469,7 +547,11 @@ def step_trains(world, sm, t, metrics, logger):
         })
     w, h = int(world.width), int(world.height)
     for tr in world.trains:
-        pts = _train_waypoints(world, sm, tr.get("faction", "player"))
+        fac = tr.get("faction", "player")
+        own = [s for s in sm.all() if s.get("faction", "player") == fac]
+        if not any(s.get("mill_live") for s in own):
+            continue
+        pts = _train_waypoints(world, sm, fac)
         if len(pts) < 2:
             continue
         ti = int(tr.get("target", 0) or 0) % len(pts)
@@ -478,16 +560,8 @@ def step_trains(world, sm, t, metrics, logger):
             _train_stop(world, sm, tr)
             tr["target"] = (ti + 1) % len(pts)
             tx, ty = pts[tr["target"]]
-        ox, oy = int(tr["x"]), int(tr["y"])
-        if int(tr["x"]) != tx:
-            tr["x"] = int(tr["x"]) + (1 if tx > int(tr["x"]) else -1)
-        elif int(tr["y"]) != ty:
-            tr["y"] = int(tr["y"]) + (1 if ty > int(tr["y"]) else -1)
-        tr["x"] = max(0, min(w - 1, int(tr["x"])))
-        tr["y"] = max(0, min(h - 1, int(tr["y"])))
-        dx, dy = int(tr["x"]) - ox, int(tr["y"]) - oy
-        if dx or dy:
-            tr["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
+        rail = _rail_tiles(world, sm, fac)
+        _step_on_line(tr, tx, ty, rail, w, h)
 
 
 def _airports(world):
@@ -603,23 +677,38 @@ def _step_vehicle(veh, pts, w, h, speed=1):
         veh["face"] = "e" if dx > 0 else ("w" if dx < 0 else ("s" if dy > 0 else "n"))
 
 
+def _jammed(veh, pack) -> bool:
+    x, y = int(veh["x"]), int(veh["y"])
+    vid = str(veh.get("id") or "")
+    for o in pack:
+        if o is veh:
+            continue
+        if abs(int(o["x"]) - x) + abs(int(o["y"]) - y) <= 1:
+            if vid > str(o.get("id") or ""):
+                return True
+    return False
+
+
 def step_traffic(world, sm, t, metrics, logger):
-    """One taxi and one bus a pole after the airport. No RNG. Streets stay streets."""
+    """Cabs and buses on the square. A second cab when the city is full. Jam holds the tile."""
     if getattr(world, "taxis", None) is None:
         world.taxis = []
     if getattr(world, "buses", None) is None:
         world.buses = []
     live = set()
+    fat = set()
     for s in sm.all():
+        fac = s.get("faction", "player")
         if int(s.get("era", 2) or 2) >= 6:
-            live.add(s.get("faction", "player"))
+            live.add(fac)
+            if int(s.get("population", 0) or 0) >= 40:
+                fat.add(fac)
     for stx in world.structures:
         if stx.type == "airport":
             live.add(_airport_faction(world, sm, stx))
-    have_t = {v.get("faction") for v in world.taxis}
-    have_b = {v.get("faction") for v in world.buses}
     tpre = {"player": "CW", "rival": "CE", "north": "CN", "south": "CS"}
     bpre = {"player": "BW", "rival": "BE", "north": "BN", "south": "BS"}
+    w, h = int(world.width), int(world.height)
     for fac in ("player", "rival", "north", "south"):
         if fac not in live:
             continue
@@ -628,20 +717,34 @@ def step_traffic(world, sm, t, metrics, logger):
             continue
         cap = _capital(towns)
         cx, cy = int(cap["x"]), int(cap["y"])
-        if fac not in have_t:
-            cab = {"id": tpre.get(fac, "C") + "0", "faction": fac, "x": cx, "y": cy, "target": 1}
+        cabs = [v for v in world.taxis if v.get("faction") == fac]
+        want_cabs = 2 if fac in fat else 1
+        while len(cabs) < want_cabs:
+            n = len(cabs)
+            cab = {
+                "id": tpre.get(fac, "C") + str(n),
+                "faction": fac,
+                "x": min(w - 1, cx + (2 if n else 0)),
+                "y": cy,
+                "target": 1 + n,
+            }
             world.taxis.append(cab)
+            cabs.append(cab)
             metrics["taxi_events"] = metrics.get("taxi_events", 0) + 1
             metrics["last_taxi"] = {"tick": t, "taxi_id": cab["id"], "faction": fac}
             logger.event({"type": "taxi_rolled", "tick": t, "taxi_id": cab["id"], "faction": fac})
-        if fac not in have_b:
+        if not any(v.get("faction") == fac for v in world.buses):
             bus = {"id": bpre.get(fac, "B") + "0", "faction": fac, "x": cx, "y": cy, "target": 1}
             world.buses.append(bus)
             metrics["bus_events"] = metrics.get("bus_events", 0) + 1
             metrics["last_bus"] = {"tick": t, "bus_id": bus["id"], "faction": fac}
             logger.event({"type": "bus_rolled", "tick": t, "bus_id": bus["id"], "faction": fac})
-    w, h = int(world.width), int(world.height)
+    pack = list(world.taxis) + list(world.buses)
     for cab in world.taxis:
+        if _jammed(cab, pack):
+            cab["jam"] = 1
+            continue
+        cab["jam"] = 0
         towns = [s for s in sm.all() if s.get("faction", "player") == cab.get("faction")]
         if not towns:
             continue
@@ -653,6 +756,10 @@ def step_traffic(world, sm, t, metrics, logger):
             pts.append((int(hall.x), int(hall.y)))
         _step_vehicle(cab, pts, w, h, 1)
     for bus in world.buses:
+        if _jammed(bus, pack):
+            bus["jam"] = 1
+            continue
+        bus["jam"] = 0
         fac = bus.get("faction")
         towns = [s for s in sm.all() if s.get("faction", "player") == fac]
         if not towns:
