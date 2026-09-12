@@ -396,16 +396,6 @@ def _train_waypoints(world, sm, fac):
     return pts
 
 
-def _faction_has_warehouse(world, sm, fac) -> bool:
-    for stx in world.structures:
-        if stx.type != "warehouse":
-            continue
-        sid = sm.structure_settlement_id(stx.x, stx.y)
-        if sid and sm.get(sid).get("faction", "player") == fac:
-            return True
-    return False
-
-
 def _train_stop(world, sm, tr):
     st = world.structure_at(int(tr["x"]), int(tr["y"]))
     sid = sm.nearest(int(tr["x"]), int(tr["y"]), faction=tr.get("faction"))
@@ -413,25 +403,43 @@ def _train_stop(world, sm, tr):
         return
     s = sm.get(sid)
     if st is not None and st.type == "mill" and int(tr.get("cargo", 0) or 0) == 0:
-        if not s.get("mill_live"):
+        fac = tr.get("faction")
+        if not sm._faction_mill_live(fac):
             return
         wood = int(s.get("wood_stock", 0) or 0)
         if wood >= 1:
             s["wood_stock"] = wood - 1
             tr["cargo"] = 1
+            return
+        for ss in sm._faction_towns(fac):
+            w = int(ss.get("wood_stock", 0) or 0)
+            if w >= 1:
+                ss["wood_stock"] = w - 1
+                tr["cargo"] = 1
+                return
         return
     if int(tr.get("cargo", 0) or 0) <= 0:
         return
-    has_wh = _faction_has_warehouse(world, sm, tr.get("faction"))
     if st is not None and st.type == "warehouse":
         goods = int(tr["cargo"])
-        s["wood_stock"] = int(s.get("wood_stock", 0) or 0) + goods
         s["goods_stock"] = int(s.get("goods_stock", 0) or 0) + goods
         tr["cargo"] = 0
+        sm.metrics["goods_hauled_total"] = sm.metrics.get("goods_hauled_total", 0) + goods
+        sm.metrics["last_goods"] = {
+            "tick": int(getattr(world, "tick", 0) or 0),
+            "faction": tr.get("faction"),
+            "goods": goods,
+            "stock": int(s.get("goods_stock", 0) or 0),
+            "settlement_id": sid,
+        }
+        sm.logger.event({
+            "type": "goods_hauled", "tick": int(getattr(world, "tick", 0) or 0),
+            "faction": tr.get("faction"), "goods": goods,
+            "stock": int(s.get("goods_stock", 0) or 0),
+            "settlement_id": sid,
+        })
         return
-    if not has_wh and (st is None or st.type != "mill"):
-        s["wood_stock"] = int(s.get("wood_stock", 0) or 0) + int(tr["cargo"])
-        tr["cargo"] = 0
+    # Cargo stays on the train until a warehouse. No dump on the grass.
 
 
 def _manhattan_line(x0, y0, x1, y1):
@@ -550,6 +558,11 @@ def step_trains(world, sm, t, metrics, logger):
         fac = tr.get("faction", "player")
         own = [s for s in sm.all() if s.get("faction", "player") == fac]
         if not any(s.get("mill_live") for s in own):
+            continue
+        if not any(
+            getattr(a, "faction", "player") == fac and getattr(a, "role", "walker") == "crew"
+            for a in world.agents
+        ):
             continue
         pts = _train_waypoints(world, sm, fac)
         if len(pts) < 2:

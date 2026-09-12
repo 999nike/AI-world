@@ -89,6 +89,7 @@ SETTLEMENT_RULES = {
     "age_up6_food_bonus": 5.0,
     "hotel_gold_per_tick": 0.12,
     "hotel_food_per_tick": 0.18,
+    "hotel_goods_per_tick": 0.08,
     "hotel_pop_step": 35,
     "mill_tools_per_tick": 0.25,
     "mill_power_reach": 4,
@@ -143,6 +144,8 @@ class SettlementManager:
             "tools_stock": 0.0, "soldiers": 0.0, "knowledge": 0.0,
             "power": 0.0, "mill_live": False, "mill_race": None,
             "goods_stock": 0,
+            "hotels": 0,
+            "hotels_dark": 0,
             "discoveries": 0,
             "subjects": [], "era": 2, "starve_ticks": 0, "surplus_ticks": 0,
         }
@@ -479,16 +482,6 @@ class SettlementManager:
                 hf = float(SETTLEMENT_RULES.get("hall_food_per_tick", 0.20))
                 s["food_stock"] = float(s.get("food_stock", 0) or 0) + hf
                 self.metrics["hall_food_total"] = self.metrics.get("hall_food_total", 0) + hf
-            hotels = 0
-            if era >= 6:
-                step = max(1, int(SETTLEMENT_RULES.get("hotel_pop_step", 35)))
-                hotels = min(6, 2 + int(pop_before) // step)
-            s["hotels"] = hotels
-            if hotels:
-                hg = hotels * float(SETTLEMENT_RULES.get("hotel_gold_per_tick", 0.12))
-                s["gold_stock"] = float(s.get("gold_stock", 0) or 0) + hg
-                self.metrics["hotel_gold_total"] = self.metrics.get("hotel_gold_total", 0) + hg
-                self.metrics["hotel_nights"] = self.metrics.get("hotel_nights", 0) + hotels
             used_floor = False
             if city and farms > 0:
                 people_need = pop_before * cons
@@ -521,10 +514,9 @@ class SettlementManager:
             post_harvest = float(s.get("food_stock", 0))
             soldiers_now = float(s.get("soldiers", 0.0))
             soldier_upkeep = soldiers_now * float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
-            hotel_eat = hotels * float(SETTLEMENT_RULES.get("hotel_food_per_tick", 0.18))
-            need = pop_before * cons + soldier_upkeep + hotel_eat
+            people_need = pop_before * cons
+            need = people_need + soldier_upkeep
             if city and soldiers_now > 0:
-                people_need = pop_before * cons
                 eat = float(SETTLEMENT_RULES.get("soldier_food_consume", 0.03))
                 keep = people_need * 2.0
                 room = max(0.0, post_harvest - keep)
@@ -534,7 +526,7 @@ class SettlementManager:
                     s["soldiers"] = max(0.0, max_soldiers)
                     soldiers_now = float(s["soldiers"])
                     soldier_upkeep = soldiers_now * eat
-                    need = pop_before * cons + soldier_upkeep
+                    need = people_need + soldier_upkeep
                     self.metrics["stand_down_events"] = self.metrics.get("stand_down_events", 0) + 1
                     self.metrics["stand_down_cut_total"] = self.metrics.get("stand_down_cut_total", 0.0) + cut
                     if cut >= 1.0:
@@ -548,6 +540,45 @@ class SettlementManager:
                             "faction": s.get("faction", "player"),
                             "cut": cut, "soldiers_after": soldiers_now,
                         })
+            want = 0
+            if era >= 6:
+                step = max(1, int(SETTLEMENT_RULES.get("hotel_pop_step", 35)))
+                want = min(6, 2 + int(pop_before) // step)
+            food_c = float(SETTLEMENT_RULES.get("hotel_food_per_tick", 0.18))
+            goods_c = float(SETTLEMENT_RULES.get("hotel_goods_per_tick", 0.08))
+            gold_c = float(SETTLEMENT_RULES.get("hotel_gold_per_tick", 0.12))
+            leftover = max(0.0, post_harvest - need)
+            fac = s.get("faction", "player")
+            goods_have = self._faction_goods(fac)
+            open_n = 0
+            for _ in range(want):
+                if leftover >= food_c and goods_have >= goods_c:
+                    leftover -= food_c
+                    goods_have -= goods_c
+                    open_n += 1
+                else:
+                    break
+            if open_n:
+                self._take_faction_goods(fac, open_n * goods_c)
+                hg = open_n * gold_c
+                s["gold_stock"] = float(s.get("gold_stock", 0) or 0) + hg
+                self.metrics["hotel_gold_total"] = self.metrics.get("hotel_gold_total", 0) + hg
+                self.metrics["hotel_nights"] = self.metrics.get("hotel_nights", 0) + open_n
+            prev_dark = int(s.get("hotels_dark", 0) or 0)
+            s["hotels"] = open_n
+            s["hotels_dark"] = max(0, want - open_n)
+            if s["hotels_dark"] >= 1:
+                self.metrics["hotel_dark_ticks"] = self.metrics.get("hotel_dark_ticks", 0) + 1
+                if prev_dark == 0:
+                    self.metrics["last_hotel_dark"] = {
+                        "tick": tick, "settlement_id": sid, "faction": fac,
+                        "dark": s["hotels_dark"], "open": open_n,
+                    }
+                    self.logger.event({
+                        "type": "hotel_dark", "tick": tick, "settlement_id": sid,
+                        "faction": fac, "dark": s["hotels_dark"], "open": open_n,
+                    })
+            need = people_need + soldier_upkeep + open_n * food_c
             starve_needed = granary_starve if has_granary else starve_needed_default
             local_surplus_needed = int(SETTLEMENT_RULES.get("temple_surplus_ticks", 3)) if has_temple else surplus_needed
             if "organisation" in subjects:
@@ -859,6 +890,23 @@ class SettlementManager:
 
     def _faction_mill_live(self, fac) -> bool:
         return any(bool(ss.get("mill_live")) for ss in self._faction_towns(fac))
+
+    def _faction_goods(self, fac) -> float:
+        return sum(float(ss.get("goods_stock") or 0) for ss in self._faction_towns(fac))
+
+    def _take_faction_goods(self, fac, amt: float) -> None:
+        left = float(amt)
+        if left <= 0:
+            return
+        for ss in self._faction_towns(fac):
+            have = float(ss.get("goods_stock") or 0)
+            take = min(have, left)
+            if take <= 0:
+                continue
+            ss["goods_stock"] = have - take
+            left -= take
+            if left <= 1e-9:
+                return
 
     def _note_science_ready(self, world, tick: int) -> None:
         need = int(SETTLEMENT_RULES.get("age_up5_min_discoveries", 2))

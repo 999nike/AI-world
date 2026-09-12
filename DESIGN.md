@@ -25,9 +25,9 @@ Order is locked. Owner stamps pins. Edicts are open as of **v56** — you govern
 |---|---|---|
 | Done · v55 | **A. Eras last** | Industry and world cannot skip. Science hold seed 42 stays **Year 343**. Aging 4→5 and 5→6 **costs food**. Mill must be live. Dwell after the science sit. |
 | Done · v56 | **B. Playable governor** | Pause. 3 fat choices that hurt. No `focus food`. Same kernel. You govern the west; east/north/south keep their own heads. |
-| Next | **C. Hotel / rail as rules** | Train is labour mill→warehouse. Hotel: gold in, food out. Stickers die. Spine you can point at. |
-| After sit | **Districts you can name** | Park W and read housing / fields / spine / civic / water. Empty granary reads. Uni and bar stop being stand-in letters. |
-| After sit | **Graphics pass** | Sprites, roofs, water, mill-race, skyline — on top of a finished sit, not instead of it. The painting is the brief. |
+| Live · v57 | **C. Hotel / rail as rules** | Train is labour mill→warehouse. Hotel: gold in, food+goods out. Stickers die. Empty towers earn nothing. Spine you can point at. |
+| Live · v58 | **Districts you can name** | Park W and read housing / fields / spine / civic / water. Folk drops lab IDs. Empty granary reads. Names earned from the sit — no typing. |
+| Live · v59 | **Graphics pass** | Turquoise water, cream shore, olive canopy, mill-race glint — on the finished sit. The painting is the brief for structure, not lighting. |
 | Later | **Late starve honest** | World city doesn’t silently die. Food still kills. A full skyline can still go hungry. |
 | Later | **Crown that reads** | One island king: taller, a banner, a name. Bonus you can lose. Head worth taking. |
 | Later | **Memory-app agents** | Walkers get clever on the same rules. Watch stays solid first. Do not drop brains on a camp. |
@@ -169,20 +169,20 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 
 ### Still to finish in that picture
 
-- **Uni / bars as real buildings** — academy stands in for the uni; market stands in for the bar
-- **Housing / civic / industry / green** — started; keep reading as districts, not letters
-- Empty granary should read on the map
+- **Uni / bars as real buildings** — academy stands in for the uni; market stands in for the bar. Iso already has mass; keep them in civic.
+- **Housing / civic / industry / green** — named as of v58; keep the clusters honest
 - Late sits that don’t silently starve and stall
 
 ### After the city can carry it
 
 1. **Eras last** — v55. Hurt to leave science/industry.
-2. **Playable governor** — now (v56). Pause, 3 fat choices, no typing `focus food`
-3. **Hotel / rail as rules** — gold in food out; train is haul
-4. **Districts + graphics** — sit first, paint second
-5. **Late starve honest** — a world city can still go hungry
-6. **Crown that reads** — banner, name, a head you can lose
-7. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
+2. **Playable governor** — v56. Pause, 3 fat choices, no typing `focus food`
+3. **Hotel / rail as rules** — live v57. Gold in, food+goods out; train is haul. Empty towers earn nothing.
+4. **Districts you can name** — live v58. Park W. Housing, fields, spine, civic, water. Empty granary reads. No rename box.
+5. **Graphics pass** — live v59. Turquoise water, cream shore, olive canopy. Sit first, then this paint.
+6. **Late starve honest** — a world city can still go hungry
+7. **Crown that reads** — banner, name, a head you can lose
+8. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
 
 Do not drop clever agents onto a camp with letters. Do not open edicts to paper over a missing race.
 

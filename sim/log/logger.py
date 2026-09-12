@@ -14,6 +14,8 @@ KEY_TYPES: Set[str] = {
     "decision_offered", "decision_taken",
     "discovery_mode",
     "build_funded",
+    "goods_hauled",
+    "hotel_dark",
     "outcome",
 }
 

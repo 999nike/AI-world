@@ -18,7 +18,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);min-height:100%}
 button,[role=button]{cursor:pointer} button:disabled{cursor:default;opacity:.4}
-.shell{width:min(1320px,calc(100% - 24px));margin:0 auto;padding:16px 0 28px}
+.shell{width:min(1320px,calc(100% - 24px));margin:0 auto;padding:16px 0 28px;container-type:inline-size;container-name:shell}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 h1{font-family:var(--font-display);font-weight:600;letter-spacing:-.03em;font-size:1.55rem;margin:0}
 .sub{color:var(--fg-muted);font-size:.85rem;margin-top:2px}
@@ -34,7 +34,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .world-box summary::-webkit-details-marker{display:none}
 .world-box[open]{position:relative;z-index:2}
 .world-box .drawer{display:flex;gap:10px;padding-top:8px;flex-wrap:wrap}
-.hud{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(11rem,100%),1fr));gap:8px;margin-bottom:12px}
 .stat{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .stat span{display:block;color:var(--fg-subtle);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
 .stat b{font-family:var(--font-mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
@@ -58,7 +58,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .age.now.east{color:#1c100e;background:var(--them);font-weight:700}
 .age.now.north{color:#101820;background:var(--north);font-weight:700}
 .age.now.south{color:#12180e;background:var(--south);font-weight:700}
-.race{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.race{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(14rem,100%),1fr));gap:8px;margin-bottom:12px}
 .lane{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .lane .pair{display:flex;justify-content:space-between;gap:8px;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-subtle);margin-bottom:6px}
 .lane .pair b{color:var(--fg);font-weight:600;letter-spacing:0;text-transform:none;font-size:.78rem}
@@ -68,7 +68,10 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .dual i.e{background:var(--them)}
 .dual i.n{background:var(--north)}
 .dual i.s{background:var(--south)}
-.stage{display:grid;grid-template-columns:240px 1fr 280px;gap:12px}
+.stage{display:grid;grid-template-columns:240px minmax(0,1fr) 280px;grid-template-areas:"log map city";gap:12px}
+.stage > .panel:first-child{grid-area:log}
+.stage > .map-panel{grid-area:map}
+.stage > .panel.city{grid-area:city}
 .panel{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:0}
 .kicker{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-subtle);font-weight:600;margin-bottom:8px}
 .log{max-height:min(72vh,640px);overflow:auto;font-size:.82rem;line-height:1.4;color:var(--fg-muted)}
@@ -84,7 +87,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .log .ev-starve{box-shadow:inset 3px 0 0 #8a3a38}
 .log .ev-age{box-shadow:inset 3px 0 0 #c4b090}
 .log .ev-found{box-shadow:inset 3px 0 0 var(--you)}
-.map-wrap{overflow:auto;background:#071018;border-radius:10px;padding:8px;position:relative;touch-action:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;min-height:min(68vh,520px);max-height:min(72vh,640px);cursor:grab}
+.map-wrap{overflow:auto;background:#1a6a78;border-radius:10px;padding:8px;position:relative;touch-action:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;min-height:280px;max-height:min(72vh,640px);cursor:grab}
 .map-wrap.grabbing{cursor:grabbing}
 .map-zoom{position:absolute;top:10px;left:10px;z-index:3;display:flex;align-items:center;gap:4px;background:color-mix(in oklab,var(--bg-elevated) 88%,transparent);border:1px solid var(--border);border-radius:8px;padding:3px;flex-wrap:wrap;max-width:calc(100% - 24px)}
 .map-zoom .look{height:32px;min-width:28px;padding:0 8px;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase}
@@ -110,7 +113,7 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .map-sizer{position:relative;margin:0 auto}
 #map{display:grid;gap:0;width:max-content;margin:0 auto}
 
-#iso{display:block;margin:0 auto;background:#0c141c;border-radius:4px}
+#iso{display:block;margin:0 auto;background:#2aa8b4;border-radius:4px}
 #isoFx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .map-wrap.mode-iso #map{display:none}
 .map-wrap.mode-grid #iso{display:none}
@@ -447,11 +450,15 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 #map.age-science .cell.water{background:#163848}
 #map.age-industry .cell.rail,#map.age-industry .cell.street.rail{box-shadow:inset 0 0 0 1px #1a1814,0 0 5px color-mix(in oklab,#c4b080 25%,transparent)}
 #map.age-industry .cell.mill,#map.age-industry .cell.foundry{box-shadow:0 0 8px color-mix(in oklab,#c08040 45%,transparent)}
-.city{max-height:min(72vh,640px);overflow:auto}
-.city h2{font-family:var(--font-display);font-size:1.15rem;margin:0 0 4px}
-.city .lead{color:var(--fg-muted);margin:0 0 8px;font-size:.88rem}
-.city .folk{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border)}
-.city .folk:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.city{max-height:min(72vh,640px);overflow:auto;display:grid;grid-template-columns:1fr;gap:12px;align-content:start}
+.city h2{font-family:var(--font-display);font-size:1.15rem;margin:0}
+.city .lead{color:var(--fg-muted);margin:0 0 6px;font-size:.88rem}
+.city .folk-copy .lead:last-child{margin-bottom:0}
+.city .folk{display:grid;grid-template-rows:auto auto 1fr auto auto;gap:6px;min-width:0}
+.city .folk + .folk{border-top:1px solid var(--border);padding-top:12px}
+.folk-meters .meter{margin:6px 0}
+.folk-meters .meter:first-child{margin-top:0}
+.folk-meters .meter:last-child{margin-bottom:0}
 .bar{height:4px;background:#080c11;border-radius:99px;overflow:hidden}
 .bar>i{display:block;height:100%;background:var(--ok);width:0}
 .bar.low>i{background:var(--danger)}
@@ -640,17 +647,22 @@ input[type=number]{height:34px;width:80px;background:var(--bg);color:var(--fg);b
 .epilogue .side h4{font-family:var(--font-display);margin:2px 0 6px;font-size:1.05rem}
 .epilogue .side p{margin:0;font-size:.8rem;color:var(--fg-muted);line-height:1.45}
 .epilogue .score{margin-top:10px;font-family:var(--font-mono);font-size:.8rem;color:var(--fg-subtle)}
-@media(max-width:980px){
-  .stage{grid-template-columns:1fr}
-  .hud{grid-template-columns:repeat(3,1fr)}
-  .race{grid-template-columns:1fr}
-  .log{max-height:160px}
-  .epilogue .sides{grid-template-columns:1fr}
-  .map-wrap{min-height:min(58vh,560px);max-height:min(68vh,680px)}
-  .map-zoom{max-width:calc(100% - 16px)}
-}
 @media(pointer:coarse){
   .map-zoom .btn,.map-zoom .look{height:40px;min-width:40px}
+}
+@container shell (max-width: 980px){
+  .stage{grid-template-columns:minmax(0,1fr);grid-template-areas:"map" "city" "log"}
+  .log{max-height:140px}
+  .epilogue .sides{grid-template-columns:1fr}
+  .map-wrap{min-height:280px;max-height:min(70vh,720px)}
+  .map-zoom{max-width:calc(100% - 16px)}
+  .ages-block{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));gap:6px 8px;margin-bottom:8px}
+  .race{gap:6px;margin-bottom:8px}
+  .hud{margin-bottom:8px}
+  .city{grid-template-columns:repeat(auto-fit,minmax(min(16rem,100%),1fr));grid-auto-rows:auto;max-height:none}
+  .city .folk{grid-template-rows:subgrid;grid-row:span 5;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px}
+  .city .folk + .folk{border-top:0;padding-top:10px}
+  .city .folk .kicker{margin-bottom:0}
 }
 </style></head>
 <body>
@@ -666,7 +678,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Govern the west. Four peoples. Same map. · v56</div></div>
+    <div><h1>AI-world</h1><div class="sub">Govern the west. The island reads. · v59</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -688,8 +700,8 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="race" id="race"></div>
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
-    <div class="panel">
-      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v56</div>
+    <div class="panel map-panel">
+      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v59</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -710,14 +722,14 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">You govern the west. Three choices. Each one hurts. · v56</div>
+      <div class="legend">Park W. Turquoise water, cream shore, olive canopy. · v59</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastTick=-1,lastOutcomeTick=-1,lastIslandCrownTick=-1,lastCrownTakenTick=-1,lastScienceStolenTick=-1,lastChoiceTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
+let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastGoodsTick=-1,lastHotelDarkTick=-1,lastTick=-1,lastOutcomeTick=-1,lastIslandCrownTick=-1,lastCrownTakenTick=-1,lastScienceStolenTick=-1,lastChoiceTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
 const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"U",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F",market:"b"};
 const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"],["era5","Industry"],["era6","World"]];
 const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city",5:"industry",6:"world"};
@@ -816,6 +828,8 @@ function pingColor(kind){
   if(kind==="discover") return "#e8e0b0";
   if(kind==="starve") return "#c45b55";
   if(kind==="age") return "#c4b090";
+  if(kind==="goods") return "#c4a06a";
+  if(kind==="dark") return "#6a6864";
   return "#d8d2c6";
 }
 function pingWord(kind){
@@ -829,6 +843,8 @@ function pingWord(kind){
   if(kind==="starve") return "STARVE";
   if(kind==="age") return "AGE";
   if(kind==="found") return "CAMP";
+  if(kind==="goods") return "GOODS";
+  if(kind==="dark") return "EMPTY";
   return "";
 }
 function drawPingGlyph(ctx,kind,col){
@@ -865,6 +881,15 @@ function drawPingGlyph(ctx,kind,col){
   }
   if(kind==="age"){
     ctx.beginPath(); ctx.moveTo(-2,-8); ctx.lineTo(-2,8); ctx.moveTo(-2,-8); ctx.lineTo(8,-4); ctx.lineTo(-2,0); ctx.stroke();
+    return;
+  }
+  if(kind==="goods"){
+    ctx.beginPath(); ctx.moveTo(-7,4); ctx.lineTo(-7,-3); ctx.lineTo(0,-7); ctx.lineTo(7,-3); ctx.lineTo(7,4); ctx.closePath(); ctx.fill();
+    return;
+  }
+  if(kind==="dark"){
+    ctx.beginPath(); ctx.rect(-5,-8,10,16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-5,-8); ctx.lineTo(5,8); ctx.stroke();
     return;
   }
   ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(2,8); ctx.lineTo(-6,2); ctx.closePath(); ctx.fill();
@@ -927,6 +952,16 @@ function drawIsoFx(now){
       ctx.fill();
     }
   }
+  const races=lives.races||[];
+  for(let i=0;i<races.length;i++){
+    const r=races[i];
+    const b=isoScreen(r.x,r.y,orig.ox,orig.oy);
+    const ph=((t*0.45+r.x*11+r.y*7)%400)/400;
+    ctx.fillStyle="rgba(232,255,255,"+(0.22+0.28*(1-ph))+")";
+    ctx.beginPath();
+    ctx.ellipse(b.sx-4+ph*8, b.sy-2, 3.2, 1.2, 0.4, 0, 6.28);
+    ctx.fill();
+  }
   const wu=Math.min(1,(t-walkAt)/280);
   const we=1-Math.pow(1-wu,2);
   const wids=Object.keys(walkNow);
@@ -974,6 +1009,24 @@ function drawIsoFx(now){
       ctx.fillText(who, 0, 20);
       ctx.restore();
     }
+  }
+  const parkFac=lookAt==="west"?"player":lookAt==="east"?"rival":lookAt==="north"?"north":lookAt==="south"?"south":null;
+  if(parkFac && orig){
+    const names=(window.__isoDistricts||[]).filter(d=>d.fac===parkFac);
+    ctx.save();
+    ctx.font="600 12px Iowan Old Style, Palatino, Georgia, serif";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    for(let i=0;i<names.length;i++){
+      const d=names[i];
+      const p=isoScreen(d.x,d.y,orig.ox,orig.oy);
+      ctx.lineWidth=3.2;
+      ctx.strokeStyle="rgba(8,14,20,0.75)";
+      ctx.strokeText(d.word, p.sx, p.sy-22);
+      ctx.fillStyle="#e7eef6";
+      ctx.fillText(d.word, p.sx, p.sy-22);
+    }
+    ctx.restore();
   }
   const keep=[];
   for(let i=0;i<mapPings.length;i++){
@@ -1087,6 +1140,55 @@ function factionOf(world,st){
   return (best&&best.faction)||"player";
 }
 function facName(f){const row=POLES.find(p=>p[0]===f);return row?row[1]:"west";}
+function clsHas(c,w){return (" "+(c||"")+" ").indexOf(" "+w+" ")>=0;}
+function occCentroid(occ, test){
+  let sx=0,sy=0,n=0;
+  for(const k in occ){
+    const cell=occ[k];
+    if(!cell) continue;
+    if(!test(cell.cls||"", cell.title||"")) continue;
+    const p=k.split(",");
+    sx+=+p[0]; sy+=+p[1]; n++;
+  }
+  if(!n) return null;
+  return {x:sx/n, y:sy/n};
+}
+function collectDistricts(world, occ){
+  const all=[];
+  for(const [fac,fn] of POLES){
+    const towns=townsOf(world,fac);
+    if(!towns.length) continue;
+    const era=towns.reduce((a,s)=>Math.max(a,Number(s.era||2)),0);
+    const cap=capital(towns);
+    const days=cap?foodDays(cap):null;
+    const live=towns.some(t=>t.mill_live);
+    const st=ownStructs(world,fac);
+    const of=t=>st.filter(s=>s.type===t);
+    const house=occCentroid(occ, c=>clsHas(c,"house") && clsHas(c,fn));
+    if(house) all.push({kind:"housing", word:"Housing", x:house.x, y:house.y, fac});
+    const gran=of("granary");
+    const field=occCentroid(occ, c=>(clsHas(c,"field")||clsHas(c,"crop-a")||clsHas(c,"crop-b")) && clsHas(c,fn));
+    const empty=days!=null&&days<1;
+    if(empty && gran.length) all.push({kind:"fields", word:"Empty granary", x:gran[0].x, y:gran[0].y, fac});
+    else if(field) all.push({kind:"fields", word:empty?"Empty fields":"Fields", x:field.x, y:field.y, fac});
+    const millWh=of("mill").concat(of("warehouse"));
+    if(millWh.length){
+      const p={x:millWh.reduce((a,s)=>a+Number(s.x||0),0)/millWh.length, y:millWh.reduce((a,s)=>a+Number(s.y||0),0)/millWh.length};
+      all.push({kind:"spine", word:live?"Spine":(era>=5?"Dry spine":"Spine"), x:p.x, y:p.y, fac});
+    }
+    const civic=occCentroid(occ, c=>(clsHas(c,"civic")||clsHas(c,"hall")||clsHas(c,"uni")||clsHas(c,"temple")) && clsHas(c,fn));
+    if(civic) all.push({kind:"civic", word:"Civic", x:civic.x, y:civic.y, fac});
+    const quay=occCentroid(occ, (c,title)=>clsHas(c,"quay") && ((title||"").indexOf(fn)>=0||clsHas(c,fn)));
+    if(quay && live) all.push({kind:"water", word:"Harbour", x:quay.x, y:quay.y, fac});
+    const towers=occCentroid(occ, c=>(clsHas(c,"tower")||clsHas(c,"hotel")||clsHas(c,"highrise")) && clsHas(c,fn));
+    if(towers && era>=6){
+      const open=sum(towns,"hotels");
+      all.push({kind:"skyline", word:open>=1?"Skyline":"Empty towers", x:towers.x, y:towers.y, fac});
+    }
+  }
+  return all;
+}
+function districtsFor(fac){return (window.__isoDistricts||[]).filter(d=>d.fac===fac);}
 function sciBits(world,fac){
   const st=ownStructs(world,fac);
   const has=t=>st.some(s=>s.type===t);
@@ -1101,7 +1203,7 @@ function ageState(world,fac){
   const era=towns.reduce((a,s)=>Math.max(a,Number(s.era||2)),0);
   const on={camp:true,era2:towns.length>0,era3:era>=3,era4:era>=4,library:sci.lib,lab:sci.lab,observatory:sci.obs,era5:era>=5,era6:era>=6};
   let now="camp";for(const [id] of AGES) if(on[id]) now=id;
-  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),gold:sum(towns,"gold_stock"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder"),uni:ownStructs(world,fac).some(s=>s.type==="academy"),bar:ownStructs(world,fac).some(s=>s.type==="market")};
+  return {on,now,era,sci,people:sum(towns,"population"),soldiers:sum(towns,"soldiers"),gold:sum(towns,"gold_stock"),goods:sum(towns,"goods_stock"),hotels:sum(towns,"hotels"),dark:sum(towns,"hotels_dark"),cap:capital(towns),live:towns.some(t=>t.mill_live),power:towns.reduce((a,t)=>a+Number(t.power||0),0),wonder:ownStructs(world,fac).some(s=>s.type==="wonder"),uni:ownStructs(world,fac).some(s=>s.type==="academy"),bar:ownStructs(world,fac).some(s=>s.type==="market")};
 }
 function ranksOf(world,fac){
   const hands=((world&&world.agents)||[]).filter(a=>(a.faction||"player")===fac);
@@ -1224,8 +1326,9 @@ function folkBlock(side,title,barCls){
   if(side.era>=5) lead+=(lead.endsWith(".")?" ":"")+"The roads are rail.";
   if(side.live) lead+=(lead.endsWith(".")?" ":"")+"The mill turns.";
   else if((side.era>=5)||(side.ranks&&side.ranks.crew)) lead+=(lead.endsWith(".")?" ":"")+"The mill is dry.";
-  const goods=Number((side.cap&&side.cap.goods_stock)||0);
+  const goods=Number(side.goods||0);
   if(goods>0) lead+=(lead.endsWith(".")?" ":"")+"Goods in the warehouse.";
+  else if(side.era>=5 && side.live) lead+=(lead.endsWith(".")?" ":"")+"The warehouse is empty.";
   if(side.wonder) lead+=(lead.endsWith(".")?" ":"")+"A pyramid rose from the dirt.";
   if(side.uni) lead+=(lead.endsWith(".")?" ":"")+"A university stands.";
   if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"A bar sits on the street.";
@@ -1234,8 +1337,10 @@ function folkBlock(side,title,barCls){
   else if(side.bar) lead+=(lead.endsWith(".")?" ":"")+"The purse is empty.";
   if(side.live) lead+=(lead.endsWith(".")?" ":"")+"A harbour sits on the water.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Planes leave the field.";
-  const inns=Number((side.cap&&side.cap.hotels)||0);
-  if(inns>=1) lead+=(lead.endsWith(".")?" ":"")+"Hotels take gold and eat.";
+  const inns=Number(side.hotels||0);
+  const dark=Number(side.dark||0);
+  if(inns>=1) lead+=(lead.endsWith(".")?" ":"")+"Hotels take gold and eat goods.";
+  else if(dark>=1) lead+=(lead.endsWith(".")?" ":"")+"Hotels stand empty — no goods on the rail.";
   if(side.era>=6) lead+=(lead.endsWith(".")?" ":"")+"Cabs work the streets. A jam holds the square.";
   const bits=[];
   if(rk.island) bits.push("island crown");
@@ -1251,16 +1356,22 @@ function folkBlock(side,title,barCls){
   const discWord=disc===1?"1 discovery":(disc?disc+" discoveries":"no discoveries");
   const sci=`${discWord}${side.sci.obs?" · observatory":(side.sci.lab?" · lab":(side.sci.lib?" · library":""))}`;
   const chips=((cap&&cap.subjects)||[]).map(sub=>`<span class="chip">${esc(sub)}</span>`).join("");
+  const dist=districtsFor(side.fac).map(d=>d.word).join(" · ");
   return `<div class="folk"><div class="kicker">${title}</div>
-    <h2>${cap?esc(cap.id)+" · "+eraWord:"No town yet"}</h2>
-    <p class="lead">${esc(lead)}</p>
-    <p class="lead">${esc(rankLine)}</p>
-    <div class="meter"><label><span>Food days</span><span>${days==null?"—":(days<1?"short":Math.floor(days)+"d")}</span></label><div class="bar ${low?"low":""} ${barCls}"><i style="width:${fill.toFixed(0)}%"></i></div></div>
-    <div class="meter"><label><span>Science</span><span>${esc(sci)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.sci.steps/5*100)}%"></i></div></div>
-    <div class="meter"><label><span>Military</span><span>${side.soldiers.toFixed(1)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.soldiers*8)}%"></i></div></div>
-    <div class="meter"><label><span>Purse</span><span>${(side.gold||0)<1?"—":(side.gold||0).toFixed(0)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,(side.gold||0)/20*100)}%"></i></div></div>
-    <div class="meter"><label><span>Power</span><span>${side.live?"live":(side.era>=5?"dry":"—")}</span></label><div class="bar ${barCls}"><i style="width:${side.live?100:0}%"></i></div></div>
-    ${chips}</div>`;
+    <h2>${cap?esc(side.label)+" · "+eraWord:"No town yet"}</h2>
+    <div class="folk-copy">
+      <p class="lead">${esc(lead)}</p>
+      ${dist?`<p class="lead">${esc(dist)}</p>`:""}
+      <p class="lead">${esc(rankLine)}</p>
+    </div>
+    <div class="folk-meters">
+      <div class="meter"><label><span>Food days</span><span>${days==null?"—":(days<1?"short":Math.floor(days)+"d")}</span></label><div class="bar ${low?"low":""} ${barCls}"><i style="width:${fill.toFixed(0)}%"></i></div></div>
+      <div class="meter"><label><span>Science</span><span>${esc(sci)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.sci.steps/5*100)}%"></i></div></div>
+      <div class="meter"><label><span>Military</span><span>${side.soldiers.toFixed(1)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,side.soldiers*8)}%"></i></div></div>
+      <div class="meter"><label><span>Purse</span><span>${(side.gold||0)<1?"—":(side.gold||0).toFixed(0)}</span></label><div class="bar ${barCls}"><i style="width:${Math.min(100,(side.gold||0)/20*100)}%"></i></div></div>
+      <div class="meter"><label><span>Power</span><span>${side.live?"live":(side.era>=5?"dry":"—")}</span></label><div class="bar ${barCls}"><i style="width:${side.live?100:0}%"></i></div></div>
+    </div>
+    <div class="folk-chips">${chips}</div></div>`;
 }
 function renderCity(world){
   const s=sidesOf(world);
@@ -1295,21 +1406,19 @@ function paintLand(w,h,set){
     const patch=n01((x+2)>>2,(y+7)>>2);
     let k="grass";
     if(e<0.28) k="water";
-    else if(e<0.34) k="shore";
-    else if(e<0.44) k="grass-d";
+    else if(e<0.40) k="shore";
+    else if(e<0.46) k="grass-d";
     else if(e<0.60) k="grass";
     else if(e<0.76) k="meadow";
     else k="rock";
     if(lake>0.78 && e>0.26 && e<0.58) k="water";
-    if(k!=="water" && grove>0.64 && e>0.36 && e<0.74) k=(n01(x,y+3)>0.42)?"tree":"wood";
+    if(k!=="water" && k!=="shore" && grove>0.50 && e>0.42 && e<0.80) k=(n01(x,y+3)>0.32)?"tree":"wood";
     if((k==="grass"||k==="grass-d") && patch>0.52 && patch<0.68 && e>0.40) k="meadow";
     kind[y][x]=k;
   }
   let ry=6+(hash(2,9)%10);
   for(let x=0;x<w;x++){
     kind[ry][x]="water";
-    if(ry>2) kind[ry-1][x]=(kind[ry-1][x]==="water")?"water":"shore";
-    if(ry<h-3) kind[ry+1][x]=(kind[ry+1][x]==="water")?"water":"shore";
     const step=hash(x,ry)%4;
     if(step===0 && ry>3) ry--;
     else if(step===1 && ry<h-4) ry++;
@@ -1322,6 +1431,16 @@ function paintLand(w,h,set){
       if(y&&kind[y-1][x]==="water") adj++;
       if(y<h-1&&kind[y+1][x]==="water") adj++;
       if(adj>=1 && (kind[y][x]==="grass"||kind[y][x]==="grass-d"||kind[y][x]==="meadow")) kind[y][x]="shore";
+    }
+  }
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    if(kind[y][x]==="water"){
+      let land=0;
+      if(x&&kind[y][x-1]!=="water") land++;
+      if(x<w-1&&kind[y][x+1]!=="water") land++;
+      if(y&&kind[y-1][x]!=="water") land++;
+      if(y<h-1&&kind[y+1][x]!=="water") land++;
+      if(land>=2) kind[y][x]="water shoal";
     }
     set(x,y,kind[y][x],"","",0);
   }
@@ -1419,13 +1538,16 @@ function isoScreen(x,y,ox,oy){
 function isoFill(cls,x,y){
   const c=cls||"";
   x=x||0;y=y||0;
-  if(c.indexOf("water")>=0) return ["#3a9ab8","#1a6a88","#0c3a52"];
+  if(c.indexOf("water")>=0){
+    if(c.indexOf("shoal")>=0) return ["#8ad8d0","#2a9890","#145858"];
+    return ["#3cc8d0","#1a8898","#0c5868"];
+  }
   if(c.indexOf("boat")>=0) return ["#d4c09a","#8a6a40","#5a4030"];
   if(c.indexOf("quay")>=0) return ["#c4a070","#8a6840","#4a3018"];
-  if(c.indexOf("shore")>=0) return ["#e2d09a","#b08a58","#6a5030"];
-  if(c.indexOf("tree")>=0) return ["#4a9a48","#2a6030","#143820"];
-  if(c.indexOf("wood")>=0) return ["#3a7a40","#245028","#102818"];
-  if(c.indexOf("crop")>=0||c.indexOf("field")>=0) return ((x+y)%2?["#c8c050","#7a8a30","#4a5a18"]:["#8aaa40","#5a7a28","#3a4a14"]);
+  if(c.indexOf("shore")>=0) return ["#f2e4b8","#d4b078","#8a6840"];
+  if(c.indexOf("tree")>=0) return ["#3d7040","#2a5030","#143820"];
+  if(c.indexOf("wood")>=0) return ["#2e5a34","#1c4024","#102818"];
+  if(c.indexOf("crop")>=0||c.indexOf("field")>=0) return ((x+y)%2?["#d4c858","#8a8a30","#4a5a18"]:["#8aaa40","#5a7a28","#3a4a14"]);
   if(c.indexOf("rail")>=0) return ["#9a9aa4","#4a4840","#1a1814"];
   if(c.indexOf("street")>=0||c.indexOf("path")>=0||c.indexOf("haul")>=0) return ["#6a5a44","#3a3228","#1c1814"];
   if(c.indexOf("mill")>=0) return ["#d8c8a0","#6a5030","#3a2c18"];
@@ -1460,9 +1582,10 @@ function isoFill(cls,x,y){
   }
   if(c.indexOf("train")>=0||c.indexOf("taxi")>=0||c.indexOf("bus")>=0||c.indexOf("plane")>=0) return ["#e8e0d0","#6a6050","#2a2820"];
   if(c.indexOf("rock")>=0) return ["#8a8a80","#5a5a52","#2a2c28"];
-  if(c.indexOf("meadow")>=0) return ["#6aaa50","#3a7a38","#1c4820"];
-  if(c.indexOf("race")>=0) return ["#4aa0c0","#2a6078","#144050"];
-  return ["#4a8a44","#2c6230","#163c1c"];
+  if(c.indexOf("meadow")>=0) return ["#6a9840","#3a6a30","#1c4820"];
+  if(c.indexOf("race")>=0) return ["#6ae0e8","#2a98a8","#146068"];
+  if(c.indexOf("grass-d")>=0) return ["#4a7a38","#2c5a28","#163c1c"];
+  return ["#5a8a40","#3a6a30","#1c4018"];
 }
 function isoKind(cls){
   const c=cls||"";
@@ -1549,28 +1672,52 @@ function drawIsoBox(ctx,x,y,hgt,cols,ox,oy){
 }
 function drawIsoTree(ctx,x,y,ox,oy){
   const ground=5+Math.round(elev(x,y)*8);
-  drawIsoBox(ctx,x,y,ground,["#3a6a34","#245028","#16381c"],ox,oy);
+  drawIsoBox(ctx,x,y,ground,["#3a6234","#244828","#16381c"],ox,oy);
   const b=isoScreen(x,y,ox,oy);
-  isoContact(ctx,b.sx,b.sy+1,7,2.8);
-  const h=ground+16;
-  const tw=7, th=5;
+  isoContact(ctx,b.sx,b.sy+1,8,3);
+  const h=ground+13;
   ctx.fillStyle="#5a4030";
-  ctx.fillRect(b.sx-1.5, b.sy-ground-8, 3, 10);
+  ctx.fillRect(b.sx-1.4, b.sy-ground-6, 2.8, 10);
+  ctx.fillStyle="#2a5830";
+  ctx.beginPath(); ctx.ellipse(b.sx, b.sy-h+1, 9.2, 7.2, 0, 0, 6.28); ctx.fill();
+  ctx.fillStyle="#3d7040";
+  ctx.beginPath(); ctx.ellipse(b.sx-2.2, b.sy-h-4, 6.6, 5.2, 0, 0, 6.28); ctx.fill();
+  ctx.fillStyle="#6a9448";
+  ctx.beginPath(); ctx.ellipse(b.sx+1.4, b.sy-h-7.5, 4.2, 3.4, 0, 0, 6.28); ctx.fill();
+}
+function drawIsoBush(ctx,x,y,ox,oy){
+  const ground=5+Math.round(elev(x,y)*8);
+  drawIsoBox(ctx,x,y,ground,["#2e5a34","#1c4028","#12301c"],ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.fillStyle="#244828";
+  ctx.beginPath(); ctx.ellipse(b.sx, b.sy-ground-2, 7, 4.4, 0, 0, 6.28); ctx.fill();
+  ctx.fillStyle="#4a7040";
+  ctx.beginPath(); ctx.ellipse(b.sx-1, b.sy-ground-5, 4.5, 3, 0, 0, 6.28); ctx.fill();
+}
+function drawIsoWater(ctx,x,y,ox,oy,cls){
+  const c=cls||"";
+  const shoal=c.indexOf("shoal")>=0;
+  const race=c.indexOf("race")>=0;
+  const hgt=shoal?2:(race?2:1);
+  drawIsoBox(ctx,x,y,hgt,isoFill(c,x,y),ox,oy);
+  const b=isoScreen(x,y,ox,oy);
+  ctx.save();
+  ctx.globalAlpha=shoal?0.40:0.32;
+  ctx.strokeStyle=shoal?"#e8fffa":"#c8f8f8";
+  ctx.lineWidth=1;
   ctx.beginPath();
-  ctx.moveTo(b.sx, b.sy-th-h);
-  ctx.lineTo(b.sx+tw, b.sy-h+2);
-  ctx.lineTo(b.sx, b.sy+th-ground-2);
-  ctx.lineTo(b.sx-tw, b.sy-h+2);
-  ctx.closePath();
-  ctx.fillStyle="#3d8a40";
-  ctx.fill();
+  ctx.moveTo(b.sx-7, b.sy-1);
+  ctx.lineTo(b.sx+3, b.sy-5);
+  ctx.stroke();
+  ctx.globalAlpha=shoal?0.22:0.18;
   ctx.beginPath();
-  ctx.moveTo(b.sx, b.sy-th-h-8);
-  ctx.lineTo(b.sx+5, b.sy-h-2);
-  ctx.lineTo(b.sx-5, b.sy-h-2);
-  ctx.closePath();
-  ctx.fillStyle="#5aaa58";
-  ctx.fill();
+  ctx.moveTo(b.sx-3, b.sy+1);
+  ctx.lineTo(b.sx+6, b.sy-2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawIsoShore(ctx,x,y,ox,oy){
+  drawIsoBox(ctx,x,y,3,["#f2e4b8","#d4b078","#8a6840"],ox,oy);
 }
 function isoHas(occ,x,y,tag){
   return ((occ[x+","+y]||{}).cls||"").indexOf(tag)>=0;
@@ -1656,6 +1803,7 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
   const c=cls||"";
   const hungry=c.indexOf("hungry")>=0;
   const fed=c.indexOf("fed")>=0;
+  const empty=c.indexOf("empty")>=0;
   const hotel=c.indexOf("hotel")>=0;
   const hVar=((x*5+y*3)%3);
   const wallH=hotel?34:(24+hVar*7);
@@ -1663,14 +1811,14 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
   if(c.indexOf("east")>=0) wall=["#e0c0b8","#7a5048","#3a2824"];
   else if(c.indexOf("north")>=0) wall=["#c8d4e0","#4a5a68","#243038"];
   else if(c.indexOf("south")>=0) wall=["#c8d4b0","#4a5a38","#243020"];
-  if(hungry) wall=["#8a8480","#4a4844","#242220"];
+  if(hungry||empty) wall=["#8a8480","#4a4844","#242220"];
   drawIsoBox(ctx,x,y,3,["#5a5a58","#3a3a38","#1a1a18"],ox,oy);
   isoContact(ctx,isoScreen(x,y,ox,oy).sx, isoScreen(x,y,ox,oy).sy, 10, 4);
   drawIsoBox(ctx,x,y,wallH,wall,ox,oy);
   const b=isoScreen(x,y,ox,oy);
   const tw=ISO_TW/2, th=ISO_TH/2;
   const floors=Math.max(5, Math.floor(wallH/5));
-  const lit=hungry?"#2a2420":(fed?"#f0d878":"#8ab0c8");
+  const lit=(hungry||empty)?"#2a2420":(fed?"#f0d878":"#8ab0c8");
   ctx.fillStyle=lit;
   for(let i=1;i<floors;i++){
     const wy=b.sy-Math.floor(i*(wallH/(floors+1)));
@@ -1687,7 +1835,7 @@ function drawIsoTower(ctx,x,y,ox,oy,cls){
   ctx.lineTo(b.sx-tw, b.sy-wallH);
   ctx.closePath();
   ctx.fill();
-  if(hotel){
+  if(hotel && !empty){
     ctx.fillStyle="#c8a040";
     ctx.beginPath();
     ctx.moveTo(b.sx-10, b.sy-8);
@@ -1782,12 +1930,20 @@ function drawIsoWarehouse(ctx,x,y,ox,oy){
   ctx.fillRect(b.sx-8, b.sy-2, 4, 3);
   ctx.fillRect(b.sx-4, b.sy, 3, 3);
 }
-function drawIsoBarn(ctx,x,y,ox,oy){
-  drawIsoBox(ctx,x,y,10,["#d8c090","#8a6840","#4a3818"],ox,oy);
+function drawIsoBarn(ctx,x,y,ox,oy,cls){
+  const c=cls||"";
+  const empty=c.indexOf("empty")>=0;
+  const low=c.indexOf("low")>=0;
+  const wall=empty?["#6a6058","#3a342c","#1c1814"]:(low?["#b8a070","#6a5430","#3a2c18"]:["#d8c090","#8a6840","#4a3818"]);
+  drawIsoBox(ctx,x,y,10,wall,ox,oy);
   const b=isoScreen(x,y,ox,oy);
-  drawIsoRoof(ctx,b,10,12,"#a05030","#6a2818");
-  ctx.fillStyle="#3a2410";
+  drawIsoRoof(ctx,b,10,12, empty?"#4a3830":(low?"#8a4030":"#a05030"), empty?"#2a2018":"#6a2818");
+  ctx.fillStyle=empty?"#1a1410":"#3a2410";
   ctx.fillRect(b.sx+1, b.sy-6, 5, 6);
+  if(!empty){
+    ctx.fillStyle=low?"#8a6a30":"#c4a050";
+    ctx.fillRect(b.sx+2, b.sy-4, 3, 3);
+  }
 }
 function drawIsoFoundry(ctx,x,y,ox,oy,cls){
   const live=(cls||"").indexOf("live")>=0;
@@ -1853,7 +2009,7 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
     return;
   }
   if(cls.indexOf("granary")>=0||cls.indexOf("farm")>=0){
-    if(isoAnchor(occ,x,y,"granary")||isoAnchor(occ,x,y,"farm")) drawIsoBarn(ctx,x,y,ox,oy);
+    if(isoAnchor(occ,x,y,"granary")||isoAnchor(occ,x,y,"farm")) drawIsoBarn(ctx,x,y,ox,oy,cls);
     return;
   }
   if(cls.indexOf("tower")>=0||cls.indexOf("hotel")>=0||cls.indexOf("highrise")>=0){
@@ -2120,7 +2276,13 @@ function drawIso(occ,w,h){
   if(canvas.width!==width) canvas.width=width;
   if(canvas.height!==height) canvas.height=height;
   const ctx=canvas.getContext("2d");
-  ctx.fillStyle="#0a1822";
+  const sea=ctx.createLinearGradient(0,0,0,height);
+  sea.addColorStop(0,"#d4e8f0");
+  sea.addColorStop(0.08,"#b4dce4");
+  sea.addColorStop(0.16,"#5ecad4");
+  sea.addColorStop(0.45,"#2eb0bc");
+  sea.addColorStop(1,"#1a7a88");
+  ctx.fillStyle=sea;
   ctx.fillRect(0,0,width,height);
   const keys=[];
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) keys.push(x+","+y);
@@ -2137,6 +2299,9 @@ function drawIso(occ,w,h){
       const cls=cell.cls||"grass";
       if(!pred(cls)) continue;
       if(isoKind(cls)==="tree"){ drawIsoTree(ctx,x,y,orig.ox,orig.oy); continue; }
+      if(isoKind(cls)==="wood"){ drawIsoBush(ctx,x,y,orig.ox,orig.oy); continue; }
+      if(isoKind(cls)==="water"){ drawIsoWater(ctx,x,y,orig.ox,orig.oy,cls); continue; }
+      if(isoKind(cls)==="shore"){ drawIsoShore(ctx,x,y,orig.ox,orig.oy); continue; }
       if(isoKind(cls)==="rail"){ drawIsoRail(ctx,x,y,orig.ox,orig.oy,occ); continue; }
       if(isoKind(cls)==="road"){ drawIsoStreet(ctx,x,y,orig.ox,orig.oy,occ); continue; }
       if(isoKind(cls)==="built"){ drawIsoBuilt(ctx,occ,x,y,orig.ox,orig.oy,cls); continue; }
@@ -2440,11 +2605,13 @@ function renderMap(world){
     }
     slots.sort(function(a,b){ return a.ring-b.ring; });
     const nTowers=era>=6?Math.min(6, 2+Math.floor(pop/35)):0;
+    const nLive=Math.max(0, Number(town.hotels||0));
     let placedT=0;
     for(const s of slots){
       if(placedT>=nTowers) break;
       const kind=placedT===0?"hotel":"highrise";
-      set(s.x,s.y,"tower "+kind+" "+fn+(hungry?" hungry":(fed?" fed":"")),"",town.id+" "+kind,6);
+      const vacant=placedT>=nLive?" empty":"";
+      set(s.x,s.y,"tower "+kind+" "+fn+vacant+(hungry?" hungry":(fed?" fed":"")),"",town.id+" "+kind,6);
       placedT++;
     }
     let placed=0;
@@ -2507,7 +2674,7 @@ function renderMap(world){
     nowVeh[bus.id||("B"+fn)]={kind:"bus",x:bus.x,y:bus.y,face:(bus.face||face.replace("face-","")),air:0,jam:Number(bus.jam||0)};
   }
   vehPrev=vehNow; vehNow=nowVeh; vehAt=performance.now();
-  const lives={mills:[],foundries:[]};
+  const lives={mills:[],foundries:[],races:[]};
   for(const st of world.structures||[]){
     if(st.type==="mill"){
       const fac=factionOf(world,st);
@@ -2520,7 +2687,14 @@ function renderMap(world){
       lives.foundries.push({x:st.x,y:st.y,live:!!live});
     }
   }
+  for(const k in occ){
+    const cls=(occ[k]&&occ[k].cls)||"";
+    if(cls.indexOf("race")<0) continue;
+    const p=k.split(",");
+    lives.races.push({x:+p[0], y:+p[1]});
+  }
   window.__isoLives=lives;
+  window.__isoDistricts=collectDistricts(world, occ);
   try{ drawIso(occ,w,h); }catch(e){}
   applyZoom();
 }
@@ -2596,7 +2770,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v56";}
+  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v59";}
   renderEpilogue(state);
 }
 function renderEdict(state){
@@ -2719,6 +2893,18 @@ async function poll(){
       lastBusTick=bs.tick;
       logLine(world.tick,`${whoOf(bs.faction)} ran a bus · ${bs.bus_id}.`);
     }
+    const goodsEv=(world.metrics||{}).last_goods;
+    if(goodsEv&&goodsEv.tick!==lastGoodsTick){
+      lastGoodsTick=goodsEv.tick;
+      const xy=townXY(world, goodsEv.settlement_id);
+      logLine(world.tick,`${whoOf(goodsEv.faction)} hauled goods mill to warehouse.`, xy&&{x:xy.x,y:xy.y,fac:goodsEv.faction,kind:"goods"});
+    }
+    const darkEv=(world.metrics||{}).last_hotel_dark;
+    if(darkEv&&darkEv.tick!==lastHotelDarkTick){
+      lastHotelDarkTick=darkEv.tick;
+      const xy=townXY(world, darkEv.settlement_id);
+      logLine(world.tick,`${whoOf(darkEv.faction)} hotels stand empty — no goods on the rail.`, xy&&{x:xy.x,y:xy.y,fac:darkEv.faction,kind:"dark"});
+    }
   }
   renderBanner(state);
   renderEdict(state);
@@ -2743,7 +2929,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;lastChoiceTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;walkPrev={};walkNow={};walkAt=0;window.__isoLives={mills:[],foundries:[]};hideSlip();
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastGoodsTick=-1;lastHotelDarkTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;lastChoiceTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;walkPrev={};walkNow={};walkAt=0;window.__isoLives={mills:[],foundries:[]};window.__isoDistricts=[];hideSlip();
   const ed=$("edict"); if(ed) ed.hidden=true;
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
@@ -2794,16 +2980,22 @@ function lookPole(name){
 function zoomMin(){ return 0.12; }
 function fitMap(){
   const wrap=$("mapWrap"), iso=$("iso");
-  if(!wrap) return;
+  if(!wrap||!iso||!iso.width) return;
   lookAt="island";
   const pad=16;
-  if(iso && iso.width){
-    const sx=(Math.max(80,wrap.clientWidth)-pad*2)/iso.width;
-    const sy=(Math.max(80,wrap.clientHeight)-pad*2)/Math.max(1,iso.height);
-    setZoom(Math.min(sx, sy));
-    wrap.scrollLeft=0;
-    wrap.scrollTop=0;
+  const cw=wrap.clientWidth, ch=wrap.clientHeight;
+  if(cw<80 || ch<80){
+    fitMap._tries=(fitMap._tries||0)+1;
+    if(fitMap._tries<24) requestAnimationFrame(fitMap);
+    return;
   }
+  fitMap._tries=0;
+  const sx=(cw-pad*2)/iso.width;
+  const sy=(ch-pad*2)/iso.height;
+  setZoom(Math.min(sx, sy));
+  wrap.scrollLeft=0;
+  wrap.scrollTop=0;
+  markLook();
 }
 function setZoom(z, focus){
   const wrap=$("mapWrap");
@@ -2910,6 +3102,21 @@ renderAges({});renderHud({});renderRace({});renderCity({});
 renderMap({width:96,height:96,settlements:[],structures:[],agents:[]});
 setViewMode("iso");
 fitMap();
+requestAnimationFrame(function(){ fitMap(); });
+window.addEventListener("resize", function(){ if(lookAt==="island") fitMap(); });
+(function(){
+  const shell=document.querySelector(".shell");
+  if(!window.ResizeObserver||!shell) return;
+  let t=0, lastW=-1;
+  new ResizeObserver(function(){
+    const w=Math.round(shell.clientWidth);
+    if(w===lastW) return;
+    lastW=w;
+    if(lookAt!=="island") return;
+    cancelAnimationFrame(t);
+    t=requestAnimationFrame(function(){ fitMap(); });
+  }).observe(shell);
+})();
 (async()=>{
   try{
     const state=await (await fetch("/api/state")).json();

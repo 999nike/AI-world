@@ -1,27 +1,27 @@
 # AI-world Patch Ledger
 
-**Live · v56.** Pin / good save **`v56`** SHA `53c0563adb9810f952056a56ca62d44347fa5951`.
+**Live · v59** on branch **`v59`**. Pin / good save **`v56`** SHA `53c0563adb9810f952056a56ca62d44347fa5951`.
 
 96×96 island. Iso is the map. You govern the west when the world asks. Three buttons. No typing.
 Seed 42, 10 a pole, east science hold **Year 343** (unsteered).
 
-**This hop:** stamp. Playable governor is the pin. Next is hotel / rail as rules.
+**This hop:** graphics on a finished sit. Turquoise water, cream shore, olive canopy, mill-race glint. The painting is the brief for structure — not this canvas's lighting. Pane follows the preview, not the window.
 
-**Proven:** unsteered seed 42 still east science **Year 343**. First west ask is the town (~Year 71). A west pick can shift the hold — one island, raids are real.
+**Proven:** unsteered seed 42 still east science **Year 343** (kernel untouched this hop). First west ask is the town (~Year 71). A west pick can shift the hold — one island, raids are real.
 
-**Carried:** v56 governor · v55 eras last · v54 slips · v53 crown · v52 traffic · v51 hotel · v50 rail · v49 industry.
+**Carried:** v59 paint + pane grid · v58 districts · v57 haul · v56 governor · v55 eras last · v54 slips · v53 crown · v52 traffic · v51 hotel · v50 rail · v49 industry.
 
-**Heading:** finish the sit, then push graphics. Painting is structure, not this canvas's lighting. Destination lives in [DESIGN.md](DESIGN.md).
+**Heading:** sit is named and painted. Next is late starve honest, then a crown that reads. Destination lives in [DESIGN.md](DESIGN.md).
 
-**Versioning:** next **patch** is **v57** (hotel / rail as rules). Owner says **stamp** to freeze a pin.
+**Versioning:** live **v59** (branch `v59`). Pin stays **v56** until owner says **stamp**.
 
 ## Road (do not skip)
 
 - [x] **A. Eras last** — v55
 - [x] **B. Playable governor** — v56
-- [ ] **C. Hotel / rail as rules** — v57
-- [ ] Districts you can name
-- [ ] Graphics pass (after sit)
+- [x] **C. Hotel / rail as rules** — v57
+- [x] **Districts you can name** — v58
+- [x] **Graphics pass** — v59
 - [ ] Late starve honest
 - [ ] Crown that reads
 - [ ] Memory-app agents
@@ -39,5 +39,8 @@ Parked (not this pin): gold as purse, buried temples, physics sit, event popups.
 - [x] **Event slips** — v54
 - [x] **Eras last** — v55
 - [x] **Playable governor** — v56
+- [x] **Hotel / rail as rules** — v57
+- [x] **Districts you can name** — v58
+- [x] **Graphics pass** — v59
 
-**Next chat:** restore **`v56`** (`53c0563`) unless stamped later. Hold **Year 343** unsteered. Never Vite. You govern the west.
+**Next chat:** restore branch **`v59`** (live: haul, districts, paint, pane grid). Pin / rollback is **`v56`** (`53c0563`) — do not check out v56 unless rolling back. Hold **Year 343** unsteered. Never Vite. You govern the west.
