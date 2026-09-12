@@ -18,20 +18,20 @@ Sprites live in `tools/sprites/` (`/sprites/train.png` etc). If those 404, the m
 ## New Grok chat (same project)
 
 1. User must be in **Build**, not Expert.
-2. Restore branch **v60** (late starve honest). Pin **v56** (`53c0563`) only to roll back.
-3. Canvas live stamp is **· v60**.
+2. Restore branch **v61** (crown that reads). Pin **v56** (`53c0563`) only to roll back.
+3. Canvas live stamp is **· v61**.
 4. Copy `/workspace/artifacts/ai-world` → `/workspace/ai-world` if the kernel is missing or `play_web.py` / `play_ui.html` is PLACEHOLDER / <1KB.
 5. `/workspace/startup.sh` must start play_web, not `npm run dev`.
 6. `sh /workspace/startup.sh` and leave it running.
-7. Prove: page contains `id="begin"` and `· v60`. Prove `/sprites/train.png` is 200.
-8. Tell the user to click **Watch**. The map is **Iso**. Park **W**. Time stops when the west is asked. Three buttons. Each one hurts. Empty granary reads. A skyline can still go hungry.
+7. Prove: page contains `id="begin"` and `· v61`. Prove `/sprites/train.png` is 200.
+8. Tell the user to click **Watch**. The map is **Iso**. Park **W**. Time stops when the west is asked. Three buttons. Each one hurts. The island king is taller, a banner, a name. Head worth taking.
 
 Never `pkill -f`. Kill only the `python3 tools/play_web.py` PID (SIGTERM), then `sh /workspace/startup.sh`.
 
-Live stamp: subtitle **Govern the west. The island reads. · v60**
+Live stamp: subtitle **Govern the west. The island reads. · v61**
 
 If the right pane is blank HUD / empty World / no map at idle, the UI script crashed. Revert the last HTML edit; do not debug ports.
 
 ## Next chat
 
-See [PATCH_LEDGER.md](PATCH_LEDGER.md). Restore **v60**. Pin **v56**. You govern the west. Never Vite.
+See [PATCH_LEDGER.md](PATCH_LEDGER.md). Restore **v61**. Pin **v56**. You govern the west. Never Vite.

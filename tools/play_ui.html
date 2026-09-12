@@ -678,7 +678,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Govern the west. The island reads. · v60</div></div>
+    <div><h1>AI-world</h1><div class="sub">Govern the west. The island reads. · v61</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -701,7 +701,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel map-panel">
-      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v60</div>
+      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v61</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -722,7 +722,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Park W. Empty granary reads. Food still kills. · v60</div>
+      <div class="legend">Park W. One island crown. Taller, a banner, a name. · v61</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
@@ -988,25 +988,21 @@ function drawIsoFx(now){
     if(x!=null){
       const p=isoScreen(x,y,orig.ox,orig.oy);
       ctx.save();
-      ctx.translate(p.sx, p.sy-26);
-      ctx.fillStyle="rgba(8,10,14,.55)";
-      ctx.beginPath(); ctx.ellipse(0, 24, 10, 4, 0, 0, 6.28); ctx.fill();
-      ctx.strokeStyle="#f0d060";
-      ctx.lineWidth=2;
-      ctx.beginPath(); ctx.arc(0,6,12,0,6.28); ctx.stroke();
-      ctx.fillStyle="#f0d060";
-      ctx.beginPath();
-      ctx.moveTo(-7,-8); ctx.lineTo(-7,-2); ctx.lineTo(-3,2); ctx.lineTo(0,-10); ctx.lineTo(3,2); ctx.lineTo(7,-2); ctx.lineTo(7,-8);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle="#c45a38";
-      ctx.fillRect(10, -4, 10, 8);
-      ctx.fillStyle="#e8c040";
-      ctx.fillRect(10, -4, 10, 2);
+      ctx.translate(p.sx, p.sy-38);
+      ctx.fillStyle="rgba(8,10,14,.62)";
+      ctx.beginPath(); ctx.ellipse(0, 28, 16, 5, 0, 0, 6.28); ctx.fill();
+      ctx.fillStyle="#1a1814";
+      ctx.fillRect(-22, 8, 44, 14);
+      ctx.strokeStyle="#e8c040";
+      ctx.lineWidth=1.4;
+      ctx.strokeRect(-22, 8, 44, 14);
       ctx.fillStyle="#f0e8c8";
-      ctx.font="700 8px Segoe UI, system-ui, sans-serif";
+      ctx.font="700 9px Segoe UI, system-ui, sans-serif";
       ctx.textAlign="center";
+      ctx.textBaseline="middle";
       const who=whoOf(ic.faction);
-      ctx.fillText(who, 0, 20);
+      const aid=ic.agent_id||(king&&(king.agent_id||king.id))||"";
+      ctx.fillText(aid?who+" · "+aid:who, 0, 15);
       ctx.restore();
     }
   }
@@ -1185,6 +1181,13 @@ function collectDistricts(world, occ){
     }
     const civic=occCentroid(occ, c=>(clsHas(c,"civic")||clsHas(c,"hall")||clsHas(c,"uni")||clsHas(c,"temple")) && clsHas(c,fn));
     if(civic) all.push({kind:"civic", word:"Civic", x:civic.x, y:civic.y, fac});
+    const ic=(world.metrics||{}).island_crown;
+    if(ic&&!ic.vacant&&ic.faction===fac){
+      const halls=of("hall");
+      const hx=halls.length?halls[0].x:(cap?cap.x:civic&&civic.x);
+      const hy=halls.length?halls[0].y:(cap?cap.y:civic&&civic.y);
+      if(hx!=null) all.push({kind:"crown", word:"The crown", x:hx, y:hy, fac});
+    }
     const quay=occCentroid(occ, (c,title)=>clsHas(c,"quay") && ((title||"").indexOf(fn)>=0||clsHas(c,fn)));
     if(quay && live) all.push({kind:"water", word:"Harbour", x:quay.x, y:quay.y, fac});
     const towers=occCentroid(occ, c=>(clsHas(c,"tower")||clsHas(c,"hotel")||clsHas(c,"highrise")) && clsHas(c,fn));
@@ -1311,7 +1314,8 @@ function renderRace(world){
     lane("Science path",poles.map(sci).join(" · "),poles.map(p=>p.sci.steps))+
     lane("People",poles.map(p=>p.people).join(" · "),poles.map(p=>p.people))+
     lane("Soldiers",poles.map(p=>p.soldiers.toFixed(1)).join(" · "),poles.map(p=>p.soldiers))+
-    lane("Gold",poles.map(p=>(p.gold||0).toFixed(1)).join(" · "),poles.map(p=>p.gold||0));
+    lane("Gold",poles.map(p=>(p.gold||0).toFixed(1)).join(" · "),poles.map(p=>p.gold||0))+
+    lane("Island crown",poles.map(p=>(p.ranks&&p.ranks.island)?"wears":"—").join(" · "),poles.map(p=>(p.ranks&&p.ranks.island)?1:0));
 }
 function folkBlock(side,title,barCls){
   const cap=side.cap;
@@ -1327,8 +1331,8 @@ function folkBlock(side,title,barCls){
     else lead=`${side.people} souls. Granary empty — food is short.`;
   } else if(cap&&days!=null&&days<3) lead=`${side.people} souls. Only ${Math.floor(days)} days of food.`;
   else if(cap) lead=`${side.people} souls. A ${eraWord}.`;
-  if(rk.island&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"The island crown sits in the hall.";
-  else if(rk.island) lead+=(lead.endsWith(".")?" ":"")+"They wear the island crown.";
+  if(rk.island&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"The island crown sits in the hall. Banner up. Head worth taking.";
+  else if(rk.island) lead+=(lead.endsWith(".")?" ":"")+"They wear the island crown · "+(rk.crown||"the head")+".";
   else if(rk.crown&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"A king sits in the hall.";
   else if(rk.crown) lead+=(lead.endsWith(".")?" ":"")+"A king is crowned.";
   if(rk.scribe) lead+=(lead.endsWith(".")?" ":"")+"A scribe keeps the library.";
@@ -1915,6 +1919,19 @@ function drawIsoHall(ctx,x,y,ox,oy,cls){
   ctx.fillRect(b.sx-2, b.sy-24, 4, 10);
   ctx.fillStyle=ban;
   ctx.fillRect(b.sx-1, b.sy-28, 2, 5);
+  if(c.indexOf("true-crown")>=0){
+    ctx.fillStyle="#6a5040";
+    ctx.fillRect(b.sx+8, b.sy-42, 2, 28);
+    ctx.fillStyle="#e8c040";
+    ctx.beginPath();
+    ctx.moveTo(b.sx+10, b.sy-42);
+    ctx.lineTo(b.sx+22, b.sy-34);
+    ctx.lineTo(b.sx+10, b.sy-26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle="#c45a38";
+    ctx.fillRect(b.sx+10, b.sy-40, 10, 6);
+  }
   ctx.fillStyle="#2a2420";
   ctx.fillRect(b.sx-6, b.sy-14, 3, 4);
   ctx.fillRect(b.sx+2, b.sy-14, 3, 4);
@@ -2076,11 +2093,16 @@ function drawIsoBuilt(ctx,occ,x,y,ox,oy,cls){
 function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
   const b=isoScreen(x,y,ox,oy);
   const t=now||0;
+  const c=cls||"";
+  const island=c.indexOf("true-crown")>=0;
+  const scale=island?1.7:1;
   const step=Math.sin(t*0.008+(x*9+y*5));
   const bob=moving?Math.abs(step)*1.7:0.4;
   const swing=moving?step*2.4:0;
-  isoContact(ctx,b.sx,b.sy+1,6.4,2.5);
-  const c=cls||"";
+  ctx.save();
+  ctx.translate(b.sx, b.sy);
+  ctx.scale(scale, scale);
+  isoContact(ctx,0,1,6.4,2.5);
   let shirt="#d8d2c6", pants="#4a4038", skin="#e8c8a8";
   if(c.indexOf("east")>=0) shirt="#c47a62";
   else if(c.indexOf("north")>=0) shirt="#7aa0c0";
@@ -2091,7 +2113,7 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
   if(c.indexOf("knight")>=0){ shirt="#8a9098"; pants="#3a4048"; }
   if(c.indexOf("king")>=0){ shirt="#e8d080"; pants="#5a3a18"; }
   if(c.indexOf("hungry")>=0){ shirt="#6a6864"; pants="#3a3834"; skin="#c4b098"; }
-  const cx=b.sx, cy=b.sy-3-bob;
+  const cx=0, cy=-3-bob;
   ctx.fillStyle=pants;
   ctx.fillRect(cx-3-swing, cy, 2, 6);
   ctx.fillRect(cx+1+swing, cy, 2, 6);
@@ -2101,12 +2123,24 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
   ctx.beginPath();
   ctx.arc(cx, cy-12, 3.2, 0, 6.28);
   ctx.fill();
-  if(c.indexOf("true-crown")>=0){
+  if(island){
     ctx.fillStyle="#f0d060";
-    ctx.fillRect(cx-4, cy-17, 8, 3);
-    ctx.fillRect(cx-1, cy-20, 2, 3);
+    ctx.fillRect(cx-5, cy-18, 10, 4);
+    ctx.fillRect(cx-3, cy-22, 2, 4);
+    ctx.fillRect(cx+1, cy-23, 2, 5);
     ctx.fillStyle="#e8c040";
-    ctx.fillRect(cx-0.5, cy-21, 1, 1);
+    ctx.fillRect(cx-0.5, cy-24, 1.5, 2);
+    ctx.fillStyle="#6a5040";
+    ctx.fillRect(cx+6, cy-16, 1.6, 18);
+    ctx.fillStyle="#c45a38";
+    ctx.beginPath();
+    ctx.moveTo(cx+7.6, cy-16);
+    ctx.lineTo(cx+16, cy-12);
+    ctx.lineTo(cx+7.6, cy-8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle="#e8c040";
+    ctx.fillRect(cx+7.6, cy-16, 8, 1.5);
   } else if(c.indexOf("king")>=0){
     ctx.fillStyle="#f0d060";
     ctx.fillRect(cx-3, cy-16, 6, 2);
@@ -2115,6 +2149,7 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
     ctx.fillStyle="#6a7078";
     ctx.fillRect(cx-3, cy-15, 6, 3);
   }
+  ctx.restore();
 }
 function drawIsoRail(ctx,x,y,ox,oy,occ){
   drawIsoBox(ctx,x,y,4,["#6a6458","#3a3630","#1a1814"],ox,oy);
@@ -2534,6 +2569,10 @@ function renderMap(world){
       const purse=towns.filter(t=>(t.faction||"player")===fac).reduce((a,t)=>a+Number(t.gold_stock||0),0);
       if(purse>=1) extra+=" purse";
     }
+    if(st.type==="hall"){
+      const ic=(world.metrics||{}).island_crown;
+      if(ic&&!ic.vacant&&ic.faction===fac) extra+=" true-crown";
+    }
     const liveTown=towns.some(t=>(t.faction||"player")===fac&&t.mill_live);
     const skin=skinType+" "+fn+extra+(fac==="rival"?" rival":" "+fn)+(st.type==="road"&&towns.some(t=>(t.faction||"player")===fac&&Number(t.era||2)>=5 && Math.abs(t.x-st.x)+Math.abs(t.y-st.y)<=4)?" rail":"")+(st.type==="mill"?(liveTown?" live":" dry"):"")+(st.type==="foundry"&&liveTown?" live":"");
     const label=st.type==="academy"?"university":(st.type==="market"?"bar":(st.type||""));
@@ -2749,6 +2788,10 @@ function raceLine(world){
     const late=hungry.some(p=>p.era>=6);
     return late?`${names} hungry under a skyline. Food still kills.`:`${names} short of food. The granary is empty.`;
   }
+  const ic=(world.metrics||{}).island_crown;
+  if(ic&&ic.vacant) return "The island crown sits vacant. The bonus is dead.";
+  const wearer=poles.find(p=>p.ranks&&p.ranks.island);
+  if(wearer) return `${wearer.label} wears the island crown${wearer.ranks.crown?(" · "+wearer.ranks.crown):""}. Head worth taking.`;
   const sciLead=[...poles].sort((a,b)=>b.sci.steps-a.sci.steps);
   if(sciLead[0].sci.steps>sciLead[1].sci.steps) return `${sciLead[0].label} leads the science path (${sciLead[0].sci.steps} vs ${sciLead[1].sci.steps}).`;
   const ageLead=[...poles].sort((a,b)=>orderOf(b.now)-orderOf(a.now));
@@ -2792,7 +2835,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v60";}
+  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v61";}
   renderEpilogue(state);
 }
 function renderEdict(state){

@@ -29,7 +29,7 @@ Order is locked. Owner stamps pins. Edicts are open as of **v56** — you govern
 | Live · v58 | **Districts you can name** | Park W and read housing / fields / spine / civic / water. Folk drops lab IDs. Empty granary reads. Names earned from the sit — no typing. |
 | Live · v59 | **Graphics pass** | Turquoise water, cream shore, olive canopy, mill-race glint — on the finished sit. The painting is the brief for structure, not lighting. |
 | Live · v60 | **Late starve honest** | World city doesn’t silently die. Food still kills. A full skyline can still go hungry. Empty granary, STARVE slip, hungry walkers. |
-| Later | **Crown that reads** | One island king: taller, a banner, a name. Bonus you can lose. Head worth taking. |
+| Live · v61 | **Crown that reads** | One island king: taller, a banner, a name. Bonus you can lose. Head worth taking. |
 | Later | **Memory-app agents** | Walkers get clever on the same rules. Watch stays solid first. Do not drop brains on a camp. |
 
 Do not clone Civ religion, hex armies, 20 unique civs. Steal feelings: Civ 7 age-crisis, Anno chains, Frostpunk districts, Storm’s 3 buttons, Banished food-as-death, Settlers haul, SimCity skyline.
@@ -181,7 +181,7 @@ You do not jump to airports. Rail is the spine. Airports sit on the spine.
 4. **Districts you can name** — live v58. Park W. Housing, fields, spine, civic, water. Empty granary reads. No rename box.
 5. **Graphics pass** — live v59. Turquoise water, cream shore, olive canopy. Sit first, then this paint.
 6. **Late starve honest** — live v60. A world city can still go hungry
-7. **Crown that reads** — banner, name, a head you can lose
+7. **Crown that reads** — live v61. Banner, name, a head you can lose
 8. **Memory-app agents** — walkers get clever, same rules. Watch must stay solid first
 
 Do not drop clever agents onto a camp with letters. Do not open edicts to paper over a missing race.
