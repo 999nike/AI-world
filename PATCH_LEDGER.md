@@ -1,19 +1,19 @@
 # AI-world Patch Ledger
 
-**Live · v59** on branch **`v59`**. Pin / good save **`v56`** SHA `53c0563adb9810f952056a56ca62d44347fa5951`.
+**Live · v60** on branch **`v60`**. Pin / good save **`v56`** SHA `53c0563adb9810f952056a56ca62d44347fa5951`.
 
 96×96 island. Iso is the map. You govern the west when the world asks. Three buttons. No typing.
 Seed 42, 10 a pole, east science hold **Year 343** (unsteered).
 
-**This hop:** graphics on a finished sit. Turquoise water, cream shore, olive canopy, mill-race glint. The painting is the brief for structure — not this canvas's lighting. Pane follows the preview, not the window.
+**This hop:** late starve honest. A skyline can still go hungry. Food still kills. Empty granary, hungry walkers, a STARVE slip on the first short tick and on each lost soul. Hotels count on the food-days meter. Kernel scores unchanged — metrics only.
 
-**Proven:** unsteered seed 42 still east science **Year 343** (kernel untouched this hop). First west ask is the town (~Year 71). A west pick can shift the hold — one island, raids are real.
+**Proven:** unsteered seed 42 still east science **Year 343** (starve timing unchanged). First west ask is the town (~Year 71).
 
-**Carried:** v59 paint + pane grid · v58 districts · v57 haul · v56 governor · v55 eras last · v54 slips · v53 crown · v52 traffic · v51 hotel · v50 rail · v49 industry.
+**Carried:** v60 starve read · v59 paint + pane grid · v58 districts · v57 haul · v56 governor · v55 eras last · v54 slips.
 
-**Heading:** sit is named and painted. Next is late starve honest, then a crown that reads. Destination lives in [DESIGN.md](DESIGN.md).
+**Heading:** sit is named and painted. Next is a crown that reads. Destination lives in [DESIGN.md](DESIGN.md).
 
-**Versioning:** live **v59** (branch `v59`). Pin stays **v56** until owner says **stamp**.
+**Versioning:** live **v60** (branch `v60`). Pin stays **v56** until owner says **stamp**.
 
 ## Road (do not skip)
 
@@ -22,7 +22,7 @@ Seed 42, 10 a pole, east science hold **Year 343** (unsteered).
 - [x] **C. Hotel / rail as rules** — v57
 - [x] **Districts you can name** — v58
 - [x] **Graphics pass** — v59
-- [ ] Late starve honest
+- [x] **Late starve honest** — v60
 - [ ] Crown that reads
 - [ ] Memory-app agents
 
@@ -42,5 +42,6 @@ Parked (not this pin): gold as purse, buried temples, physics sit, event popups.
 - [x] **Hotel / rail as rules** — v57
 - [x] **Districts you can name** — v58
 - [x] **Graphics pass** — v59
+- [x] **Late starve honest** — v60
 
-**Next chat:** restore branch **`v59`** (live: haul, districts, paint, pane grid). Pin / rollback is **`v56`** (`53c0563`) — do not check out v56 unless rolling back. Hold **Year 343** unsteered. Never Vite. You govern the west.
+**Next chat:** restore branch **`v60`**. Pin / rollback is **`v56`** (`53c0563`). Hold **Year 343** unsteered. Never Vite. You govern the west.

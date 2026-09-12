@@ -608,7 +608,19 @@ class SettlementManager:
             else:
                 s["food_stock"] = 0.0
                 s["surplus_ticks"] = 0
-                s["starve_ticks"] = int(s.get("starve_ticks", 0)) + 1
+                prev_starve = int(s.get("starve_ticks", 0))
+                s["starve_ticks"] = prev_starve + 1
+                if prev_starve == 0:
+                    self.metrics["last_hungry"] = {
+                        "tick": tick, "settlement_id": sid,
+                        "faction": s.get("faction", "player"),
+                        "era": era, "population": pop_before,
+                    }
+                    self.logger.event({
+                        "type": "hungry", "tick": tick, "settlement_id": sid,
+                        "faction": s.get("faction", "player"),
+                        "era": era, "population": pop_before,
+                    })
                 if int(s["starve_ticks"]) >= starve_needed:
                     soldiers = float(s.get("soldiers", 0.0))
                     defend_cost = float(SETTLEMENT_RULES.get("soldier_defend_cost", 1.0))
@@ -628,6 +640,20 @@ class SettlementManager:
                     else:
                         s["population"] = max(0, pop_before - 1)
                         s["starve_ticks"] = 0
+                        self.metrics["last_starve"] = {
+                            "tick": tick, "settlement_id": sid,
+                            "faction": s.get("faction", "player"),
+                            "era": era,
+                            "pop_before": pop_before,
+                            "pop_after": int(s["population"]),
+                        }
+                        self.logger.event({
+                            "type": "starved", "tick": tick, "settlement_id": sid,
+                            "faction": s.get("faction", "player"),
+                            "era": era,
+                            "population_before": pop_before,
+                            "population_after": int(s["population"]),
+                        })
 
             if pop_before <= 0 and float(s.get("food_stock", 0)) >= (buffer_food + cons * 3):
                 s["population"] = 1

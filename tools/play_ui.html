@@ -678,7 +678,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
 </script>
 <div class="shell">
   <div class="topbar">
-    <div><h1>AI-world</h1><div class="sub">Govern the west. The island reads. · v59</div></div>
+    <div><h1>AI-world</h1><div class="sub">Govern the west. The island reads. · v60</div></div>
     <div class="controls">
       <details class="world-box" id="worldBox">
         <summary id="worldSum">World</summary>
@@ -701,7 +701,7 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
   <div class="stage">
     <div class="panel"><div class="kicker">Event log</div><div class="log" id="log"></div></div>
     <div class="panel map-panel">
-      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v59</div>
+      <div id="statusBanner" class="banner">Open a world. You govern the west when it asks. · v60</div>
       <div id="epilogue" class="epilogue"></div>
       <div class="map-wrap mode-iso" id="mapWrap">
         <div class="map-zoom">
@@ -722,14 +722,14 @@ if(ev.data.type==="hello"){msg("location",{path:location.pathname||"/",search:lo
         </div>
         <div class="map-sizer" id="mapSizer"><canvas id="iso" width="1200" height="700"></canvas><canvas id="isoFx" width="1200" height="700"></canvas></div>
       </div>
-      <div class="legend">Park W. Turquoise water, cream shore, olive canopy. · v59</div>
+      <div class="legend">Park W. Empty granary reads. Food still kills. · v60</div>
     </div>
     <div class="panel city" id="city"></div>
   </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastGoodsTick=-1,lastHotelDarkTick=-1,lastTick=-1,lastOutcomeTick=-1,lastIslandCrownTick=-1,lastCrownTakenTick=-1,lastScienceStolenTick=-1,lastChoiceTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
+let timer=null,lastRaidTick=-1,lastDownTick=-1,lastBreedTick=-1,lastKnightTick=-1,lastKingTick=-1,lastScribeTick=-1,lastBuilderTick=-1,lastCrewTick=-1,lastTrainTick=-1,lastPlaneTick=-1,lastTaxiTick=-1,lastBusTick=-1,lastGoodsTick=-1,lastHotelDarkTick=-1,lastStarveTick=-1,lastHungryTick=-1,lastTick=-1,lastOutcomeTick=-1,lastIslandCrownTick=-1,lastCrownTakenTick=-1,lastScienceStolenTick=-1,lastChoiceTick=-1,prevWorld=null,prevSample=null,paused=false,speed=2,lastSides=null,zoom=1,lookAt="island",viewMode="iso";
 const GLYPH={library:"L",lab:"R",observatory:"V",barracks:"B",academy:"U",walls:"#",temple:"T",hall:"H",mill:"M",warehouse:"W",wonder:"P",airport:"F",market:"b"};
 const AGES=[["camp","Camp"],["era2","Settlement"],["era3","Town"],["era4","City"],["library","Library"],["lab","Lab"],["observatory","Observatory"],["era5","Industry"],["era6","World"]];
 const ERA_WORD={0:"camp",1:"camp",2:"settlement",3:"town",4:"city",5:"industry",6:"world"};
@@ -761,7 +761,7 @@ function logLine(tick,t,meta){
   $("log").prepend(d);
   showSlip(tick,t,meta);
 }
-const SLIP_KINDS={age:1,crown:1,king:1,steal:1,vacant:1,starve:1,discover:1};
+const SLIP_KINDS={age:1,crown:1,king:1,steal:1,vacant:1,starve:1,discover:1,dark:1};
 let slipTimer=null;
 function showSlip(tick,t,meta){
   const kind=meta&&meta.kind;
@@ -1124,7 +1124,14 @@ const POLES=[["player","west","West"],["rival","east","East"],["north","north","
 function whoOf(f){const row=POLES.find(p=>p[0]===f);return row?row[2]:"West";}
 function townsOf(world,fac){return ((world&&world.settlements)||[]).filter(s=>(s.faction||"player")===fac);}
 function splitTowns(world){return{you:townsOf(world,"player"),them:townsOf(world,"rival")};}
-function foodDays(s){const need=Number(s.population||0)*0.22+Number(s.soldiers||0)*0.03;if(need<=0)return null;return Number(s.food_stock||0)/need;}
+function foodDays(s){
+  const pop=Number(s.population||0);
+  const sol=Number(s.soldiers||0);
+  const inns=Number(s.hotels||0);
+  const need=pop*0.22+sol*0.03+inns*0.18;
+  if(need<=0) return null;
+  return Number(s.food_stock||0)/need;
+}
 function capital(towns){if(!towns.length)return null;return towns.slice().sort((a,b)=>Number(b.population||0)-Number(a.population||0))[0];}
 function ownStructs(world,fac){return ((world&&world.structures)||[]).filter(s=>factionOf(world,s)===fac);}
 function sum(list,k){return list.reduce((a,s)=>a+Number(s[k]||0),0);}
@@ -1183,7 +1190,8 @@ function collectDistricts(world, occ){
     const towers=occCentroid(occ, c=>(clsHas(c,"tower")||clsHas(c,"hotel")||clsHas(c,"highrise")) && clsHas(c,fn));
     if(towers && era>=6){
       const open=sum(towns,"hotels");
-      all.push({kind:"skyline", word:open>=1?"Skyline":"Empty towers", x:towers.x, y:towers.y, fac});
+      const hungry=days!=null&&days<1;
+      all.push({kind:"skyline", word:hungry?"Hungry skyline":(open>=1?"Skyline":"Empty towers"), x:towers.x, y:towers.y, fac});
     }
   }
   return all;
@@ -1313,8 +1321,11 @@ function folkBlock(side,title,barCls){
   const eraWord=ERA_WORD[side.era]||"camp";
   const rk=side.ranks||{hands:0,crown:null,hall:false,knight:null,scribe:null,builder:null};
   let lead="Still walking.";
-  if(cap&&days!=null&&days<1) lead=`${side.people} souls. Granary empty — food is short.`;
-  else if(cap&&days!=null&&days<3) lead=`${side.people} souls. Only ${Math.floor(days)} days of food.`;
+  if(cap&&days!=null&&days<1){
+    if(side.era>=6) lead=`A skyline. ${side.people} souls. The granary is empty. Food still kills.`;
+    else if(side.era>=5) lead=`Industry. ${side.people} souls. Granary empty — the mill still wants feeding.`;
+    else lead=`${side.people} souls. Granary empty — food is short.`;
+  } else if(cap&&days!=null&&days<3) lead=`${side.people} souls. Only ${Math.floor(days)} days of food.`;
   else if(cap) lead=`${side.people} souls. A ${eraWord}.`;
   if(rk.island&&rk.hall) lead+=(lead.endsWith(".")?" ":"")+"The island crown sits in the hall.";
   else if(rk.island) lead+=(lead.endsWith(".")?" ":"")+"They wear the island crown.";
@@ -2079,6 +2090,7 @@ function drawIsoWalker(ctx,x,y,ox,oy,cls,now,moving){
   if(c.indexOf("crew")>=0) shirt="#6a6058";
   if(c.indexOf("knight")>=0){ shirt="#8a9098"; pants="#3a4048"; }
   if(c.indexOf("king")>=0){ shirt="#e8d080"; pants="#5a3a18"; }
+  if(c.indexOf("hungry")>=0){ shirt="#6a6864"; pants="#3a3834"; skin="#c4b098"; }
   const cx=b.sx, cy=b.sy-3-bob;
   ctx.fillStyle=pants;
   ctx.fillRect(cx-3-swing, cy, 2, 6);
@@ -2636,6 +2648,8 @@ function renderMap(world){
     const list=byFac[fac];
     const ic=(world.metrics||{}).island_crown;
     const wears=!!(ic && !ic.vacant && ic.faction===fac);
+    const cap=townsOf(world,fac).slice().sort((a,b)=>Number(b.population||0)-Number(a.population||0))[0];
+    const hungry=cap?(foodDays(cap)!=null&&foodDays(cap)<1):false;
     list.forEach(a=>{
       const fn=facName(fac);
       const role=a.role||"walker";
@@ -2646,7 +2660,7 @@ function renderMap(world){
         :(role==="crew"?("crew "+fn)
         :("vil "+fn)))));
       const id=a.agent_id||a.id||(fn+":"+a.x+","+a.y);
-      nowWalk[id]={x:Number(a.x),y:Number(a.y),cls:skin};
+      nowWalk[id]={x:Number(a.x),y:Number(a.y),cls:skin+(hungry?" hungry":"")};
     });
   }
   walkPrev=walkNow; walkNow=nowWalk; walkAt=performance.now();
@@ -2710,7 +2724,6 @@ function chronicleDiff(world){
     const had=new Set(o.subjects||[]);
     for(const sub of (s.subjects||[])) if(sub&&!had.has(sub)) logLine(tick,`${who} ${s.id} unlocked ${sub}.`);
     if(Number(s.discoveries||0)>Number(o.discoveries||0)) logLine(tick,`${who} ${s.id} made a discovery (${s.discoveries}).`,{x:s.x,y:s.y,fac:s.faction,kind:"discover"});
-    if(Number(s.population||0)+2<Number(o.population||0)) logLine(tick,`${who} ${s.id} lost people.`,{x:s.x,y:s.y,fac:s.faction,kind:"starve"});
   }
   const risen={library:"A library rose",lab:"A lab rose",observatory:"An observatory rose",barracks:"Barracks rose",academy:"A university rose",farm:"Fields spread",mill:"A mill rose",foundry:"A foundry smoked",warehouse:"A warehouse rose",wonder:"A pyramid rose from the dirt",temple:"A temple was found",airport:"An airport rose",market:"A bar opened on the street"};
   for(const [typ,line] of Object.entries(risen)){
@@ -2727,6 +2740,15 @@ function raceLine(world){
   const s=sidesOf(world);
   const poles=POLES.map(([fac])=>s[fac]);
   if(poles.every(p=>!p.cap)) return "All still walking.";
+  const hungry=poles.filter(p=>{
+    const d=p.cap?foodDays(p.cap):null;
+    return d!=null&&d<1;
+  });
+  if(hungry.length){
+    const names=hungry.map(p=>p.label).join(" · ");
+    const late=hungry.some(p=>p.era>=6);
+    return late?`${names} hungry under a skyline. Food still kills.`:`${names} short of food. The granary is empty.`;
+  }
   const sciLead=[...poles].sort((a,b)=>b.sci.steps-a.sci.steps);
   if(sciLead[0].sci.steps>sciLead[1].sci.steps) return `${sciLead[0].label} leads the science path (${sciLead[0].sci.steps} vs ${sciLead[1].sci.steps}).`;
   const ageLead=[...poles].sort((a,b)=>orderOf(b.now)-orderOf(a.now));
@@ -2770,7 +2792,7 @@ function renderBanner(state){
   else if(o.winner){banner.className="banner "+(o.winner!=="draw"?"win":"");banner.textContent=`${holdTitle(o.winner)} · ${o.kind||"outcome"}. The ages continue.`;}
   else if(state.paused){banner.className="banner";banner.textContent="Paused. "+raceLine(state.world);}
   else if(state.status==="running"){banner.className="banner";banner.textContent=raceLine(state.world)||"The ages are turning.";}
-  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v59";}
+  else {banner.className="banner";banner.textContent="Open a world. You govern the west when it asks. · v60";}
   renderEpilogue(state);
 }
 function renderEdict(state){
@@ -2905,6 +2927,28 @@ async function poll(){
       const xy=townXY(world, darkEv.settlement_id);
       logLine(world.tick,`${whoOf(darkEv.faction)} hotels stand empty — no goods on the rail.`, xy&&{x:xy.x,y:xy.y,fac:darkEv.faction,kind:"dark"});
     }
+    const starved=(world.metrics||{}).last_starve;
+    if(starved&&starved.tick!==lastStarveTick){
+      lastStarveTick=starved.tick;
+      const who=whoOf(starved.faction);
+      const xy=townXY(world, starved.settlement_id);
+      const late=Number(starved.era||0)>=6;
+      const line=late
+        ? `${who} lost a soul under the skyline. Food still kills.`
+        : `${who} ${starved.settlement_id} lost a soul. The granary was empty.`;
+      logLine(world.tick, line, xy&&{x:xy.x,y:xy.y,fac:starved.faction,kind:"starve"});
+    }
+    const hungryEv=(world.metrics||{}).last_hungry;
+    if(hungryEv&&hungryEv.tick!==lastHungryTick && hungryEv.tick!==lastStarveTick){
+      lastHungryTick=hungryEv.tick;
+      const who=whoOf(hungryEv.faction);
+      const xy=townXY(world, hungryEv.settlement_id);
+      const late=Number(hungryEv.era||0)>=6;
+      const line=late
+        ? `${who} is hungry under a skyline. Hotels still eat.`
+        : `${who} is short of food.`;
+      logLine(world.tick, line, xy&&{x:xy.x,y:xy.y,fac:hungryEv.faction,kind:"starve"});
+    }
   }
   renderBanner(state);
   renderEdict(state);
@@ -2929,7 +2973,7 @@ async function poll(){
 }
 async function begin(){
   $("begin").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="Pause";
-  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastGoodsTick=-1;lastHotelDarkTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;lastChoiceTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;walkPrev={};walkNow={};walkAt=0;window.__isoLives={mills:[],foundries:[]};window.__isoDistricts=[];hideSlip();
+  $("log").innerHTML="";lastTick=-1;lastRaidTick=-1;lastDownTick=-1;lastBreedTick=-1;lastKnightTick=-1;lastKingTick=-1;lastScribeTick=-1;lastBuilderTick=-1;lastCrewTick=-1;lastTrainTick=-1;lastPlaneTick=-1;lastTaxiTick=-1;lastBusTick=-1;lastGoodsTick=-1;lastHotelDarkTick=-1;lastStarveTick=-1;lastHungryTick=-1;lastOutcomeTick=-1;lastIslandCrownTick=-1;lastCrownTakenTick=-1;lastScienceStolenTick=-1;lastChoiceTick=-1;window.__holdYear=null;prevWorld=null;prevSample=null;paused=false;lastSides=null;mapPings=[];vehPrev={};vehNow={};vehAt=0;walkPrev={};walkNow={};walkAt=0;window.__isoLives={mills:[],foundries:[]};window.__isoDistricts=[];hideSlip();
   const ed=$("edict"); if(ed) ed.hidden=true;
   $("epilogue").className="epilogue";$("epilogue").innerHTML="";
   const seed=Number($("seed").value)||42, ticks=Number($("ticks").value)||8000;
